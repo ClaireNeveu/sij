@@ -3,7 +3,7 @@ import { Ident, Expr } from './expr';
 
 type Query<Ext extends Extension = NoExtension> = Tagged<'Query', {
     readonly commonTableExprs: Array<CommonTableExpr<Ext>>,
-    // readonly body: SetExpr,
+    readonly selection: SetExpr<Ext>,
     readonly ordering: Array<OrderingExpr<Ext>>,
     readonly limit: Expr<Ext> | null,
     readonly offset: Expr<Ext> | null,
@@ -42,6 +42,49 @@ type OrderingExpr<Ext extends Extension = NoExtension> = Tagged<'OrderingExpr', 
 const OrderingExpr = <Ext extends Extension = NoExtension>(
     args: UnTag<OrderingExpr<Ext>>
 ): OrderingExpr<Ext> => tag('OrderingExpr', args);
+
+type SetExpr<Ext extends Extension = NoExtension> =
+    | SetSingleton
+    | SetFunction<Ext>;
+
+type SetSingleton = Tagged<'SetSingleton', {
+    readonly select: Select,
+}>;
+const SetSingleton = (select: Select): SetSingleton => tag('SetSingleton', { select });
+
+export interface SetFunction<Ext extends Extension = NoExtension> extends Tagged<'SetFunction', {
+    readonly func: 'Union' | 'Except' | 'Intersect',
+    readonly all: boolean,
+    readonly left: SetExpr,
+    readonly right: SetExpr,
+}> {};
+const SetFunction = <Ext extends Extension = NoExtension>(args: UnTag<SetFunction<Ext>>): SetFunction<Ext> => tag('SetFunction', args);
+
+type Select = {
+    readonly selections: Array<Selection>,
+    readonly from: Array<Table>,
+    readonly where: Expr | null,
+    readonly groupBy: Array<Expr>,
+    readonly having: Expr | null,
+};
+
+type Selection =
+    | AnonymousSelection
+    | AliasedSelection;
+
+type AnonymousSelection<Ext extends Extension = NoExtension> = Tagged<'AnonymousSelection', {
+    readonly selection: Expr<Ext>,
+}>;
+const AnonymousSelection = <Ext extends Extension = NoExtension>(selection: Expr<Ext>): AnonymousSelection<Ext> => tag('AnonymousSelection', { selection });
+
+/**
+ * `foo AS bar`
+ */
+type AliasedSelection<Ext extends Extension = NoExtension> = Tagged<'AliasedSelection', {
+    readonly selection: Expr<Ext>,
+    readonly alias: Ident,
+}>;
+const AliasedSelection = <Ext extends Extension = NoExtension>(args: UnTag<AliasedSelection<Ext>>): AliasedSelection<Ext> => tag('AliasedSelection', args);
 
 export {
     Query,

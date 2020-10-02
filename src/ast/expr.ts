@@ -111,7 +111,7 @@ type Collate<Ext extends Extension = NoExtension> = Tagged<'Collate', {
 const Collate = <Ext extends Extension = NoExtension>(args: UnTag<Collate<Ext>>): Collate<Ext> => tag('Collate', args);
 
 /**
- * `Exists(subQuery)`
+ * `EXISTS(subQuery)`
  */
 type Exists<Ext extends Extension = NoExtension> = Tagged<'Exists', { readonly subQuery: Query<Ext> }>;
 const Exists = <Ext extends Extension = NoExtension>(subQuery: Query<Ext>): Exists<Ext> => tag('Exists', { subQuery });
