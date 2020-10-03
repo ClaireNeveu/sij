@@ -7,6 +7,10 @@ import { TypedAst } from './functions';
 
 const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });
 
+
+export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension> =
+    AliasedSelection<Ext> & { __schemaType: Schema, __returnType: Return };
+
 class Builder<Schema, Ext extends Extension = NoExtension> {
     from<Table extends ((keyof Schema) & string)>(table: Table) {
         const select = Select({
@@ -33,7 +37,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
         return AliasedSelection({
             selection: expr,
             alias: Ident(name),
-        }) as TypedAst<Schema, R, AliasedSelection<Ext>>;
+        }) as TypedAlias<Schema, R, Col, Ext>;
     }
 
     /**
@@ -45,40 +49,21 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
     }
 }
 
-type ColumnValue<T, P extends ColumnOf<T>> =
-  P extends `${infer Key}.${infer Rest}`
-  ? Key extends keyof T
-    ? Rest extends ColumnOf<T[Key]>
-      ? ColumnValue<T[Key], Rest>
-      : never
-    : never
-  : P extends keyof T
-    ? T[P]
-    : never;
-
 type ColumnFinal<P> =
     P extends `${infer Key}.${infer Rest}` ? Rest : never;
 
 type ColumnInit<P> =
     P extends `${infer Key}.${infer Rest}` ? Key : never;
 
-type ColumnOf<T, Key extends keyof T = keyof T> =
-  Key extends string
-  ? T[Key] extends Record<string, any>
-    ? | `${Key}.${keyof T[Key] & string}`
-    : never
-  : never;
-
 type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
 class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> {
     constructor(readonly _query: Query) {}
 
-    // TODO selecting foo and bar.foo breaks type inference
     select<
         Id extends ((keyof Table) & string),
         Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
-        Exp extends TypedAst<Schema, any, AliasedSelection<Ext>>,
+        Exp extends TypedAlias<Schema, any, any, Ext>,
         Col extends Id | Comp | Exp,
     >(
         ...cols: Array<Col>
@@ -97,18 +82,20 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         type KeysOf<C> =
             C extends Id ? [C, any]
             : C extends Comp ? [ColumnFinal<C>, ColumnInit<C>]
-            : C extends Exp ? [any, any]
+            : C extends  TypedAlias<Schema, infer R, infer C, Ext> ? [C, R]
             : never;
         
         type ValuesOf<C, K extends [any, any]> =
             C extends Id ? Table[K[0]]
             : C extends Comp ? Schema[K[1]][K[0]]
-            : C extends Exp ? any
+            : C extends Exp ? K[1]
             : never;
 
         type NewReturn = { [K in KeysOf<Col> as K[0]]: ValuesOf<Col, K> } & Return;
+        // Pick up any new aliases
+        type NewTable = { [K in KeysOf<Col> as K[0]]: ValuesOf<Col, K> } & Table;
         if (this._query.unions.length === 0) {
-            return new QueryBuilder<Schema, Table, Tn, NewReturn, Ext>(copy(this._query, {
+            return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(copy(this._query, {
                 selection: copy(this._query.selection, {
                     selections: [
                         ...this._query.selection.selections,
@@ -129,7 +116,7 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
             })
         })
         
-        return new QueryBuilder<Schema, Table, Tn, NewReturn, Ext>(copy(this._query, {
+        return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(copy(this._query, {
             unions: [
                 ...this._query.unions.slice(0, numUnions - 1),
                 newUnion
@@ -161,7 +148,9 @@ import { ascii } from './functions';
 
 const b = new Builder<MySchema, NoExtension>();
 
-b.from('employee').select('employee.name', 'employee.id').select(b.as('asc', ascii<MySchema, NoExtension>('name')))
+const ggg: { name: string, id: number, asc: string } = b.from('employee')
+    .select('employee.name', 'employee.id')
+    .select(b.as('asc', ascii<MySchema, NoExtension>('name'))).testingGet()
 
 b.from('employee').fakeJoin<'department'>().select('department.budget', 'employee.id')
 
