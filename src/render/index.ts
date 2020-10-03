@@ -1,14 +1,18 @@
-import type { Expr } from 'ast/expr';
-import type { DataType } from 'ast/data-type';
-import type { Query } from 'ast/query';
-import type { Literal } from 'ast/literal';
-import type { Extension, NoExtension } from 'ast/util';
+import type { Expr, Ident } from '../ast/expr';
+import type { DataType } from '../ast/data-type';
+import type { Query, Select } from '../ast/query';
+import type { Literal } from '../ast/literal';
+import type { Extension, NoExtension } from '../ast/util';
 
 class Renderer<Ext extends Extension = NoExtension> {
+    renderIdent(ident: Ident): string {
+        return `"${ident}"`;
+    }
+    
     renderExpr(expr: Expr): string {
         // Ident
         if (typeof expr === 'string') {
-            return '"${expr}"';
+            return this.renderIdent(expr);
         }
         switch (expr._tag) {
             case 'Wildcard': return '*';
@@ -43,7 +47,7 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'Extract': return `EXTRACT(${expr.field} FROM ${this.renderExpr(expr.source)})`;
             case 'FunctionApp': {
                 const args = expr.args.map(this.renderExpr).join(', ');
-                return `${this.renderExpr(name)}(${args})`;
+                return `${this.renderExpr(expr.name)}(${args})`;
             }
             case 'IsNull': {
                 const not = expr.negated ? ' NOT' : '';
@@ -75,10 +79,76 @@ class Renderer<Ext extends Extension = NoExtension> {
         throw Error('Unimplemented');
     }
     renderQuery(query: Query): string {
-        throw Error('Unimplemented');
+        const ctes = (() => {
+            if (query.commonTableExprs.length == 0) {
+                return '';
+            }
+            const subs = query.commonTableExprs.map(cte => {
+                const cols = (
+                    cte.alias.columns.length === 0
+                        ? ''
+                        : ` (${cte.alias.columns.map(this.renderIdent).join(', ')})`
+                );
+                return `${this.renderIdent(cte.alias.name)}${cols} AS`
+            });
+            return `WITH ${subs.join(', ')} `;
+        })();
+
+        const limit = query.limit === null ? '' : ` LIMIT ${this.renderExpr(query.limit)}`;
+        const offset = query.offset === null ? '' : ` OFFSET ${this.renderExpr(query.offset)}`;
+        const ordering = (() => {
+            if (query.ordering.length === 0) {
+                return '';
+            }
+            const orders = query.ordering.map(order => {
+                const asc = order.order === null ? '' : ' ' + order.order;
+                const nullHandling = order.nullHandling === null ? '' : ' ' + order.nullHandling;
+                `${this.renderExpr(order.expr)}${asc}${nullHandling}`
+            });
+            return ` ORDER BY ${orders.join(', ')}`;
+        })();
+        const selection = this.renderSelect(query.selection);
+        const unions = (() => {
+            if (query.unions.length === 0) {
+                return '';
+            }
+            return ' ' + query.unions.map(u => {
+                const all = u.all ? ' ALL' : '';
+                return ` ${u.func}${all} ${this.renderSelect(u.select)}`;
+            }).join(' ');
+        })();
+
+        return `${ctes}${selection}${unions}${ordering}${limit}${offset}`;
     }
-    renderLiteral(query: Literal): string {
-        throw Error('Unimplemented');
+    
+    renderSelect(select: Select<any>): string {
+        const selections = select.selections.map(s => {
+            switch (s._tag) {
+                case 'AnonymousSelection': return this.renderExpr(s.selection);
+                case 'AliasedSelection':
+                    return `${this.renderExpr(s.selection)} AS ${this.renderIdent(s.alias)}`;
+            }
+        }).join(', ');
+
+        const where = select.where === null ? '' : ' ' + this.renderExpr(select.where);
+        const groupBy = (
+            select.groupBy.length === 0
+                ? ''
+                : ' GROUP BY' + select.groupBy.map(this.renderExpr).join(', ')
+        );
+        const having = (
+            select.having === null
+                ? ''
+                : ' HAVING' + this.renderExpr(select.having)
+        );
+
+        const table = 'TODO';
+
+        return `SELECT ${selections} FROM ${table}${where}${groupBy}${having}`;
+    }
+    
+    renderLiteral(literal: Literal): string {
+        return literal;
     }
 }
 

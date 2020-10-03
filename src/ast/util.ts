@@ -8,11 +8,13 @@ const tag = <Tag, O extends {}>(tag: Tag, obj: O): Tagged<Tag, O> => ({ _tag: ta
 type Extension = {
     expression: any,
     query: any,
+    select: any,
 };
 
 type NoExtension = {
     expression: unknown,
     query: unknown,
+    select: unknown,
 };
 
 const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });

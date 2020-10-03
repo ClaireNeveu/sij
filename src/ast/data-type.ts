@@ -26,7 +26,6 @@ type DataType =
     | Interval
     | Text
     | Bytea
-    | Array
     | Custom;
 
 type Uuid = { readonly _tag: 'Uuid' };
@@ -97,10 +96,12 @@ type Float = Tagged<'Float', {
 }>;
 const Float = (prec: number | null): Float => tag('Float', { precision: prec ?? null });
 
+/* Postgres only
 type Array = Tagged<'Array', {
     readonly wrapped: DataType
 }>;
 const Array = (wrapped: DataType): Array => tag('Array', { wrapped });
+*/
 
 /**
  * Custom type like an enum
@@ -133,6 +134,5 @@ export {
     Blob,
     Decimal,
     Float,
-    Array,
     Custom,
 };

@@ -11,15 +11,13 @@ type NumLit = VTagged<'NumLit', string>;
 const NumLit = (val: number | string): NumLit => (typeof val === 'string' ? val : '' + val) as NumLit;
 
 type StringLit = VTagged<'StringLit', string>;
-const StringLit = (val: string): StringLit => val as StringLit;
+const StringLit = (val: string): StringLit => `'val'` as StringLit;
 
-type BoolLit = VTagged<'BoolLit', boolean>;
-const BoolLit = (val: boolean): BoolLit => val as BoolLit;
+type BoolLit = VTagged<'BoolLit', string>;
+const BoolLit = (val: boolean): BoolLit => (val ? 'TRUE' : 'FALSE') as BoolLit;
 
-type NullLit = { _tag: 'NullLit' };
-const NullLit = { _tag: 'NullLit' };
-
-const literalToString = (l: Literal): string => (typeof l === 'object') ? 'NULL' : '' + l;
+type NullLit = VTagged<'NullLit', string>;
+const NullLit = 'NULL' as NullLit;
 
 export {
     Literal,
@@ -27,5 +25,4 @@ export {
     StringLit,
     BoolLit,
     NullLit,
-    literalToString,
 };

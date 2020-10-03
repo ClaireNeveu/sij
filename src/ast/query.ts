@@ -1,14 +1,15 @@
 import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
 import { Ident, Expr } from './expr';
 
-type Query<Ext extends Extension = NoExtension> = Tagged<'Query', {
+interface Query<Ext extends Extension = NoExtension> extends Tagged<'Query', {
     readonly commonTableExprs: Array<CommonTableExpr<Ext>>,
-    readonly selection: SetExpr<Ext>,
+    readonly selection: Select<Ext>,
+    readonly unions: Array<SetOp<Ext>>,
     readonly ordering: Array<OrderingExpr<Ext>>,
     readonly limit: Expr<Ext> | null,
     readonly offset: Expr<Ext> | null,
     readonly extensions: Ext['query'] | null,
-}>;
+}> {};
 const Query = <Ext extends Extension = NoExtension>(args: UnTag<Query<Ext>>): Query<Ext> => tag('Query', args);
 
 /**
@@ -36,37 +37,29 @@ const TableAlias = (args: UnTag<TableAlias>): TableAlias => tag('TableAlias', ar
 
 type OrderingExpr<Ext extends Extension = NoExtension> = Tagged<'OrderingExpr', {
     readonly expr: Expr<Ext>,
-    readonly order: 'Asc' | 'Desc' | null,
-    readonly nullHandling: 'NullsFirst' | 'NullsLast' | null
+    readonly order: 'ASC' | 'DESC' | null,
+    readonly nullHandling: 'NULLS FIRST' | 'NULLS LAST' | null
 }>;
 const OrderingExpr = <Ext extends Extension = NoExtension>(
     args: UnTag<OrderingExpr<Ext>>
 ): OrderingExpr<Ext> => tag('OrderingExpr', args);
 
-type SetExpr<Ext extends Extension = NoExtension> =
-    | SetSingleton
-    | SetFunction<Ext>;
-
-type SetSingleton = Tagged<'SetSingleton', {
-    readonly select: Select,
-}>;
-const SetSingleton = (select: Select): SetSingleton => tag('SetSingleton', { select });
-
-export interface SetFunction<Ext extends Extension = NoExtension> extends Tagged<'SetFunction', {
-    readonly func: 'Union' | 'Except' | 'Intersect',
+type SetOp<Ext extends Extension = NoExtension> = Tagged<'SetOp', {
+    readonly func: 'UNION' | 'EXCEPT' | 'INTERSECT',
     readonly all: boolean,
-    readonly left: SetExpr,
-    readonly right: SetExpr,
-}> {};
-const SetFunction = <Ext extends Extension = NoExtension>(args: UnTag<SetFunction<Ext>>): SetFunction<Ext> => tag('SetFunction', args);
+    readonly select: Select<Ext>,
+}>;
+const SetOp = <Ext extends Extension = NoExtension>(args: UnTag<SetOp<Ext>>): SetOp<Ext> => tag('SetOp', args);
 
-type Select = {
+type Select<Ext extends Extension = NoExtension> = {
     readonly selections: Array<Selection>,
-    readonly from: Array<Table>,
+    readonly from: JoinedTable,
     readonly where: Expr | null,
     readonly groupBy: Array<Expr>,
     readonly having: Expr | null,
+    readonly extensions: Ext['select'] | null,
 };
+const Select = <Ext extends Extension = NoExtension>(args: UnTag<Select<Ext>>): Select<Ext> => tag('Select', args);
 
 type Selection =
     | AnonymousSelection
@@ -86,8 +79,39 @@ type AliasedSelection<Ext extends Extension = NoExtension> = Tagged<'AliasedSele
 }>;
 const AliasedSelection = <Ext extends Extension = NoExtension>(args: UnTag<AliasedSelection<Ext>>): AliasedSelection<Ext> => tag('AliasedSelection', args);
 
+type JoinedTable<Ext extends Extension = NoExtension> = Tagged<'JoinedTable', {
+    readonly name: Ident,
+    readonly joins: Array<Join>,
+}>;
+const JoinedTable = <Ext extends Extension = NoExtension>(args: UnTag<JoinedTable<Ext>>): JoinedTable<Ext> => tag('JoinedTable', args);
+
+type Join<Ext extends Extension = NoExtension> = Tagged<'Join', {
+    readonly name: Ident,
+    readonly kind: JoinKind,
+    readonly on: Expr<Ext>,
+}>;
+const Join = <Ext extends Extension = NoExtension>(args: UnTag<Join<Ext>>): Join<Ext> => tag('Join', args);
+
+enum JoinKind {
+    Inner = 'INNER',
+    LeftOuter = 'LEFT OUTER',
+    RightOuter = 'RIGHT OUTER',
+    FullOuter = 'FULL OUTER',
+}
+
 export {
     Query,
+    CommonTableExpr,
+    TableAlias,
+    OrderingExpr,
+    SetOp,
+    Select,
+    Selection,
+    AnonymousSelection,
+    AliasedSelection,
+    JoinedTable,
+    Join,
+    JoinKind,
 }
 
 /* Extensions that will be needed
