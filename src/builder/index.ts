@@ -1,6 +1,6 @@
 import { Expr, Ident, CompoundIdentifier } from '../ast/expr';
 import { DataType } from '../ast/data-type';
-import { Query, Select, JoinedTable, AnonymousSelection } from '../ast/query';
+import { Query, Select, JoinedTable, AnonymousSelection, AliasedSelection } from '../ast/query';
 import { Literal } from '../ast/literal';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst } from './functions';
@@ -8,7 +8,7 @@ import { TypedAst } from './functions';
 const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
-    from<Table extends (keyof Schema & string)>(table: Table) {
+    from<Table extends ((keyof Schema) & string)>(table: Table) {
         const select = Select({
             selections: [],
             from: JoinedTable({ name: Ident(table), joins: [] }),
@@ -26,7 +26,22 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
             offset: null,
             extensions: null,
         });
-        return new QueryBuilder<Schema, Schema[Table], {}, Ext>(query);
+        return new QueryBuilder<Schema, Schema[Table], Table, {}, Ext>(query);
+    }
+
+    as<Col extends string, R>(name: Col, expr: TypedAst<Schema, R, Expr<Ext>>) {
+        return AliasedSelection({
+            selection: expr,
+            alias: Ident(name),
+        }) as TypedAst<Schema, R, AliasedSelection<Ext>>;
+    }
+
+    /**
+     * Allows you to pass a raw bit of AST into the query.
+     * You must provide the type of this expression.
+     */
+    ast<Return>(e: Expr<Ext>): TypedAst<Schema, Return, Expr<Ext>>{
+        return e as TypedAst<Schema, Return, Expr<Ext>>
     }
 }
 
@@ -54,23 +69,23 @@ type ColumnOf<T, Key extends keyof T = keyof T> =
     : never
   : never;
 
+type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
-class QueryBuilder<Schema, Table, Return, Ext extends Extension = NoExtension> {
+class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> {
     constructor(readonly _query: Query) {}
 
-    // TODO support template literal types when typescript 4.1 lands
+    // TODO selecting foo and bar.foo breaks type inference
     select<
-        Id extends (keyof Table & string),
-        T extends (keyof Schema & string),
-        Comp extends ColumnOf<Schema, T>,
-        Exp extends TypedAst<Schema, any, Expr<Ext>>,
+        Id extends ((keyof Table) & string),
+        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
+        Exp extends TypedAst<Schema, any, AliasedSelection<Ext>>,
         Col extends Id | Comp | Exp,
     >(
         ...cols: Array<Col>
-    ) {
+    ) {        
         const selections = cols.map(c => {
             if (typeof c === 'object') {
-                return AnonymousSelection(c as Expr<Ext>);
+                return c as AliasedSelection<Ext>;
             }
             const idParts = (c as string).split('.');
             if (idParts.length === 1) {
@@ -93,7 +108,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends Extension = NoExtension> {
 
         type NewReturn = { [K in KeysOf<Col> as K[0]]: ValuesOf<Col, K> } & Return;
         if (this._query.unions.length === 0) {
-            return new QueryBuilder<Schema, Table, NewReturn, Ext>(copy(this._query, {
+            return new QueryBuilder<Schema, Table, Tn, NewReturn, Ext>(copy(this._query, {
                 selection: copy(this._query.selection, {
                     selections: [
                         ...this._query.selection.selections,
@@ -114,7 +129,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends Extension = NoExtension> {
             })
         })
         
-        return new QueryBuilder<Schema, Table, NewReturn, Ext>(copy(this._query, {
+        return new QueryBuilder<Schema, Table, Tn, NewReturn, Ext>(copy(this._query, {
             unions: [
                 ...this._query.unions.slice(0, numUnions - 1),
                 newUnion
@@ -122,6 +137,10 @@ class QueryBuilder<Schema, Table, Return, Ext extends Extension = NoExtension> {
         }));
     }
 
+    fakeJoin<T2 extends keyof Schema & string>() {
+        return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(this._query);
+    }
+        
     testingGet(): Return {
         throw new Error('testing code');
     }
@@ -142,13 +161,11 @@ import { ascii } from './functions';
 
 const b = new Builder<MySchema, NoExtension>();
 
-b.from('employee').select('department.budget', 'employee.id').select(ascii<MySchema, NoExtension>('name'))
+b.from('employee').select('employee.name', 'employee.id').select(b.as('asc', ascii<MySchema, NoExtension>('name')))
+
+b.from('employee').fakeJoin<'department'>().select('department.budget', 'employee.id')
 
 const foo: { name: string } = b.from('employee').select('name').testingGet();
-
-type TestTuple = [number, string]
-
-const bar: string = null as unknown as TestTuple[0]
 
 const ssss: { name: string, id: number } = b.from('employee').select('employee.name', 'employee.id').testingGet()
   
