@@ -55,7 +55,14 @@ type ColumnFinal<P> =
 type ColumnInit<P> =
     P extends `${infer Key}.${infer Rest}` ? Key : never;
 
-type StringKeys<T> = (keyof T) extends string ? keyof T : never;
+export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
+export type QualifiedIds<Schema, Tn extends ((keyof Schema) & string)> = ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn];
+// Need to carry this out or the constraint is lost in the .d.ts files
+export type ValuesOf<Schema, Table, Tn extends ((keyof Schema) & string), Ext extends Extension, Id, C, K extends [any, any]> =
+    C extends Id ? Table[K[0]]
+    : C extends QualifiedIds<Schema, Tn> ? Schema[K[1]][K[0]]
+    : C extends TypedAlias<Schema, any, any, Ext> ? K[1]
+    : never;
 
 class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> {
     constructor(readonly _query: Query) {}
@@ -85,15 +92,11 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
             : C extends  TypedAlias<Schema, infer R, infer C, Ext> ? [C, R]
             : never;
         
-        type ValuesOf<C, K extends [any, any]> =
-            C extends Id ? Table[K[0]]
-            : C extends Comp ? Schema[K[1]][K[0]]
-            : C extends Exp ? K[1]
-            : never;
+        type ValuesOf1<C, K extends [any, any]> = ValuesOf<Schema, Table, Tn, Ext, Id, C, K>;
 
-        type NewReturn = { [K in KeysOf<Col> as K[0]]: ValuesOf<Col, K> } & Return;
+        type NewReturn = { [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> } & Return;
         // Pick up any new aliases
-        type NewTable = { [K in KeysOf<Col> as K[0]]: ValuesOf<Col, K> } & Table;
+        type NewTable = { [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> } & Table;
         if (this._query.unions.length === 0) {
             return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(copy(this._query, {
                 selection: copy(this._query.selection, {
@@ -127,9 +130,10 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
     fakeJoin<T2 extends keyof Schema & string>() {
         return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(this._query);
     }
-        
-    testingGet(): Return {
-        throw new Error('testing code');
+
+    /** Method used in the tsd tests */
+    __testingGet(): Return {
+        throw new Error('Do not call this method, it only exists for testing');
     }
 }
 
@@ -150,13 +154,13 @@ const b = new Builder<MySchema, NoExtension>();
 
 const ggg: { name: string, id: number, asc: string } = b.from('employee')
     .select('employee.name', 'employee.id')
-    .select(b.as('asc', ascii<MySchema, NoExtension>('name'))).testingGet()
+    .select(b.as('asc', ascii<MySchema, NoExtension>('name'))).__testingGet()
 
 b.from('employee').fakeJoin<'department'>().select('department.budget', 'employee.id')
 
-const foo: { name: string } = b.from('employee').select('name').testingGet();
+const foo: { name: string } = b.from('employee').select('name').__testingGet();
 
-const ssss: { name: string, id: number } = b.from('employee').select('employee.name', 'employee.id').testingGet()
+const ssss: { name: string, id: number } = b.from('employee').select('employee.name', 'employee.id').__testingGet()
   
 export {
     Builder
