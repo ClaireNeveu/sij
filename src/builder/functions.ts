@@ -3,10 +3,16 @@ import { FunctionApp, Ident, Expr, CompoundIdentifier } from '../ast/expr';
 
 export type TypedAst<Schema, Return, E> = E & { __schemaType: Schema, __returnType: Return };
 export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => e as TypedAst<Schema, Return, E>;
+export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
-export class Functions<Schema extends {}, Ext extends Extension = NoExtension> {
-    charLength(
-        value: string
+export class Functions<Schema, Table, Tn extends ((keyof Schema) & string), Ext extends Extension = NoExtension> {
+    charLength<
+        Id extends ((keyof Table) & string),
+        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
+        Exp extends TypedAst<Schema, string, Expr<Ext>>,
+        Col extends Id | Comp | Exp,
+    >(
+        value: Col
     ): TypedAst<Schema, number, FunctionApp<Ext>> {
         const args = typeof value === 'string' ? [Ident(value)] : [value as unknown as Expr<Ext>];
         return FunctionApp({

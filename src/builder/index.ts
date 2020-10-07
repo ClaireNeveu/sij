@@ -16,7 +16,7 @@ export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
       
-    constructor(readonly fn: Functions<Schema, Ext>) {}
+    constructor() {}
 
     from<Table extends ((keyof Schema) & string)>(table: Table) {
         const select = Select({
@@ -75,7 +75,7 @@ export type ValuesOf<Schema, Table, Tn extends ((keyof Schema) & string), Ext ex
 
 class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> extends CallableInstance {
     
-    constructor(readonly _query: Query, readonly fn: Functions<Schema, Ext>) {
+    constructor(readonly _query: Query, readonly fn: Functions<Schema, Table, Tn, Ext>) {
         super('apply');
     }
 
@@ -84,6 +84,27 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         return fn(this);
     }
 
+    selectAs<
+        Id extends ((keyof Table) & string),
+        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
+        Exp extends TypedAst<Schema, any, Expr<Ext>>,
+        Col extends Id | Comp | Exp,
+    >(
+        alias: string, col: Col
+    ) {
+        const selection = (() => {
+            if (typeof col === 'object') {
+                return AliasedSelection({
+                    selection: col as unknown as Expr<Ext>,
+                    alias: Ident(alias),
+                }) as TypedAlias<Schema, any, any, Ext>;
+            }
+            return col;
+        })();
+        return this.select(selection as any);
+    }
+        
+
     select<
         Id extends ((keyof Table) & string),
         Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
@@ -91,7 +112,7 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         Col extends Id | Comp | Exp,
     >(
         ...cols: Array<Col>
-    ) {        
+    ) {
         const selections = cols.map(c => {
             if (typeof c === 'object') {
                 return c as AliasedSelection<Ext>;
@@ -170,7 +191,7 @@ type MySchema = {
 };
 
 
-const b = new Builder<MySchema, NoExtension>(new Functions<MySchema, NoExtension>());
+const b = new Builder<MySchema, NoExtension>();
 
 /*
 const ggg: { name: string, id: number, asc: string } = b.from('employee')
@@ -183,7 +204,7 @@ b.from('employee').fakeJoin<'department'>().select('department.budget', 'employe
 
 //const ssss: { name: string, id: number } = b.from('employee').select('employee.name', 'employee.id').__testingGet()
 
-const bar = b.from('employee').select('id', 'name')(b => b.select('name'/*b.fn.charLength('baz')*/))
+const bar = b.from('employee').select('id', 'name')(b => b.selectAs('name_length', b.fn.charLength('name')))
 
 export {
     Builder

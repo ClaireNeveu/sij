@@ -17,10 +17,10 @@ class Renderer<Ext extends Extension = NoExtension> {
         switch (expr._tag) {
             case 'Wildcard': return '*';
             case 'QualifiedWildcard': {
-                const qualifiers = expr.qualifiers.map(this.renderExpr).join('.');
+                const qualifiers = expr.qualifiers.map(e => this.renderExpr(e)).join('.');
                 return qualifiers === '' ? '*' : qualifiers + '.*';
             }
-            case 'CompoundIdentifier': return expr.idChain.map(this.renderExpr).join('.');
+            case 'CompoundIdentifier': return expr.idChain.map(e => this.renderExpr(e)).join('.');
             case 'Between': {
                 const operand = this.renderExpr(expr.expr);
                 const not = expr.negated ? ' NOT' : '';
@@ -46,7 +46,7 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'Exists': return `EXISTS(${this.renderQuery(expr.subQuery)})`;
             case 'Extract': return `EXTRACT(${expr.field} FROM ${this.renderExpr(expr.source)})`;
             case 'FunctionApp': {
-                const args = expr.args.map(this.renderExpr).join(', ');
+                const args = expr.args.map(e => this.renderExpr(e)).join(', ');
                 return `${this.renderExpr(expr.name)}(${args})`;
             }
             case 'IsNull': {
@@ -55,7 +55,7 @@ class Renderer<Ext extends Extension = NoExtension> {
             }
             case 'InList': {
                 const not = expr.negated ? ' NOT' : '';
-                const list = expr.list.map(this.renderExpr).join(', ');
+                const list = expr.list.map(e => this.renderExpr(e)).join(', ');
                 return `${this.renderExpr(expr.expr)}${not} IN (${list})`;
             }
             case 'InSubQuery': {
@@ -87,7 +87,7 @@ class Renderer<Ext extends Extension = NoExtension> {
                 const cols = (
                     cte.alias.columns.length === 0
                         ? ''
-                        : ` (${cte.alias.columns.map(this.renderIdent).join(', ')})`
+                        : ` (${cte.alias.columns.map(e => this.renderIdent(e)).join(', ')})`
                 );
                 return `${this.renderIdent(cte.alias.name)}${cols} AS`
             });
@@ -134,7 +134,7 @@ class Renderer<Ext extends Extension = NoExtension> {
         const groupBy = (
             select.groupBy.length === 0
                 ? ''
-                : ' GROUP BY' + select.groupBy.map(this.renderExpr).join(', ')
+                : ' GROUP BY' + select.groupBy.map(e => this.renderExpr(e)).join(', ')
         );
         const having = (
             select.having === null
