@@ -1,5 +1,6 @@
 import { Extension, NoExtension } from '../ast/util';
-import { FunctionApp, Ident, Expr, CompoundIdentifier } from '../ast/expr';
+import { BinaryApp, FunctionApp, Ident, Expr, CompoundIdentifier } from '../ast/expr';
+import { BinaryOperator as BinOp } from '../ast/operator';
 
 export type TypedAst<Schema, Return, E> = E & { __schemaType: Schema, __returnType: Return };
 export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => e as TypedAst<Schema, Return, E>;
@@ -19,6 +20,24 @@ export class Functions<Schema, Table, Tn extends ((keyof Schema) & string), Ext 
             name: CompoundIdentifier([Ident('CHAR_LENGTH')]),
             args,
         }) as TypedAst<Schema, number, FunctionApp<Ext>>;
+    }
+    eq<
+        Id extends ((keyof Table) & string),
+        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
+        Exp extends TypedAst<Schema, string, Expr<Ext>>,
+        Col extends Id | Comp | Exp,
+        Col2 extends Id | Comp | Exp,
+    >(
+        left_: Col,
+        right_: Col2,
+    ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
+        const left = typeof left_ === 'string' ? Ident(left_) : left_ as unknown as Expr<Ext>;
+        const right = typeof right_ === 'string' ? Ident(right_) : right_ as unknown as Expr<Ext>;
+        return BinaryApp({
+            op: BinOp.Equal,
+            left,
+            right,
+        }) as TypedAst<Schema, boolean, BinaryApp<Ext>>;
     }
 };
 /*

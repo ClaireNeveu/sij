@@ -3,7 +3,7 @@ const CallableInstance: any = CallableInstance_;
 
 import { Expr, Ident, CompoundIdentifier } from '../ast/expr';
 import { DataType } from '../ast/data-type';
-import { Query, Select, JoinedTable, AnonymousSelection, AliasedSelection } from '../ast/query';
+import { Query, Select, JoinedTable, Join, AnonymousSelection, AliasedSelection, JoinKind } from '../ast/query';
 import { Literal } from '../ast/literal';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions } from './functions';
@@ -167,6 +167,26 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
 
     fakeJoin<T2 extends keyof Schema & string>() {
         return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(this._query, this.fn);
+    }
+
+    // TODO join on expressions
+    leftJoin<T2 extends keyof Schema & string>(
+        table: T2,
+        on: TypedAst<Schema, any, Expr<Ext>>,
+    ) {
+        const joins = this._query.selection.from.joins;
+        const newJoin = Join({
+            name: Ident(table),
+            kind: JoinKind.LeftOuter,
+            on,
+        });
+        return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(copy(this._query, {
+            selection: copy(this._query.selection, {
+                from: copy(this._query.selection.from, {
+                    joins: [...joins, newJoin]
+                })
+            })
+        }), this.fn);
     }
 
     /** Method used in the tsd tests */
