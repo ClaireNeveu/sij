@@ -142,7 +142,13 @@ class Renderer<Ext extends Extension = NoExtension> {
                 : ' HAVING' + this.renderExpr(select.having)
         );
 
-        const table = 'TODO';
+        const table = (() => {
+            const initTable = this.renderIdent(select.from.name);
+            const joins = select.from.joins.map(join => (
+                ` ${join.kind} JOIN ${this.renderIdent(join.name)} ON ${this.renderExpr(join.on)}`
+            )).join('');
+            return initTable + joins;
+        })();
 
         return `SELECT ${selections} FROM ${table}${where}${groupBy}${having}`;
     }

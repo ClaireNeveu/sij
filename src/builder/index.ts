@@ -1,9 +1,12 @@
+import CallableInstance_ from 'callable-instance';
+const CallableInstance: any = CallableInstance_;
+
 import { Expr, Ident, CompoundIdentifier } from '../ast/expr';
 import { DataType } from '../ast/data-type';
 import { Query, Select, JoinedTable, AnonymousSelection, AliasedSelection } from '../ast/query';
 import { Literal } from '../ast/literal';
 import { Extension, NoExtension, VTagged } from '../ast/util';
-import { TypedAst } from './functions';
+import { TypedAst, Functions } from './functions';
 
 const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });
 
@@ -12,6 +15,9 @@ export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension
     AliasedSelection<Ext> & { __schemaType: Schema, __returnType: Return };
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
+      
+    constructor(readonly fn: Functions<Schema, Ext>) {}
+
     from<Table extends ((keyof Schema) & string)>(table: Table) {
         const select = Select({
             selections: [],
@@ -30,9 +36,12 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
             offset: null,
             extensions: null,
         });
-        return new QueryBuilder<Schema, Schema[Table], Table, {}, Ext>(query);
+        return new QueryBuilder<Schema, Schema[Table], Table, {}, Ext>(query, new Functions());
     }
 
+    /**
+     * Aliases an expression for use in a select.
+     */
     as<Col extends string, R>(name: Col, expr: TypedAst<Schema, R, Expr<Ext>>) {
         return AliasedSelection({
             selection: expr,
@@ -64,8 +73,16 @@ export type ValuesOf<Schema, Table, Tn extends ((keyof Schema) & string), Ext ex
     : C extends TypedAlias<Schema, any, any, Ext> ? K[1]
     : never;
 
-class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> {
-    constructor(readonly _query: Query) {}
+class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> extends CallableInstance {
+    
+    constructor(readonly _query: Query, readonly fn: Functions<Schema, Ext>) {
+        super('apply');
+    }
+
+
+    apply<T>(fn: (arg: QueryBuilder<Schema, Table, Tn, Return, Ext>) => T): T {
+        return fn(this);
+    }
 
     select<
         Id extends ((keyof Table) & string),
@@ -105,7 +122,7 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
                         ...selections
                     ]
                 })
-            }));
+            }), this.fn);
         }
         const numUnions = this._query.unions.length;
         const currentUnion = this._query.unions[numUnions - 1];
@@ -124,17 +141,21 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
                 ...this._query.unions.slice(0, numUnions - 1),
                 newUnion
             ]
-        }));
+        }), this.fn);
     }
 
     fakeJoin<T2 extends keyof Schema & string>() {
-        return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(this._query);
+        return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(this._query, this.fn);
     }
 
     /** Method used in the tsd tests */
     __testingGet(): Return {
         throw new Error('Do not call this method, it only exists for testing');
     }
+}
+// Merges with above class to provide calling
+interface QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> {
+    <T>(fn: (arg: QueryBuilder<Schema, Table, Tn, Return, Ext>) => T): T
 }
 
 type MySchema = {
@@ -148,20 +169,22 @@ type MySchema = {
     },
 };
 
-import { ascii } from './functions';
 
-const b = new Builder<MySchema, NoExtension>();
+const b = new Builder<MySchema, NoExtension>(new Functions<MySchema, NoExtension>());
 
+/*
 const ggg: { name: string, id: number, asc: string } = b.from('employee')
     .select('employee.name', 'employee.id')
     .select(b.as('asc', ascii<MySchema, NoExtension>('name'))).__testingGet()
-
+*/
 b.from('employee').fakeJoin<'department'>().select('department.budget', 'employee.id')
 
-const foo: { name: string } = b.from('employee').select('name').__testingGet();
+//const foo: { name: string } = b.from('employee').select('name').__testingGet();
 
-const ssss: { name: string, id: number } = b.from('employee').select('employee.name', 'employee.id').__testingGet()
-  
+//const ssss: { name: string, id: number } = b.from('employee').select('employee.name', 'employee.id').__testingGet()
+
+const bar = b.from('employee').select('id', 'name')(b => b.select('name'/*b.fn.charLength('baz')*/))
+
 export {
     Builder
 };

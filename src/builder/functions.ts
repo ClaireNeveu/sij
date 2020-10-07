@@ -4,19 +4,16 @@ import { FunctionApp, Ident, Expr, CompoundIdentifier } from '../ast/expr';
 export type TypedAst<Schema, Return, E> = E & { __schemaType: Schema, __returnType: Return };
 export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => e as TypedAst<Schema, Return, E>;
 
-type DistributiveValues<T extends Record<string, any>> = T extends T ? T[keyof T] : never;
-
-type ColumnsOf<
-  T extends Record<keyof T, object>,
-  K extends keyof T
-> = DistributiveValues<T[K]>;
-
-export const ascii = <Schema extends Record<string, object>, Ext extends Extension = NoExtension>(value: ColumnsOf<Schema, keyof Schema> & string): TypedAst<Schema, string, FunctionApp<Ext>> => {
-    const args = typeof value === 'string' ? [Ident(value)] : [value as unknown as Expr<Ext>];
-    return FunctionApp({
-        name: CompoundIdentifier([Ident('ASCII')]),
-        args,
-    }) as TypedAst<Schema, string, FunctionApp<Ext>>;
+export class Functions<Schema extends {}, Ext extends Extension = NoExtension> {
+    charLength(
+        value: string
+    ): TypedAst<Schema, number, FunctionApp<Ext>> {
+        const args = typeof value === 'string' ? [Ident(value)] : [value as unknown as Expr<Ext>];
+        return FunctionApp({
+            name: CompoundIdentifier([Ident('CHAR_LENGTH')]),
+            args,
+        }) as TypedAst<Schema, number, FunctionApp<Ext>>;
+    }
 };
 /*
 const characterLength = <Schema, Ext extends Extension = NoExtension>(value: string): VTagged<Schema, FunctionApp<Ext>> => `CHARACTER_LENGTH(${hLit(value)})` as VTagged<Schema, FunctionApp<Ext>>,

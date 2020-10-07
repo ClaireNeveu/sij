@@ -79,6 +79,7 @@ interface AliasedSelection<Ext extends Extension = NoExtension> extends Tagged<'
 }> {};
 const AliasedSelection = <Ext extends Extension = NoExtension>(args: UnTag<AliasedSelection<Ext>>): AliasedSelection<Ext> => tag('AliasedSelection', args);
 
+// TODO aliased tables
 interface JoinedTable<Ext extends Extension = NoExtension> extends Tagged<'JoinedTable', {
     readonly name: Ident,
     readonly joins: Array<Join>,
