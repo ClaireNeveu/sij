@@ -93,12 +93,11 @@ interface Join<Ext extends Extension = NoExtension> extends Tagged<'Join', {
 }> {};
 const Join = <Ext extends Extension = NoExtension>(args: UnTag<Join<Ext>>): Join<Ext> => tag('Join', args);
 
-enum JoinKind {
-    Inner = 'INNER',
-    LeftOuter = 'LEFT OUTER',
-    RightOuter = 'RIGHT OUTER',
-    FullOuter = 'FULL OUTER',
-}
+type JoinKind =
+    | 'INNER'
+    | 'LEFT OUTER'
+    | 'RIGHT OUTER'
+    | 'FULL OUTER';
 
 export {
     Query,

@@ -165,20 +165,22 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         }), this.fn);
     }
 
-    fakeJoin<T2 extends keyof Schema & string>() {
-        return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(this._query, this.fn);
-    }
-
     // TODO join on expressions
-    leftJoin<T2 extends keyof Schema & string>(
+    /**
+     * @param on Expression to condition the join on. This must be provided as a function from
+     *        the builder to your ON expression so that you have the extra columns from the join
+     *        available on the builder.
+     */
+    join<T2 extends keyof Schema & string>(
+        kind: JoinKind,
         table: T2,
-        on: TypedAst<Schema, any, Expr<Ext>>,
-    ) {
+        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
         const joins = this._query.selection.from.joins;
         const newJoin = Join({
             name: Ident(table),
-            kind: JoinKind.LeftOuter,
-            on,
+            kind: kind,
+            on: on(this),
         });
         return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(copy(this._query, {
             selection: copy(this._query.selection, {
@@ -187,6 +189,44 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
                 })
             })
         }), this.fn);
+    }
+
+    leftJoin<T2 extends keyof Schema & string>(
+        table: T2,
+        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+    ) {
+        return this.join('LEFT OUTER', table, on);
+    }
+
+    rightJoin<T2 extends keyof Schema & string>(
+        table: T2,
+        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+    ) {
+        return this.join('RIGHT OUTER', table, on);
+    }
+
+    fullOuterJoin<T2 extends keyof Schema & string>(
+        table: T2,
+        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+    ) {
+        return this.join('FULL OUTER', table, on);
+    }
+
+    innerJoin<T2 extends keyof Schema & string>(
+        table: T2,
+        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+    ) {
+        return this.join('INNER', table, on);
+    }
+
+    /**
+     * Removes all type information from the builder allowing you to select whatever
+     * you want and get back the any type. This should never be necessary as the SIJ
+     * builder includes a complete typing of SQL but in situations where SIJ has a bug
+     * you can continue using it while waiting for the upstream to be fixed.
+     */
+    unTyped(): QueryBuilder<any, any, any, any, Ext> {
+        return this;
     }
 
     /** Method used in the tsd tests */
@@ -218,7 +258,7 @@ const ggg: { name: string, id: number, asc: string } = b.from('employee')
     .select('employee.name', 'employee.id')
     .select(b.as('asc', ascii<MySchema, NoExtension>('name'))).__testingGet()
 */
-b.from('employee').fakeJoin<'department'>().select('department.budget', 'employee.id')
+b.from('employee').leftJoin('department', b => b.on(b.fn.eq('department.id', 'employee.id'))).select('department.budget', 'employee.id')
 
 //const foo: { name: string } = b.from('employee').select('name').__testingGet();
 
