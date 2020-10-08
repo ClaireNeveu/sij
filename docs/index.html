@@ -1,0 +1,179 @@
+<!doctype html>
+<html class="default no-js">
+<head>
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<title>sij-core</title>
+	<meta name="description" content="Documentation for sij-core">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+	<div class="tsd-page-toolbar">
+		<div class="container">
+			<div class="table-wrap">
+				<div class="table-cell" id="tsd-search" data-index="assets/js/search.json" data-base=".">
+					<div class="field">
+						<label for="tsd-search-field" class="tsd-widget search no-caption">Search</label>
+						<input id="tsd-search-field" type="text" />
+					</div>
+					<ul class="results">
+						<li class="state loading">Preparing search index...</li>
+						<li class="state failure">The search index is not available</li>
+					</ul>
+					<a href="index.html" class="title">sij-core</a>
+				</div>
+				<div class="table-cell" id="tsd-widgets">
+					<div id="tsd-filter">
+						<a href="#" class="tsd-widget options no-caption" data-toggle="options">Options</a>
+						<div class="tsd-filter-group">
+							<div class="tsd-select" id="tsd-filter-visibility">
+								<span class="tsd-select-label">All</span>
+								<ul class="tsd-select-list">
+									<li data-value="public">Public</li>
+									<li data-value="protected">Public/Protected</li>
+									<li data-value="private" class="selected">All</li>
+								</ul>
+							</div>
+							<input type="checkbox" id="tsd-filter-inherited" checked />
+							<label class="tsd-widget" for="tsd-filter-inherited">Inherited</label>
+						</div>
+					</div>
+					<a href="#" class="tsd-widget menu no-caption" data-toggle="menu">Menu</a>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div class="tsd-page-title">
+		<div class="container">
+			<ul class="tsd-breadcrumb">
+				<li>
+					<a href="globals.html">Globals</a>
+				</li>
+			</ul>
+			<h1>sij-core</h1>
+		</div>
+	</div>
+</header>
+<div class="container container-main">
+	<div class="row">
+		<div class="col-8 col-content">
+			<div class="tsd-panel tsd-typography">
+				<a href="#selecting" id="selecting" style="color: inherit; text-decoration: none;">
+					<h2>Selecting</h2>
+				</a>
+				<p>Selecting columns is as easy as calling <code>sql.from(&#39;my_table&#39;).select(&#39;col1&#39;, &#39;col2&#39;)</code>. You can call select as many times as you like; each time simply adds columns to the selection. These two are equivalent: <code>.select(&#39;col1&#39;, &#39;col2&#39;)</code>, <code>.select(&#39;col1&#39;).select(&#39;col2&#39;)</code>.</p>
+				<p>As with regular SQL you can select qualified identifiers like <code>my_table.col</code> and expressions like <code>UPPERCASE(col)</code>. Because of the limitations of typescript, you do need to separate columsn and expressions into different <code>.select</code>s. E.g. to write <code>SELECT col1, my_table.col2, UPPERCASE(col3) as upper_col3 FROM my_table</code> you would write</p>
+				<pre><code class="language-typescript">sql.from(<span class="hljs-string">&#x27;my_table&#x27;</span>).select(<span class="hljs-string">&#x27;col1&#x27;</span>, <span class="hljs-string">&#x27;my_table.col2&#x27;</span>).selectAs(<span class="hljs-string">&#x27;upper_col3&#x27;</span>, sql.upperCase(<span class="hljs-string">`col3))</span></code></pre>
+				<p>If you write that as a single <code>.select</code> you will get a type error.^1</p>
+				<a href="#sub-builder-syntax" id="sub-builder-syntax" style="color: inherit; text-decoration: none;">
+					<h2>Sub-Builder Syntax</h2>
+				</a>
+				<p>Because of Typescript&#39;s (mostly) unidirectional type inference, everything in SIJ is attached to a fluent builder to avoid repetitive type annotations. This can be cumbersome when constructing complicated queries, especially those that involve functions. Take for example the following rather simple query:</p>
+				<pre><code class="language-typescript"><span class="hljs-keyword">const</span> sql1 = sql.from(<span class="hljs-string">&#x27;my_table&#x27;</span>);
+sql1.selectAs(<span class="hljs-string">&#x27;pos_col&#x27;</span>, sql1.fn.abs(<span class="hljs-string">&#x27;col&#x27;</span>));</code></pre>
+				<p>We have to introduce the intermediate value <code>sql1</code> so that our <code>ABS</code> function knows about the available columns. SIJ provides a convenient syntax to work around this limitation which leverages Typescript&#39;s limited contextual typing:</p>
+				<pre><code class="language-typescript">sql.from(<span class="hljs-string">&#x27;my_table&#x27;</span>)(<span class="hljs-function"><span class="hljs-params">sql</span> =&gt;</span> sql.selectAs(<span class="hljs-string">&#x27;pos_col&#x27;</span>, sql.fn.abs(<span class="hljs-string">&#x27;col&#x27;</span>));</code></pre>
+				<p>You can call any builder as a function to get a locally scoped version of the query built up to that point.</p>
+				<a href="#differences-from-sql" id="differences-from-sql" style="color: inherit; text-decoration: none;">
+					<h2>Differences from SQL</h2>
+				</a>
+				<p>Although SIJ aims to be just &quot;SQL in Javascript&quot;, it makes a few changes to increase type-safety. None of these changes reduce the expressiveness of the language but they might require you to write your SQL in a slightly different manner than you would otherwise.</p>
+				<a href="#from-select" id="from-select" style="color: inherit; text-decoration: none;">
+					<h3>FROM SELECT</h3>
+				</a>
+				<p>The order of FROM and SELECT are reversed in SIJ. Instead of <code>SELECT * FROM my_table</code> in SIJ you would write <code>sql.from(&#39;my_table&#39;).select(&#39;*&#39;)</code>. In the rare case that you need to perform a select without referencing a table you can select from the table &quot;_NO_TABLE_&quot;. E.g. <code>sql.from(&#39;_NO_TABLE&#39;).select(sql.as(&#39;col&#39;, sql.plus(1, 1)))</code> becomes <code>SELECT 1 + 1 AS col</code>.</p>
+				<p>Similarly, if you want to select from columns on a join, you need to order the join <em>before</em> the selections as below:</p>
+				<pre><code class="language-typescript">sql.from(<span class="hljs-string">&#x27;my_table&#x27;</span>)(<span class="hljs-function"><span class="hljs-params">sql</span> =&gt;</span> sql.leftJoin(<span class="hljs-string">&#x27;other_table&#x27;</span>, sql.fn.eq(<span class="hljs-string">&#x27;my_table.foo&#x27;</span>, <span class="hljs-string">&#x27;other_table.foo&#x27;</span>)))
+  .select(<span class="hljs-string">&#x27;my_table.col&#x27;</span>, <span class="hljs-string">&#x27;other_table.col2&#x27;</span>)</code></pre>
+				<p>Ordering it the other way will produce a valid query, but typescript will complain that <code>other_table.col2</code> does not exist.</p>
+				<a href="#bare-expressions-in-selects" id="bare-expressions-in-selects" style="color: inherit; text-decoration: none;">
+					<h3>Bare Expressions in Selects</h3>
+				</a>
+				<p>Sij does not allow you to select an expression without aliasing it. In raw SQL it&#39;s possible to query <code>SELECT col + 1 from my_table</code> and get back an object that looks like <code>{ &#39;col + 1&#39;: 5 }</code>. Because the names of expression columns are not always statically determinable, sij forces you to alias any expressions you want to select. You can do this with <code>sql.as</code>, e.g. <code>sql.from(&#39;my_table&#39;).select(sql.as(&#39;col_plus_one&#39;, sql.fn.plus(&#39;col&#39;, sql.lit(1))))</code></p>
+				<p>As a convenient shorthand you can use the <code>selectAs</code> builder method:</p>
+				<pre><code class="language-typescript">sql.from(<span class="hljs-string">&#x27;my_table&#x27;</span>).selectAs(<span class="hljs-string">&#x27;my_alias&#x27;</span>, sql.fn.sum(<span class="hljs-string">&#x27;col&#x27;</span>))
+<span class="hljs-comment">// SELECT SUM(col) AS my_alias FROM my_table</span></code></pre>
+				<ol>
+					<li>This is because we need to narrow the arguments&#39; sum type to one variant in order to extract the return type.</li>
+				</ol>
+			</div>
+		</div>
+		<div class="col-4 col-menu menu-sticky-wrap menu-highlight">
+			<nav class="tsd-navigation primary">
+				<ul>
+					<li class="globals  ">
+						<a href="globals.html"><em>Globals</em></a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_ast_data_type_.html">&quot;ast/data-<wbr>type&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_ast_expr_.html">&quot;ast/expr&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_ast_literal_.html">&quot;ast/literal&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_ast_operator_.html">&quot;ast/operator&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_ast_query_.html">&quot;ast/query&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_ast_util_.html">&quot;ast/util&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_builder_functions_.html">&quot;builder/functions&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_builder_index_.html">&quot;builder/index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_index_.html">&quot;index&quot;</a>
+					</li>
+					<li class=" tsd-kind-module">
+						<a href="modules/_render_index_.html">&quot;render/index&quot;</a>
+					</li>
+				</ul>
+			</nav>
+			<nav class="tsd-navigation secondary menu-sticky">
+				<ul class="before-current">
+				</ul>
+			</nav>
+		</div>
+	</div>
+</div>
+<footer class="with-border-bottom">
+	<div class="container">
+		<h2>Legend</h2>
+		<div class="tsd-legend-group">
+			<ul class="tsd-legend">
+				<li class="tsd-kind-object-literal"><span class="tsd-kind-icon">Object literal</span></li>
+				<li class="tsd-kind-variable"><span class="tsd-kind-icon">Variable</span></li>
+				<li class="tsd-kind-function"><span class="tsd-kind-icon">Function</span></li>
+				<li class="tsd-kind-function tsd-has-type-parameter"><span class="tsd-kind-icon">Function with type parameter</span></li>
+				<li class="tsd-kind-type-alias"><span class="tsd-kind-icon">Type alias</span></li>
+				<li class="tsd-kind-type-alias tsd-has-type-parameter"><span class="tsd-kind-icon">Type alias with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-interface"><span class="tsd-kind-icon">Interface</span></li>
+				<li class="tsd-kind-interface tsd-has-type-parameter"><span class="tsd-kind-icon">Interface with type parameter</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-enum"><span class="tsd-kind-icon">Enumeration</span></li>
+			</ul>
+			<ul class="tsd-legend">
+				<li class="tsd-kind-class tsd-has-type-parameter"><span class="tsd-kind-icon">Class with type parameter</span></li>
+			</ul>
+		</div>
+	</div>
+</footer>
+<div class="container tsd-generator">
+	<p>Generated using <a href="https://typedoc.org/" target="_blank">TypeDoc</a></p>
+</div>
+<div class="overlay"></div>
+<script src="assets/js/main.js"></script>
+</body>
+</html>

@@ -8,7 +8,7 @@
     "prepublish": "npm run build",
     "build": "npx tsc && copyfiles -u 2 \"src/types/*.d.ts\" dist",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "docs": "npx typedoc src/ --out docs/ --includeDeclarations --excludeExternals --excludeNotExported --excludePrivate"
+    "docs": "npx typedoc src/ --out docs/ --includeDeclarations --excludeExternals --excludeNotExported --excludePrivate && touch docs/.nojekyll"
   },
   "keywords": [
     "sql"
