@@ -1,22 +1,31 @@
-import CallableInstance_ from 'callable-instance';
-const CallableInstance: any = CallableInstance_;
+import CallableInstance from 'callable-instance';
 import { lens } from 'lens.ts';
 
 import { Expr, Ident, CompoundIdentifier } from '../ast/expr';
 import { DataType } from '../ast/data-type';
-import { Query, Select, JoinedTable, Join, AnonymousSelection, AliasedSelection, JoinKind, SetOp } from '../ast/query';
+import {
+    AliasedSelection,
+    AnonymousSelection,
+    Join,
+    JoinKind,
+    JoinedTable,
+    OrderingExpr,
+    Query,
+    Select,
+    SetOp,
+} from '../ast/query';
 import { Literal } from '../ast/literal';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions } from './functions';
 
-export type Subbable<T, R> = R | ((t: T) => R);
+export type SubBuilder<T, R> = R | ((t: T) => R);
 
 export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension> =
     AliasedSelection<Ext> & { __schemaType: Schema, __returnType: Return };
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
 
-    from<Table extends ((keyof Schema) & string)>(table: Table) {
+    from<Table extends ((keyof Schema) & string)>(table: Table): QueryBuilder<Schema, Schema[Table], Table, {}, Ext> {
         const select = Select({
             selections: [],
             from: JoinedTable({ name: Ident(table), joins: [] }),
@@ -71,12 +80,11 @@ export type ValuesOf<Schema, Table, Tn extends ((keyof Schema) & string), Ext ex
     : C extends TypedAlias<Schema, any, any, Ext> ? K[1]
     : never;
 
-class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> extends CallableInstance {
+class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> extends CallableInstance<Array<unknown>, unknown> {
     
     constructor(readonly _query: Query, readonly fn: Functions<Schema, Table, Tn, Ext>) {
         super('apply');
     }
-
 
     apply<T>(fn: (arg: QueryBuilder<Schema, Table, Tn, Return, Ext>) => T): T {
         return fn(this);
@@ -159,7 +167,7 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
     join<T2 extends keyof Schema & string>(
         kind: JoinKind,
         table: T2,
-        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
+        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
         const on_ = on instanceof Function ? on(this) : on;
         const newJoin = Join({
@@ -175,32 +183,89 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
 
     leftJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
+        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('LEFT OUTER', table, on);
     }
 
     rightJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
+        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('RIGHT OUTER', table, on);
     }
 
     fullOuterJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
+        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('FULL OUTER', table, on);
     }
 
     innerJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
+        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('INNER', table, on);
     }
 
+    orderBy<
+        Id extends ((keyof Table) & string),
+        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
+        Exp extends Expr<Ext>,
+        Col extends Id | Comp | Exp,
+    >(
+        col: Col,
+        opts?: { order?: 'ASC' | 'DESC', nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
+    ) {
+        const expr = (() => {
+            if (typeof col === 'object') {
+                return col as Expr<Ext>;
+            }
+            const idParts = (col as string).split('.');
+            if (idParts.length === 1) {
+                return Ident(idParts[0] as string);
+            } else {
+                return CompoundIdentifier(idParts.map(Ident));
+            }
+        })();
+        const newOrder = OrderingExpr({
+            expr,
+            order: opts?.order ?? null,
+            nullHandling: opts?.nullHandling ?? null,
+        });
+        return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
+            lens<Query>().ordering.set(os => [...os, newOrder])(this._query),
+            this.fn
+        );
+    }
+
+    orderByAsc<
+        Id extends ((keyof Table) & string),
+        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
+        Exp extends Expr<Ext>,
+        Col extends Id | Comp | Exp,
+    >(
+        col: Col,
+        opts?: { nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
+    ) {
+        const subOpts = { ...(opts ?? {}), order: ('ASC' as 'ASC') }
+        this.orderBy(col, subOpts);
+    }
+
+    orderByDesc<
+        Id extends ((keyof Table) & string),
+        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
+        Exp extends Expr<Ext>,
+        Col extends Id | Comp | Exp,
+    >(
+        col: Col,
+        opts?: { nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
+    ) {
+        const subOpts = { ...(opts ?? {}), order: ('DESC' as 'DESC') }
+        this.orderBy(col, subOpts);
+    }
+    
     /**
      * Removes all type information from the builder allowing you to select whatever
      * you want and get back the any type. This should never be necessary as the SIJ
@@ -240,7 +305,7 @@ const ggg: { name: string, id: number, asc: string } = b.from('employee')
     .select('employee.name', 'employee.id')
     .select(b.as('asc', ascii<MySchema, NoExtension>('name'))).__testingGet()
 */
-b.from('employee').leftJoin('department', b => b.on(b.fn.eq('department.id', 'employee.id'))).select('department.budget', 'employee.id')
+b.from('employee').leftJoin('department', b => b.fn.eq('department.id', 'employee.id')).select('department.budget', 'employee.id')
 
 //const foo: { name: string } = b.from('employee').select('name').__testingGet();
 

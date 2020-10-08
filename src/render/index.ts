@@ -103,7 +103,7 @@ class Renderer<Ext extends Extension = NoExtension> {
             const orders = query.ordering.map(order => {
                 const asc = order.order === null ? '' : ' ' + order.order;
                 const nullHandling = order.nullHandling === null ? '' : ' ' + order.nullHandling;
-                `${this.renderExpr(order.expr)}${asc}${nullHandling}`
+                return `${this.renderExpr(order.expr)}${asc}${nullHandling}`
             });
             return ` ORDER BY ${orders.join(', ')}`;
         })();
