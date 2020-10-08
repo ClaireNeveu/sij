@@ -11,12 +11,12 @@ If you write that as a single `.select` you will get a type error.^1
 
 ## Sub-Builder Syntax
 
-Because of Typescript's unidirectional type inference, everything in SIJ is attached to a fluent builder to avoid repetitive type annotations. This can be cumbersome when constructing complicated queries, especially those that involve functions. Take for example the following rather simple query:
+Because of Typescript's (mostly) unidirectional type inference, everything in SIJ is attached to a fluent builder to avoid repetitive type annotations. This can be cumbersome when constructing complicated queries, especially those that involve functions. Take for example the following rather simple query:
 ```typescript
 const sql1 = sql.from('my_table');
 sql1.selectAs('pos_col', sql1.fn.abs('col'));
 ```
-We have to introduce the intermediate value `sql1` so that our `ABS` function knows about the available columns. SIJ provides a convenient syntax to work around this limitation:
+We have to introduce the intermediate value `sql1` so that our `ABS` function knows about the available columns. SIJ provides a convenient syntax to work around this limitation which leverages Typescript's limited contextual typing:
 ```typescript
 sql.from('my_table')(sql => sql.selectAs('pos_col', sql.fn.abs('col'));
 ```

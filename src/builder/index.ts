@@ -1,22 +1,20 @@
 import CallableInstance_ from 'callable-instance';
 const CallableInstance: any = CallableInstance_;
+import { lens } from 'lens.ts';
 
 import { Expr, Ident, CompoundIdentifier } from '../ast/expr';
 import { DataType } from '../ast/data-type';
-import { Query, Select, JoinedTable, Join, AnonymousSelection, AliasedSelection, JoinKind } from '../ast/query';
+import { Query, Select, JoinedTable, Join, AnonymousSelection, AliasedSelection, JoinKind, SetOp } from '../ast/query';
 import { Literal } from '../ast/literal';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions } from './functions';
 
-const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });
-
+export type Subbable<T, R> = R | ((t: T) => R);
 
 export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension> =
     AliasedSelection<Ext> & { __schemaType: Schema, __returnType: Return };
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
-      
-    constructor() {}
 
     from<Table extends ((keyof Schema) & string)>(table: Table) {
         const select = Select({
@@ -136,85 +134,69 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         // Pick up any new aliases
         type NewTable = { [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> } & Table;
         if (this._query.unions.length === 0) {
-            return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(copy(this._query, {
-                selection: copy(this._query.selection, {
-                    selections: [
-                        ...this._query.selection.selections,
-                        ...selections
-                    ]
-                })
-            }), this.fn);
+            return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(
+                lens<Query>().selection.selections.set(s => [...s, ...selections])(this._query),
+                this.fn,
+            );
         }
         const numUnions = this._query.unions.length;
         const currentUnion = this._query.unions[numUnions - 1];
 
-        const newUnion = copy(currentUnion, {
-            select: copy(currentUnion.select, {
-                selections: [
-                    ...currentUnion.select.selections,
-                    ...selections
-                ]
-            })
-        })
+        const newUnion = lens<SetOp<any>>().select.selections.set(s => [...s, ...selections])(currentUnion);
         
-        return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(copy(this._query, {
-            unions: [
-                ...this._query.unions.slice(0, numUnions - 1),
-                newUnion
-            ]
-        }), this.fn);
+        return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(
+            lens<Query>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
+            this.fn,
+        );
     }
 
     // TODO join on expressions
     /**
-     * @param on Expression to condition the join on. This must be provided as a function from
-     *        the builder to your ON expression so that you have the extra columns from the join
-     *        available on the builder.
+     * @param on Expression to condition the join on. If using Typescript, this must be provided
+     *        as a function from the builder to your ON expression so that you have the extra
+     *        columns from the join available on the builder.
      */
     join<T2 extends keyof Schema & string>(
         kind: JoinKind,
         table: T2,
-        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
-        const joins = this._query.selection.from.joins;
+        const on_ = on instanceof Function ? on(this) : on;
         const newJoin = Join({
             name: Ident(table),
             kind: kind,
-            on: on(this),
+            on: on_,
         });
-        return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(copy(this._query, {
-            selection: copy(this._query.selection, {
-                from: copy(this._query.selection.from, {
-                    joins: [...joins, newJoin]
-                })
-            })
-        }), this.fn);
+        return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(
+            lens<Query>().selection.from.joins.set(js => [...js, newJoin])(this._query),
+            this.fn
+        );
     }
 
     leftJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('LEFT OUTER', table, on);
     }
 
     rightJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('RIGHT OUTER', table, on);
     }
 
     fullOuterJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('FULL OUTER', table, on);
     }
 
     innerJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: (b: QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>) => TypedAst<Schema, any, Expr<Ext>>,
+        on: Subbable<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('INNER', table, on);
     }

@@ -25,6 +25,7 @@
     "typescript": "^4.1.0-beta"
   },
   "dependencies": {
-    "callable-instance": "^2.0.0"
+    "callable-instance": "^2.0.0",
+    "lens.ts": "^0.5.1"
   }
 }
