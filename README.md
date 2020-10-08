@@ -3,9 +3,9 @@
 
 Selecting columns is as easy as calling `sql.from('my_table').select('col1', 'col2')`. You can call select as many times as you like; each time simply adds columns to the selection. These two are equivalent: `.select('col1', 'col2')`, `.select('col1').select('col2')`.
 
-As with regular SQL you can select qualified identifiers like `my_table.col` and expressions like `UPPERCASE(col)`. Because of the limitations of typescript, you do need to separate the different _kinds_ of selections into different `.select`s. E.g. to write `SELECT col1, my_table.col2, UPPERCASE(col3) as upper_col3 FROM my_table` you would write
+As with regular SQL you can select qualified identifiers like `my_table.col` and expressions like `UPPERCASE(col)`. Because of the limitations of typescript, you do need to separate columsn and expressions into different `.select`s. E.g. to write `SELECT col1, my_table.col2, UPPERCASE(col3) as upper_col3 FROM my_table` you would write
 ```typescript
-sql.from('my_table').select('col1').select('my_table.col2').selectAs('upper_col3', sql.upperCase(`col3))
+sql.from('my_table').select('col1', 'my_table.col2').selectAs('upper_col3', sql.upperCase(`col3))
 ```
 If you write that as a single `.select` you will get a type error.^1
 
