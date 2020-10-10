@@ -6,6 +6,7 @@ import { DataType } from '../ast/data-type';
 import {
     AliasedSelection,
     AnonymousSelection,
+    CommonTableExpr,
     Join,
     JoinKind,
     JoinedTable,
@@ -13,6 +14,7 @@ import {
     Query,
     Select,
     SetOp,
+    TableAlias,
 } from '../ast/query';
 import {
     Literal,
@@ -265,6 +267,18 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
     ) {
         return this.join('INNER', table, on);
+    }
+
+    with<Table2, Tn2 extends string>(
+        alias: Tn2,
+        sub: QueryBuilder<Schema, any, Tn, Return, Ext>,
+    ): QueryBuilder<Schema & { [Key in Tn2]: Table2 }, any, Tn | Tn2, Return, Ext> {
+        const tAlias = TableAlias({ name: Ident(alias), columns: [] });
+        const newCte = CommonTableExpr({ alias: tAlias, query: sub._query });
+        return new QueryBuilder<Schema & { [Key in Tn2]: Table2 }, any, Tn | Tn2, Return, Ext>(
+            lens<Query>().commonTableExprs.set(ctes => [...ctes, newCte])(this._query),
+            new Functions(),
+        );
     }
 
     orderBy<

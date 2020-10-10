@@ -89,7 +89,7 @@ class Renderer<Ext extends Extension = NoExtension> {
                         ? ''
                         : ` (${cte.alias.columns.map(e => this.renderIdent(e)).join(', ')})`
                 );
-                return `${this.renderIdent(cte.alias.name)}${cols} AS`
+                return `${this.renderIdent(cte.alias.name)}${cols} AS (${this.renderQuery(cte.query)})`
             });
             return `WITH ${subs.join(', ')} `;
         })();
