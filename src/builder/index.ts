@@ -1,7 +1,7 @@
 import CallableInstance from 'callable-instance';
 import { lens } from 'lens.ts';
 
-import { Expr, Ident, CompoundIdentifier } from '../ast/expr';
+import { Expr, Ident, CompoundIdentifier, Lit } from '../ast/expr';
 import { DataType } from '../ast/data-type';
 import {
     AliasedSelection,
@@ -14,7 +14,13 @@ import {
     Select,
     SetOp,
 } from '../ast/query';
-import { Literal } from '../ast/literal';
+import {
+    Literal,
+    NumLit,
+    StringLit,
+    BoolLit,
+    NullLit,
+} from '../ast/literal';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions } from './functions';
 
@@ -46,6 +52,15 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
         return new QueryBuilder<Schema, Schema[Table], Table, {}, Ext>(query, new Functions());
     }
 
+    insertInto<Table extends ((keyof Schema) & string)>(table: Table) {
+    }
+
+    update<Table extends ((keyof Schema) & string)>(table: Table) {
+    }
+
+    deleteFrom<Table extends ((keyof Schema) & string)>(table: Table) {
+    }
+
     /**
      * Aliases an expression for use in a select.
      */
@@ -62,6 +77,24 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
      */
     ast<Return>(e: Expr<Ext>): TypedAst<Schema, Return, Expr<Ext>>{
         return e as TypedAst<Schema, Return, Expr<Ext>>
+    }
+
+    /**
+     * Allows you to insert a literal into the query.
+     */
+    lit<Return extends number | string | boolean | null>(l: Return): TypedAst<Schema, Return, Expr<Ext>>{
+        const lit = (() => {
+            if (typeof l === 'number') {
+                return NumLit(l);
+            } else if (typeof l === 'string') {
+                return StringLit(l);
+            } else if (typeof l === 'boolean') {
+                return BoolLit(l);
+            } else {
+                return NullLit;
+            }
+        })();
+        return Lit(lit) as unknown as TypedAst<Schema, Return, Expr<Ext>>
     }
 }
 
@@ -80,8 +113,11 @@ export type ValuesOf<Schema, Table, Tn extends ((keyof Schema) & string), Ext ex
     : C extends TypedAlias<Schema, any, any, Ext> ? K[1]
     : never;
 
+/**
+ * Builds a SELECT statement.
+ */
 class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> extends CallableInstance<Array<unknown>, unknown> {
-    
+
     constructor(readonly _query: Query, readonly fn: Functions<Schema, Table, Tn, Ext>) {
         super('apply');
     }
@@ -90,6 +126,10 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         return fn(this);
     }
 
+    /**
+     * Select a single column or expression and alias it to `alias`.
+     * `SELECT [col] AS [alias]`
+     */
     selectAs<
         Id extends ((keyof Table) & string),
         Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
@@ -109,8 +149,12 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         })();
         return this.select(selection as any);
     }
-        
 
+    /**
+     * Select columns or expressions. You can *either* select columns *or* expressions
+     * but not both. If you need select both, split your selections across multiple
+     * calls to `select`.
+     */
     select<
         Id extends ((keyof Table) & string),
         Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
@@ -135,7 +179,7 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
             : C extends Comp ? [ColumnFinal<C>, ColumnInit<C>]
             : C extends  TypedAlias<Schema, infer R, infer C, Ext> ? [C, R]
             : never;
-        
+
         type ValuesOf1<C, K extends [any, any]> = ValuesOf<Schema, Table, Tn, Ext, Id, C, K>;
 
         type NewReturn = { [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> } & Return;
@@ -151,7 +195,7 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         const currentUnion = this._query.unions[numUnions - 1];
 
         const newUnion = lens<SetOp<any>>().select.selections.set(s => [...s, ...selections])(currentUnion);
-        
+
         return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(
             lens<Query>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
             this.fn,
@@ -160,6 +204,8 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
 
     // TODO join on expressions
     /**
+     * `[kind] JOIN [table] ON [on]`
+     *
      * @param on Expression to condition the join on. If using Typescript, this must be provided
      *        as a function from the builder to your ON expression so that you have the extra
      *        columns from the join available on the builder.
@@ -181,6 +227,9 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         );
     }
 
+    /**
+     * `LEFT OUTER JOIN [table] ON [on]`
+     */
     leftJoin<T2 extends keyof Schema & string>(
         table: T2,
         on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
@@ -188,6 +237,9 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         return this.join('LEFT OUTER', table, on);
     }
 
+    /**
+     * `RIGHT OUTER JOIN [table] ON [on]`
+     */
     rightJoin<T2 extends keyof Schema & string>(
         table: T2,
         on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
@@ -195,6 +247,9 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         return this.join('RIGHT OUTER', table, on);
     }
 
+    /**
+     * `FULL OUTER JOIN [table] ON [on]`
+     */
     fullOuterJoin<T2 extends keyof Schema & string>(
         table: T2,
         on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
@@ -202,6 +257,9 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         return this.join('FULL OUTER', table, on);
     }
 
+    /**
+     * `INNER JOIN [table] ON [on]`
+     */
     innerJoin<T2 extends keyof Schema & string>(
         table: T2,
         on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
@@ -265,7 +323,29 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         const subOpts = { ...(opts ?? {}), order: ('DESC' as 'DESC') }
         this.orderBy(col, subOpts);
     }
-    
+
+    /**
+     * `LIMIT [expr]
+     */
+    limit(expr: Expr<Ext> | number) {
+        const lim = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
+        return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
+            lens<Query>().limit.set(() => lim)(this._query),
+            this.fn
+        );
+    }
+
+    /**
+     * `OFFSET [expr]
+     */
+    offset(expr: Expr<Ext> | number) {
+        const off = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
+        return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
+            lens<Query>().offset.set(() => off)(this._query),
+            this.fn
+        );
+    }
+
     /**
      * Removes all type information from the builder allowing you to select whatever
      * you want and get back the any type. This should never be necessary as the SIJ
@@ -281,9 +361,14 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         throw new Error('Do not call this method, it only exists for testing');
     }
 }
-// Merges with above class to provide calling
+// Merges with above class to provide calling as a function
 interface QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> {
     <T>(fn: (arg: QueryBuilder<Schema, Table, Tn, Return, Ext>) => T): T
+}
+
+class InsertBuilder<Schema, Table,  Tn extends ((keyof Schema) & string), Ext extends Extension = NoExtension> {
+    values(...vs: Array<{ [Key in keyof Table]?: Table[Key] }>) {
+    }
 }
 
 type MySchema = {
