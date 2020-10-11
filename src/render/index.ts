@@ -164,6 +164,8 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'BasicTable': return this.renderIdent(table.name);
             case 'DerivedTable':
                 return `(${this.renderQuery(table.subQuery)}) AS ${this.renderIdent(table.alias)}`;
+            case 'FunctionTable':
+                return `(${this.renderExpr(table.func)}) AS ${this.renderIdent(table.alias)}`;
             case 'TableExtension': return this.renderCustomTable(table.val);
         }
     }

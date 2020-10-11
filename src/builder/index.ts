@@ -265,6 +265,8 @@ class QueryBuilder<
         );
     }
 
+    // joinAs
+
     // TODO join on expressions
     /**
      * `[kind] JOIN [table] ON [on]`

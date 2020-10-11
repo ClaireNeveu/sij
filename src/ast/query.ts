@@ -96,6 +96,7 @@ const Join = <Ext extends Extension = NoExtension>(args: UnTag<Join<Ext>>): Join
 type Table<Ext extends Extension> =
     | BasicTable
     | DerivedTable
+    | FunctionTable
     | TableExtension<Ext>;
 
 interface BasicTable extends Tagged<'BasicTable', {
@@ -108,6 +109,19 @@ interface DerivedTable<Ext extends Extension = NoExtension> extends Tagged<'Deri
     readonly alias: Ident,
 }> {};
 const DerivedTable = <Ext extends Extension = NoExtension>(args: UnTag<DerivedTable<Ext>>): DerivedTable<Ext> => tag('DerivedTable', args);
+
+/**
+ * Represents a function that returns a table. This was only introduced in SQL 2003
+ * with UNNEST but because joins are such a core part of the builder language
+ * This AST node is included in sij-core to avoid excessive method re-defining
+ * in the dialects. At least PostgreSQL, MySQL, and MSSQL have table-valued
+ * functions even if none of them have the *same* table-valued functions.
+ */
+interface FunctionTable<Ext extends Extension = NoExtension> extends Tagged<'FunctionTable', {
+    readonly func: Expr<Ext>,
+    readonly alias: Ident,
+}> {};
+const FunctionTable = <Ext extends Extension = NoExtension>(args: UnTag<FunctionTable<Ext>>): FunctionTable<Ext> => tag('FunctionTable', args);
 
 interface TableExtension<Ext extends Extension = NoExtension> extends Tagged<'TableExtension', {
     readonly val: Ext['Table'],
