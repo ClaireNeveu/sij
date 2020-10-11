@@ -62,6 +62,16 @@ export type SubBuilder<T, R> = R | ((t: T) => R);
 export type TypedAlias<Schema, Col extends string, Return, Ext extends Extension> =
     AliasedSelection<Ext> & { __schemaType: Schema, __returnType: Return };
 
+export type AstToAlias<T, A extends string> =
+    T extends TypedAst<infer S, infer R, Expr<infer E>> ? TypedAlias<S, A, R, E> : never;
+
+type TableOf<Table, T> = { [K in 
+    T extends keyof Table ? T
+    : T extends TypedAlias<any, infer P, infer T, any> ? P
+    : never]: K extends keyof Table ? Table[K]
+    : T extends TypedAlias<any, infer P, infer T, any> ? T
+    : never};
+
 class Builder<Schema, Ext extends Extension = NoExtension> {
 
     from<TableName extends ((keyof Schema) & string)>(
@@ -147,10 +157,7 @@ export type ValuesOf<
     Table,
     Ext extends Extension,
     Id, C, K extends [any, any]
-> =
-    C extends Id ? Table[K[0]]
-    : C extends TypedAlias<Schema, any, any, Ext> ? K[1]
-    : never;
+> = K[1]
 
 /**
  * Builds a SELECT statement.
@@ -177,20 +184,26 @@ class QueryBuilder<
     selectAs<
         Alias extends string,
         Ret,
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Ret, Expr<Ext>>,
+        Id extends ((keyof Table) & string),
+        Col extends Id | TypedAst<Schema, Ret, Expr<Ext>>,
     >(
         alias: Alias, col: Col
-    ) {
-        const selection: TypedAlias<Schema, Alias, Ret, Ext> | ((keyof Table) & string) = (() => {
+    ): QueryBuilder<
+        Schema,
+        TableOf<Table, AstToAlias<Col, Alias>> & Table,
+        UnQualifiedTable<TableOf<Table, AstToAlias<Col, Alias>>> & Return,
+        Ext
+    > {
+        const selection: TypedAlias<Schema, Alias, Ret, Ext> | Id = (() => {
             if (typeof col === 'object' && 'ast' in col ) {
                 return AliasedSelection({
                     selection: (col as unknown as TypedAst<Schema, Ret, Expr<Ext>>).ast,
                     alias: Ident(alias),
                 }) as TypedAlias<Schema, Alias, any, Ext>;
             }
-            return col as ((keyof Table) & string);
+            return col as Id;
         })();
-        return this.select(selection);
+        return this.select(selection) as any;
     }
 
     /**
@@ -199,12 +212,14 @@ class QueryBuilder<
      * calls to `select`.
      */
     select<
+        Alias extends string,
+        ColType,
         Id extends ((keyof Table) & string),
-        Exp extends TypedAlias<Schema, any, any, Ext>,
-        Col extends Id | Exp,
+        Col extends Id | TypedAlias<Schema, Alias, ColType, Ext>,
     >(
         ...cols: Array<Col>
-    ) {
+    ): QueryBuilder<Schema, TableOf<Table, Col> & Table, UnQualifiedTable<TableOf<Table, Col>> & Return, Ext> {
+        // ^ modify Table to pick up any new aliases
         const selections = cols.map(c => {
             if (typeof c === 'object') {
                 return c as AliasedSelection<Ext>;
@@ -216,16 +231,36 @@ class QueryBuilder<
                 return AnonymousSelection(CompoundIdentifier(idParts.map(Ident)));
             }
         });
-        type KeysOf<C> =
-            C extends Id ? [C, any]
-            : C extends TypedAlias<Schema, infer C, infer R, Ext> ? [C, R]
-            : never;
+        if (this._query.unions.length === 0) {
+            return new QueryBuilder(
+                lens<Query>().selection.selections.set(s => [...s, ...selections])(this._query),
+                this.fn,
+            );
+        }
+        const numUnions = this._query.unions.length;
+        const currentUnion = this._query.unions[numUnions - 1];
 
-        type ValuesOf1<C, K extends [any, any]> = ValuesOf<Schema, Table, Ext, Id, C, K>;
+        const newUnion = lens<SetOp<any>>().select.selections.set(
+            s => [...s, ...selections]
+        )(currentUnion);
 
-        type NewReturn = UnQualifiedTable<{ [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> }> & Return;
+        return new QueryBuilder(
+            lens<Query>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
+            this.fn,
+        );
+    }
+    
+    selectExpr<
+        Alias extends string,
+        ColType,
+    >(
+        ...cols: Array<TypedAlias<Schema, Alias, ColType, Ext>>
+    ) {
+        const selections = cols;
+
+        type NewReturn = UnQualifiedTable<{ [K in Alias]: ColType }> & Return;
         // Pick up any new aliases
-        type NewTable = { [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> } & Table;
+        type NewTable = { [K in Alias]: ColType } & Table;
         if (this._query.unions.length === 0) {
             return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
                 lens<Query>().selection.selections.set(s => [...s, ...selections])(this._query),
