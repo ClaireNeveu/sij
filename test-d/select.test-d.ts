@@ -36,3 +36,7 @@ const a4: { name: string, id: number } = b.from('employee').select('employee.nam
 // Should disallow qualified selects for the wrong table
 expectError(b.from('employee').select('department.id', 'name'))
 
+// SelectAs shouldn't wreck type inference
+expectError(b.from('employee').select('id', 'name')(b => b.selectAs('name_length', b.fn.charLength('name'))).where({ fid: 5 }))
+expectError(b.from('employee').select('id', 'name').selectAs('name_length', 'name').where({ fid: 5 }))
+

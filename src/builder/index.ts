@@ -59,7 +59,7 @@ export type UnQualifiedTable<Table> =
 
 export type SubBuilder<T, R> = R | ((t: T) => R);
 
-export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension> =
+export type TypedAlias<Schema, Col extends string, Return, Ext extends Extension> =
     AliasedSelection<Ext> & { __schemaType: Schema, __returnType: Return };
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
@@ -103,7 +103,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
         return AliasedSelection({
             selection: expr.ast,
             alias: Ident(name),
-        }) as TypedAlias<Schema, R, Col, Ext>;
+        }) as TypedAlias<Schema, Col, R, Ext>;
     }
 
     /**
@@ -175,22 +175,22 @@ class QueryBuilder<
      * `SELECT [col] AS [alias]`
      */
     selectAs<
-        Id extends ((keyof Table) & string),
-        Exp extends TypedAst<Schema, any, Expr<Ext>>,
-        Col extends Id | Exp,
+        Alias extends string,
+        Ret,
+        Col extends ((keyof Table) & string) | TypedAst<Schema, Ret, Expr<Ext>>,
     >(
-        alias: string, col: Col
+        alias: Alias, col: Col
     ) {
-        const selection = (() => {
+        const selection: TypedAlias<Schema, Alias, Ret, Ext> | ((keyof Table) & string) = (() => {
             if (typeof col === 'object' && 'ast' in col ) {
                 return AliasedSelection({
-                    selection: (col as unknown as TypedAst<Schema, any, Expr<Ext>>).ast,
+                    selection: (col as unknown as TypedAst<Schema, Ret, Expr<Ext>>).ast,
                     alias: Ident(alias),
-                }) as TypedAlias<Schema, any, any, Ext>;
+                }) as TypedAlias<Schema, Alias, any, Ext>;
             }
-            return col;
+            return col as ((keyof Table) & string);
         })();
-        return this.select(selection as any);
+        return this.select(selection);
     }
 
     /**
@@ -218,7 +218,7 @@ class QueryBuilder<
         });
         type KeysOf<C> =
             C extends Id ? [C, any]
-            : C extends TypedAlias<Schema, infer R, infer C, Ext> ? [C, R]
+            : C extends TypedAlias<Schema, infer C, infer R, Ext> ? [C, R]
             : never;
 
         type ValuesOf1<C, K extends [any, any]> = ValuesOf<Schema, Table, Ext, Id, C, K>;
@@ -547,7 +547,8 @@ b.from('employee').leftJoin('department', b => b.fn.eq('department.id', 'employe
 //const ssss: { name: string, id: number } = b.from('employee').select('employee.name', 'employee.id').__testingGet()
 
 // The sub builder is breaking type inference here
-const bar = b.from('employee').select('id', 'name')(b => b.selectAs('name_length', b.fn.charLength('name'))).where({ fid: 5 })
+const bar = b.from('employee').select('id', 'name')(b => b.selectAs('name_length', b.fn.charLength('name'))).where({ id: 5 })
+const fffbar = b.from('employee').select('id', 'name').selectAs('name_length', 'name').where({ id: 5 })
 const blaahhh = b.from('employee').select('id', 'name').where({ id: 5 })
 
 export {
