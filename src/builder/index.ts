@@ -42,6 +42,21 @@ const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Ex
     return Lit(lit);
 };
 
+type ColumnFinal<P> =
+    P extends `${infer Key}.${infer Rest}` ? Rest : never;
+
+type ColumnInit<P> =
+    P extends `${infer Key}.${infer Rest}` ? Key : never;
+
+type UnQualifiedId<P> =
+    P extends `${infer Key}.${infer Rest}` ? Rest : P;
+
+export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
+export type QualifiedTable<Schema, TableName extends keyof Schema & string> =
+    { [Key in StringKeys<Schema[TableName]> as `${TableName}.${Key}`]: Schema[TableName][Key] };
+export type UnQualifiedTable<Table> =
+    { [Key in keyof Table as UnQualifiedId<Key>]: Table[Key] };
+
 export type SubBuilder<T, R> = R | ((t: T) => R);
 
 export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension> =
@@ -49,9 +64,9 @@ export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
 
-    from<Table extends ((keyof Schema) & string)>(
-        table: Table
-    ): QueryBuilder<Schema, Schema[Table], Table, {}, Ext> {
+    from<TableName extends ((keyof Schema) & string)>(
+        table: TableName
+    ): QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext> {
         const select = Select({
             selections: [],
             from: JoinedTable({ name: Ident(table), joins: [] }),
@@ -69,7 +84,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
             offset: null,
             extensions: null,
         });
-        return new QueryBuilder<Schema, Schema[Table], Table, {}, Ext>(query, new Functions());
+        return new QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(query, new Functions());
     }
 
     insertInto<Table extends ((keyof Schema) & string)>(table: Table) {
@@ -120,25 +135,16 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
     }
 }
 
-type ColumnFinal<P> =
-    P extends `${infer Key}.${infer Rest}` ? Rest : never;
-
-type ColumnInit<P> =
-    P extends `${infer Key}.${infer Rest}` ? Key : never;
-
-export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 export type QualifiedIds<Schema, Tn extends ((keyof Schema) & string)> =
     ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn];
 // Need to carry this out or the constraint is lost in the .d.ts files
 export type ValuesOf<
     Schema,
     Table,
-    Tn extends ((keyof Schema) & string),
     Ext extends Extension,
     Id, C, K extends [any, any]
 > =
     C extends Id ? Table[K[0]]
-    : C extends QualifiedIds<Schema, Tn> ? Schema[K[1]][K[0]]
     : C extends TypedAlias<Schema, any, any, Ext> ? K[1]
     : never;
 
@@ -148,16 +154,15 @@ export type ValuesOf<
 class QueryBuilder<
     Schema,
     Table,
-    Tn extends ((keyof Schema) & string),
     Return,
     Ext extends Extension = NoExtension
 > extends CallableInstance<Array<unknown>, unknown> {
 
-    constructor(readonly _query: Query, readonly fn: Functions<Schema, Table, Tn, Ext>) {
+    constructor(readonly _query: Query, readonly fn: Functions<Schema, Table, Ext>) {
         super('apply');
     }
 
-    apply<T>(fn: (arg: QueryBuilder<Schema, Table, Tn, Return, Ext>) => T): T {
+    apply<T>(fn: (arg: QueryBuilder<Schema, Table, Return, Ext>) => T): T {
         return fn(this);
     }
 
@@ -167,9 +172,8 @@ class QueryBuilder<
      */
     selectAs<
         Id extends ((keyof Table) & string),
-        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
         Exp extends TypedAst<Schema, any, Expr<Ext>>,
-        Col extends Id | Comp | Exp,
+        Col extends Id | Exp,
     >(
         alias: string, col: Col
     ) {
@@ -192,9 +196,8 @@ class QueryBuilder<
      */
     select<
         Id extends ((keyof Table) & string),
-        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
         Exp extends TypedAlias<Schema, any, any, Ext>,
-        Col extends Id | Comp | Exp,
+        Col extends Id | Exp,
     >(
         ...cols: Array<Col>
     ) {
@@ -211,17 +214,16 @@ class QueryBuilder<
         });
         type KeysOf<C> =
             C extends Id ? [C, any]
-            : C extends Comp ? [ColumnFinal<C>, ColumnInit<C>]
-            : C extends  TypedAlias<Schema, infer R, infer C, Ext> ? [C, R]
+            : C extends TypedAlias<Schema, infer R, infer C, Ext> ? [C, R]
             : never;
 
-        type ValuesOf1<C, K extends [any, any]> = ValuesOf<Schema, Table, Tn, Ext, Id, C, K>;
+        type ValuesOf1<C, K extends [any, any]> = ValuesOf<Schema, Table, Ext, Id, C, K>;
 
-        type NewReturn = { [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> } & Return;
+        type NewReturn = UnQualifiedTable<{ [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> }> & Return;
         // Pick up any new aliases
         type NewTable = { [K in KeysOf<Col> as K[0]]: ValuesOf1<Col, K> } & Table;
         if (this._query.unions.length === 0) {
-            return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(
+            return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
                 lens<Query>().selection.selections.set(s => [...s, ...selections])(this._query),
                 this.fn,
             );
@@ -233,7 +235,7 @@ class QueryBuilder<
             s => [...s, ...selections]
         )(currentUnion);
 
-        return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(
+        return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
             lens<Query>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
             this.fn,
         );
@@ -247,27 +249,26 @@ class QueryBuilder<
      *        as a function from the builder to your ON expression so that you have the extra
      *        columns from the join available on the builder.
      */
-    join<T2 extends keyof Schema & string>(
+    join<TableName extends keyof Schema & string>(
         kind: JoinKind,
-        table: T2,
+        table: TableName,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[T2],
-                    Tn | T2,
+                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
                     Return,
                     Ext
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
+    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
         const on_ = on instanceof Function ? on(this as any) : on;
         const newJoin = Join({
             name: Ident(table),
             kind: kind,
             on: on_,
         });
-        return new QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>(
+        return new QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext>(
             lens<Query>().selection.from.joins.set(js => [...js, newJoin])(this._query),
             this.fn
         );
@@ -276,96 +277,91 @@ class QueryBuilder<
     /**
      * `LEFT OUTER JOIN [table] ON [on]`
      */
-    leftJoin<T2 extends keyof Schema & string>(
-        table: T2,
+    leftJoin<TableName extends keyof Schema & string>(
+        table: TableName,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[T2],
-                    Tn | T2,
+                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
                     Return,
                     Ext
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
+    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
         return this.join('LEFT OUTER', table, on);
     }
 
     /**
      * `RIGHT OUTER JOIN [table] ON [on]`
      */
-    rightJoin<T2 extends keyof Schema & string>(
-        table: T2,
+    rightJoin<TableName extends keyof Schema & string>(
+        table: TableName,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[T2],
-                    Tn | T2,
+                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
                     Return,
                     Ext
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
+    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
         return this.join('RIGHT OUTER', table, on);
     }
 
     /**
      * `FULL OUTER JOIN [table] ON [on]`
      */
-    fullOuterJoin<T2 extends keyof Schema & string>(
-        table: T2,
+    fullOuterJoin<TableName extends keyof Schema & string>(
+        table: TableName,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[T2],
-                    Tn | T2,
+                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
                     Return,
                     Ext
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
+    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
         return this.join('FULL OUTER', table, on);
     }
 
     /**
      * `INNER JOIN [table] ON [on]`
      */
-    innerJoin<T2 extends keyof Schema & string>(
-        table: T2,
+    innerJoin<TableName extends keyof Schema & string>(
+        table: TableName,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[T2],
-                    Tn | T2,
+                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
                     Return,
                     Ext
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
+    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
         return this.join('INNER', table, on);
     }
 
-    with<Table2, Tn2 extends string>(
-        alias: Tn2,
-        sub: QueryBuilder<Schema, any, Tn, Return, Ext>,
-    ): QueryBuilder<Schema & { [Key in Tn2]: Table2 }, any, Tn | Tn2, Return, Ext> {
+    with<Table2, TableName extends string>(
+        alias: TableName,
+        sub: QueryBuilder<Schema, Table2, Return, Ext>,
+    ): QueryBuilder<Schema, Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] }, Return, Ext> {
         const tAlias = TableAlias({ name: Ident(alias), columns: [] });
         const newCte = CommonTableExpr({ alias: tAlias, query: sub._query });
-        return new QueryBuilder<Schema & { [Key in Tn2]: Table2 }, any, Tn | Tn2, Return, Ext>(
+        return new QueryBuilder<Schema, Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] }, Return, Ext>(
             lens<Query>().commonTableExprs.set(ctes => [...ctes, newCte])(this._query),
-            new Functions(),
+            this.fn,
         );
     }
 
     orderBy<
         Id extends ((keyof Table) & string),
-        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
         Exp extends Expr<Ext>,
-        Col extends Id | Comp | Exp,
+        Col extends Id | Exp,
     >(
         col: Col,
         opts?: { order?: 'ASC' | 'DESC', nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
@@ -386,7 +382,7 @@ class QueryBuilder<
             order: opts?.order ?? null,
             nullHandling: opts?.nullHandling ?? null,
         });
-        return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
+        return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query>().ordering.set(os => [...os, newOrder])(this._query),
             this.fn
         );
@@ -394,9 +390,8 @@ class QueryBuilder<
 
     orderByAsc<
         Id extends ((keyof Table) & string),
-        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
         Exp extends Expr<Ext>,
-        Col extends Id | Comp | Exp,
+        Col extends Id | Exp,
     >(
         col: Col,
         opts?: { nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
@@ -407,9 +402,8 @@ class QueryBuilder<
 
     orderByDesc<
         Id extends ((keyof Table) & string),
-        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
         Exp extends Expr<Ext>,
-        Col extends Id | Comp | Exp,
+        Col extends Id | Exp,
     >(
         col: Col,
         opts?: { nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
@@ -423,7 +417,7 @@ class QueryBuilder<
      */
     limit(expr: Expr<Ext> | number) {
         const lim = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
-        return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
+        return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query>().limit.set(() => lim)(this._query),
             this.fn
         );
@@ -434,7 +428,7 @@ class QueryBuilder<
      */
     offset(expr: Expr<Ext> | number) {
         const off = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
-        return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
+        return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query>().offset.set(() => off)(this._query),
             this.fn
         );
@@ -446,9 +440,7 @@ class QueryBuilder<
      *        shorthand equality object mapping columns to values.
      */
     where(
-        clause: ((keyof Table) & string)
-            | { [K in (keyof Table)]?: Table[K] } // TODO compound identifiers
-            | TypedAst<Schema, any, Expr<Ext>>
+        clause: Partial<Table> | TypedAst<Schema, any, Expr<Ext>>
     ) {
         const expr: Expr<Ext> = (() => {
             if (typeof clause === 'object' && !('_tag' in clause)) {
@@ -459,7 +451,7 @@ class QueryBuilder<
             }
             return clause as TypedAst<Schema, any, Expr<Ext>>;
         })();
-        return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
+        return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query>().selection.where.set(() => expr)(this._query),
             this.fn
         );
@@ -471,7 +463,7 @@ class QueryBuilder<
      * builder includes a complete typing of SQL but in situations where SIJ has a bug
      * you can continue using it while waiting for the upstream to be fixed.
      */
-    unTyped(): QueryBuilder<any, any, any, any, Ext> {
+    unTyped(): QueryBuilder<any, any, any, Ext> {
         return this;
     }
 
@@ -484,11 +476,10 @@ class QueryBuilder<
 interface QueryBuilder<
     Schema,
     Table,
-    Tn extends ((keyof Schema) & string),
     Return,
     Ext extends Extension = NoExtension
 > {
-    <T>(fn: (arg: QueryBuilder<Schema, Table, Tn, Return, Ext>) => T): T
+    <T>(fn: (arg: QueryBuilder<Schema, Table, Return, Ext>) => T): T
 }
 
 class InsertBuilder<

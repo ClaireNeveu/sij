@@ -7,12 +7,11 @@ export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => e a
 export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
 // TODO functions need to properly hande compound identifiers
-export class Functions<Schema, Table, Tn extends ((keyof Schema) & string), Ext extends Extension = NoExtension> {
+export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
     charLength<
         Id extends ((keyof Table) & string),
-        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
         Exp extends TypedAst<Schema, string, Expr<Ext>>,
-        Col extends Id | Comp | Exp,
+        Col extends Id | Exp,
     >(
         value: Col
     ): TypedAst<Schema, number, FunctionApp<Ext>> {
@@ -24,10 +23,9 @@ export class Functions<Schema, Table, Tn extends ((keyof Schema) & string), Ext 
     }
     eq<
         Id extends ((keyof Table) & string),
-        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
         Exp extends TypedAst<Schema, any, Expr<Ext>>,
-        Col extends Id | Comp | Exp,
-        Col2 extends Id | Comp | Exp,
+        Col extends Id | Exp,
+        Col2 extends Id | Exp,
     >(
         left_: Col,
         right_: Col2,
@@ -42,10 +40,9 @@ export class Functions<Schema, Table, Tn extends ((keyof Schema) & string), Ext 
     }
     and<
         Id extends ((keyof Table) & string),
-        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
         Exp extends TypedAst<Schema, boolean, Expr<Ext>>,
-        Col extends Id | Comp | Exp,
-        Col2 extends Id | Comp | Exp,
+        Col extends Id | Exp,
+        Col2 extends Id | Exp,
     >(
         left_: Col,
         right_: Col2,
