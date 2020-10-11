@@ -26,6 +26,7 @@
   },
   "dependencies": {
     "callable-instance": "^2.0.0",
-    "lens.ts": "^0.5.1"
+    "lens.ts": "^0.5.1",
+    "ts-toolbelt": "^8.0.7"
   }
 }

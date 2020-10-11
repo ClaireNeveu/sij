@@ -1,5 +1,6 @@
 import CallableInstance from 'callable-instance';
 import { lens } from 'lens.ts';
+import type { Any } from 'ts-toolbelt';
 
 import { Expr, Ident, CompoundIdentifier, Lit } from '../ast/expr';
 import { DataType } from '../ast/data-type';
@@ -25,7 +26,6 @@ import {
 } from '../ast/literal';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions, ast } from './functions';
-
 
 const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Expr<Ext> => {
     const lit = (() => {
@@ -505,7 +505,7 @@ class QueryBuilder<
     }
 
     /** Method used in the tsd tests */
-    __testingGet(): Return {
+    __testingGet(): Any.Compute<Return> {
         throw new Error('Do not call this method, it only exists for testing');
     }
 }
