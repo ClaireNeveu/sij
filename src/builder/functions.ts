@@ -2,8 +2,15 @@ import { Extension, NoExtension } from '../ast/util';
 import { BinaryApp, FunctionApp, Ident, Expr, CompoundIdentifier } from '../ast/expr';
 import { BinaryOperator as BinOp } from '../ast/operator';
 
-export type TypedAst<Schema, Return, E> = E & { __schemaType: Schema, __returnType: Return };
-export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => e as TypedAst<Schema, Return, E>;
+// Boxing to improve error messages.
+export interface TypedAst<Schema, Return, E> {
+    __schemaType: Schema,
+    __returnType: Return,
+    ast: E,
+};
+export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => ({
+    ast: e
+}) as TypedAst<Schema, Return, E>;
 export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
 // TODO functions need to properly hande compound identifiers
@@ -15,45 +22,41 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
     >(
         value: Col
     ): TypedAst<Schema, number, FunctionApp<Ext>> {
-        const args = typeof value === 'string' ? [Ident(value)] : [value as unknown as Expr<Ext>];
-        return FunctionApp({
+        const args = typeof value === 'string' ? [Ident(value)] : [(value as TypedAst<Schema, string, Expr<Ext>>).ast];
+        return ast<Schema, number, FunctionApp<Ext>>(FunctionApp({
             name: CompoundIdentifier([Ident('CHAR_LENGTH')]),
             args,
-        }) as TypedAst<Schema, number, FunctionApp<Ext>>;
+        }));
     }
     eq<
-        Id extends ((keyof Table) & string),
-        Exp extends TypedAst<Schema, any, Expr<Ext>>,
-        Col extends Id | Exp,
-        Col2 extends Id | Exp,
+        Col extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
+        Col2 extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
     >(
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : left_ as unknown as Expr<Ext>;
-        const right = typeof right_ === 'string' ? Ident(right_) : right_ as unknown as Expr<Ext>;
-        return BinaryApp({
+        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Equal,
             left,
             right,
-        }) as TypedAst<Schema, boolean, BinaryApp<Ext>>;
+        }));
     }
     and<
-        Id extends ((keyof Table) & string),
-        Exp extends TypedAst<Schema, boolean, Expr<Ext>>,
-        Col extends Id | Exp,
-        Col2 extends Id | Exp,
+        Col extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
+        Col2 extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
     >(
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : left_ as unknown as Expr<Ext>;
-        const right = typeof right_ === 'string' ? Ident(right_) : right_ as unknown as Expr<Ext>;
-        return BinaryApp({
+        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
+        return  ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.And,
             left,
             right,
-        }) as TypedAst<Schema, boolean, BinaryApp<Ext>>;
+        }));
     }
 };
 /*

@@ -24,7 +24,7 @@ import {
     NullLit,
 } from '../ast/literal';
 import { Extension, NoExtension, VTagged } from '../ast/util';
-import { TypedAst, Functions } from './functions';
+import { TypedAst, Functions, ast } from './functions';
 
 
 const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Expr<Ext> => {
@@ -101,7 +101,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
      */
     as<Col extends string, R>(name: Col, expr: TypedAst<Schema, R, Expr<Ext>>) {
         return AliasedSelection({
-            selection: expr,
+            selection: expr.ast,
             alias: Ident(name),
         }) as TypedAlias<Schema, R, Col, Ext>;
     }
@@ -111,7 +111,9 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
      * You must provide the type of this expression.
      */
     ast<Return>(e: Expr<Ext>): TypedAst<Schema, Return, Expr<Ext>>{
-        return e as TypedAst<Schema, Return, Expr<Ext>>
+        return {
+            ast: e
+        } as TypedAst<Schema, Return, Expr<Ext>>
     }
 
     /**
@@ -131,7 +133,9 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
                 return NullLit;
             }
         })();
-        return Lit(lit) as unknown as TypedAst<Schema, Return, Expr<Ext>>
+        return {
+            ast: Lit(lit)
+        } as unknown as TypedAst<Schema, Return, Expr<Ext>>
     }
 }
 
@@ -178,9 +182,9 @@ class QueryBuilder<
         alias: string, col: Col
     ) {
         const selection = (() => {
-            if (typeof col === 'object') {
+            if (typeof col === 'object' && 'ast' in col ) {
                 return AliasedSelection({
-                    selection: col as unknown as Expr<Ext>,
+                    selection: (col as unknown as TypedAst<Schema, any, Expr<Ext>>).ast,
                     alias: Ident(alias),
                 }) as TypedAlias<Schema, any, any, Ext>;
             }
@@ -266,7 +270,7 @@ class QueryBuilder<
         const newJoin = Join({
             name: Ident(table),
             kind: kind,
-            on: on_,
+            on: on_.ast,
         });
         return new QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext>(
             lens<Query>().selection.from.joins.set(js => [...js, newJoin])(this._query),
@@ -439,17 +443,15 @@ class QueryBuilder<
      * @param clause Either an expression that evaluates to a boolean or a
      *        shorthand equality object mapping columns to values.
      */
-    where(
-        clause: Partial<Table> | TypedAst<Schema, any, Expr<Ext>>
-    ) {
+    where(clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<Ext>>) {
         const expr: Expr<Ext> = (() => {
-            if (typeof clause === 'object' && !('_tag' in clause)) {
+            if (typeof clause === 'object' && !('ast' in clause)) {
                 return Object.keys(clause).map(k => {
                     const val: any = ((clause as any)[k]) as any
-                        return this.fn.eq((k as any), makeLit(val) as any)
-                }).reduce((acc, val) => this.fn.and(acc, val));
+                    return this.fn.eq((k as any), ast<Schema, any, Expr<Ext>>(makeLit(val)))
+                }).reduce((acc, val) => this.fn.and(acc, val)).ast;
             }
-            return clause as TypedAst<Schema, any, Expr<Ext>>;
+            return clause.ast;
         })();
         return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query>().selection.where.set(() => expr)(this._query),

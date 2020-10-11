@@ -13,7 +13,8 @@
     "noImplicitReturns": true,
     "noUnusedLocals": false,
     "module": "CommonJS",
-    "declaration": true
+    "declaration": true,
+      "noErrorTruncation": true
   },
   "include": ["./src/**/*"]
 }
