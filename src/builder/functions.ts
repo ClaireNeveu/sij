@@ -6,6 +6,7 @@ export type TypedAst<Schema, Return, E> = E & { __schemaType: Schema, __returnTy
 export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => e as TypedAst<Schema, Return, E>;
 export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
+// TODO functions need to properly hande compound identifiers
 export class Functions<Schema, Table, Tn extends ((keyof Schema) & string), Ext extends Extension = NoExtension> {
     charLength<
         Id extends ((keyof Table) & string),
@@ -24,7 +25,7 @@ export class Functions<Schema, Table, Tn extends ((keyof Schema) & string), Ext 
     eq<
         Id extends ((keyof Table) & string),
         Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
-        Exp extends TypedAst<Schema, string, Expr<Ext>>,
+        Exp extends TypedAst<Schema, any, Expr<Ext>>,
         Col extends Id | Comp | Exp,
         Col2 extends Id | Comp | Exp,
     >(
@@ -35,6 +36,24 @@ export class Functions<Schema, Table, Tn extends ((keyof Schema) & string), Ext 
         const right = typeof right_ === 'string' ? Ident(right_) : right_ as unknown as Expr<Ext>;
         return BinaryApp({
             op: BinOp.Equal,
+            left,
+            right,
+        }) as TypedAst<Schema, boolean, BinaryApp<Ext>>;
+    }
+    and<
+        Id extends ((keyof Table) & string),
+        Comp extends ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn],
+        Exp extends TypedAst<Schema, boolean, Expr<Ext>>,
+        Col extends Id | Comp | Exp,
+        Col2 extends Id | Comp | Exp,
+    >(
+        left_: Col,
+        right_: Col2,
+    ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
+        const left = typeof left_ === 'string' ? Ident(left_) : left_ as unknown as Expr<Ext>;
+        const right = typeof right_ === 'string' ? Ident(right_) : right_ as unknown as Expr<Ext>;
+        return BinaryApp({
+            op: BinOp.And,
             left,
             right,
         }) as TypedAst<Schema, boolean, BinaryApp<Ext>>;

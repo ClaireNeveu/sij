@@ -26,6 +26,22 @@ import {
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions } from './functions';
 
+
+const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Expr<Ext> => {
+    const lit = (() => {
+        if (typeof l === 'number') {
+            return NumLit(l);
+        } else if (typeof l === 'string') {
+            return StringLit(l);
+        } else if (typeof l === 'boolean') {
+            return BoolLit(l);
+        } else {
+            return NullLit;
+        }
+    })();
+    return Lit(lit);
+};
+
 export type SubBuilder<T, R> = R | ((t: T) => R);
 
 export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension> =
@@ -33,7 +49,9 @@ export type TypedAlias<Schema, Return, Col extends string, Ext extends Extension
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
 
-    from<Table extends ((keyof Schema) & string)>(table: Table): QueryBuilder<Schema, Schema[Table], Table, {}, Ext> {
+    from<Table extends ((keyof Schema) & string)>(
+        table: Table
+    ): QueryBuilder<Schema, Schema[Table], Table, {}, Ext> {
         const select = Select({
             selections: [],
             from: JoinedTable({ name: Ident(table), joins: [] }),
@@ -84,7 +102,9 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
     /**
      * Allows you to insert a literal into the query.
      */
-    lit<Return extends number | string | boolean | null>(l: Return): TypedAst<Schema, Return, Expr<Ext>>{
+    lit<Return extends number | string | boolean | null>(
+        l: Return
+    ): TypedAst<Schema, Return, Expr<Ext>>{
         const lit = (() => {
             if (typeof l === 'number') {
                 return NumLit(l);
@@ -107,9 +127,16 @@ type ColumnInit<P> =
     P extends `${infer Key}.${infer Rest}` ? Key : never;
 
 export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
-export type QualifiedIds<Schema, Tn extends ((keyof Schema) & string)> = ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn];
+export type QualifiedIds<Schema, Tn extends ((keyof Schema) & string)> =
+    ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn];
 // Need to carry this out or the constraint is lost in the .d.ts files
-export type ValuesOf<Schema, Table, Tn extends ((keyof Schema) & string), Ext extends Extension, Id, C, K extends [any, any]> =
+export type ValuesOf<
+    Schema,
+    Table,
+    Tn extends ((keyof Schema) & string),
+    Ext extends Extension,
+    Id, C, K extends [any, any]
+> =
     C extends Id ? Table[K[0]]
     : C extends QualifiedIds<Schema, Tn> ? Schema[K[1]][K[0]]
     : C extends TypedAlias<Schema, any, any, Ext> ? K[1]
@@ -118,7 +145,13 @@ export type ValuesOf<Schema, Table, Tn extends ((keyof Schema) & string), Ext ex
 /**
  * Builds a SELECT statement.
  */
-class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> extends CallableInstance<Array<unknown>, unknown> {
+class QueryBuilder<
+    Schema,
+    Table,
+    Tn extends ((keyof Schema) & string),
+    Return,
+    Ext extends Extension = NoExtension
+> extends CallableInstance<Array<unknown>, unknown> {
 
     constructor(readonly _query: Query, readonly fn: Functions<Schema, Table, Tn, Ext>) {
         super('apply');
@@ -196,7 +229,9 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
         const numUnions = this._query.unions.length;
         const currentUnion = this._query.unions[numUnions - 1];
 
-        const newUnion = lens<SetOp<any>>().select.selections.set(s => [...s, ...selections])(currentUnion);
+        const newUnion = lens<SetOp<any>>().select.selections.set(
+            s => [...s, ...selections]
+        )(currentUnion);
 
         return new QueryBuilder<Schema, NewTable, Tn, NewReturn, Ext>(
             lens<Query>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
@@ -215,9 +250,18 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
     join<T2 extends keyof Schema & string>(
         kind: JoinKind,
         table: T2,
-        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
+        on: SubBuilder<
+                QueryBuilder<
+                    Schema,
+                    Table & Schema[T2],
+                    Tn | T2,
+                    Return,
+                    Ext
+                >,
+                TypedAst<Schema, any, Expr<Ext>>
+            >,
     ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
-        const on_ = on instanceof Function ? on(this) : on;
+        const on_ = on instanceof Function ? on(this as any) : on;
         const newJoin = Join({
             name: Ident(table),
             kind: kind,
@@ -234,8 +278,17 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
      */
     leftJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
-    ) {
+        on: SubBuilder<
+                QueryBuilder<
+                    Schema,
+                    Table & Schema[T2],
+                    Tn | T2,
+                    Return,
+                    Ext
+                >,
+                TypedAst<Schema, any, Expr<Ext>>
+            >,
+    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
         return this.join('LEFT OUTER', table, on);
     }
 
@@ -244,8 +297,17 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
      */
     rightJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
-    ) {
+        on: SubBuilder<
+                QueryBuilder<
+                    Schema,
+                    Table & Schema[T2],
+                    Tn | T2,
+                    Return,
+                    Ext
+                >,
+                TypedAst<Schema, any, Expr<Ext>>
+            >,
+    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
         return this.join('RIGHT OUTER', table, on);
     }
 
@@ -254,8 +316,17 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
      */
     fullOuterJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
-    ) {
+        on: SubBuilder<
+                QueryBuilder<
+                    Schema,
+                    Table & Schema[T2],
+                    Tn | T2,
+                    Return,
+                    Ext
+                >,
+                TypedAst<Schema, any, Expr<Ext>>
+            >,
+    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
         return this.join('FULL OUTER', table, on);
     }
 
@@ -264,8 +335,17 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
      */
     innerJoin<T2 extends keyof Schema & string>(
         table: T2,
-        on: SubBuilder<QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext>, TypedAst<Schema, any, Expr<Ext>>>,
-    ) {
+        on: SubBuilder<
+                QueryBuilder<
+                    Schema,
+                    Table & Schema[T2],
+                    Tn | T2,
+                    Return,
+                    Ext
+                >,
+                TypedAst<Schema, any, Expr<Ext>>
+            >,
+    ): QueryBuilder<Schema, Table & Schema[T2], Tn | T2, Return, Ext> {
         return this.join('INNER', table, on);
     }
 
@@ -339,7 +419,7 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
     }
 
     /**
-     * `LIMIT [expr]
+     * `LIMIT [expr]`
      */
     limit(expr: Expr<Ext> | number) {
         const lim = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
@@ -350,12 +430,37 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
     }
 
     /**
-     * `OFFSET [expr]
+     * `OFFSET [expr]`
      */
     offset(expr: Expr<Ext> | number) {
         const off = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
         return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
             lens<Query>().offset.set(() => off)(this._query),
+            this.fn
+        );
+    }
+
+    /**
+     * `WHERE [expr]`
+     * @param clause Either an expression that evaluates to a boolean or a
+     *        shorthand equality object mapping columns to values.
+     */
+    where(
+        clause: ((keyof Table) & string)
+            | { [K in (keyof Table)]?: Table[K] } // TODO compound identifiers
+            | TypedAst<Schema, any, Expr<Ext>>
+    ) {
+        const expr: Expr<Ext> = (() => {
+            if (typeof clause === 'object' && !('_tag' in clause)) {
+                return Object.keys(clause).map(k => {
+                    const val: any = ((clause as any)[k]) as any
+                        return this.fn.eq((k as any), makeLit(val) as any)
+                }).reduce((acc, val) => this.fn.and(acc, val));
+            }
+            return clause as TypedAst<Schema, any, Expr<Ext>>;
+        })();
+        return new QueryBuilder<Schema, Table, Tn, Return, Ext>(
+            lens<Query>().selection.where.set(() => expr)(this._query),
             this.fn
         );
     }
@@ -376,12 +481,50 @@ class QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, 
     }
 }
 // Merges with above class to provide calling as a function
-interface QueryBuilder<Schema, Table, Tn extends ((keyof Schema) & string), Return, Ext extends Extension = NoExtension> {
+interface QueryBuilder<
+    Schema,
+    Table,
+    Tn extends ((keyof Schema) & string),
+    Return,
+    Ext extends Extension = NoExtension
+> {
     <T>(fn: (arg: QueryBuilder<Schema, Table, Tn, Return, Ext>) => T): T
 }
 
-class InsertBuilder<Schema, Table,  Tn extends ((keyof Schema) & string), Ext extends Extension = NoExtension> {
+class InsertBuilder<
+    Schema,
+    Table,
+    Tn extends ((keyof Schema) & string),
+    Ext extends Extension = NoExtension
+> {
     values(...vs: Array<{ [Key in keyof Table]?: Table[Key] }>) {
+        // This is where reflection would be really nice
+        /*
+        if (this._statement.columns.length === 0) {
+         */
+        const columns = new Set();
+        vs.forEach(v => {
+            Object.keys(v).forEach(k => columns.add(k));
+        });
+    }
+    /**
+     * When inserting values SIJ automatically determines the columns
+     * of your dataset by traversing all the keys in all the values.
+     * In large datasets this can be a performance issue. `values1`
+     * only looks at the first value in your dataset to determine
+     * the columns.
+     */
+    values1(...vs: Array<{ [Key in keyof Table]?: Table[Key] }>) {
+    }
+
+    /**
+     * When inserting values SIJ automatically determines the columns
+     * of your dataset by traversing all the keys in all the values.
+     * In large datasets this can be a performance issue so you can
+     * use `columns` to specify the columns manually and avoid the
+     * extra computation.
+     */
+    columns(...cols: Array<string>) {
     }
 }
 
@@ -410,7 +553,9 @@ b.from('employee').leftJoin('department', b => b.fn.eq('department.id', 'employe
 
 //const ssss: { name: string, id: number } = b.from('employee').select('employee.name', 'employee.id').__testingGet()
 
-const bar = b.from('employee').select('id', 'name')(b => b.selectAs('name_length', b.fn.charLength('name')))
+// The sub builder is breaking type inference here
+const bar = b.from('employee').select('id', 'name')(b => b.selectAs('name_length', b.fn.charLength('name'))).where({ fid: 5 })
+const blaahhh = b.from('employee').select('id', 'name').where({ id: 5 })
 
 export {
     Builder

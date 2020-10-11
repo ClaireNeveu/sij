@@ -130,7 +130,7 @@ class Renderer<Ext extends Extension = NoExtension> {
             }
         }).join(', ');
 
-        const where = select.where === null ? '' : ' ' + this.renderExpr(select.where);
+        const where = select.where === null ? '' : ' WHERE ' + this.renderExpr(select.where);
         const groupBy = (
             select.groupBy.length === 0
                 ? ''
