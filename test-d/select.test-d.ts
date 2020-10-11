@@ -67,5 +67,3 @@ const a6: { name_length: number } = b.from('employee')(b1 => b1.selectExpr(b.as(
 expectError(() => {
     const a5: { name_length: string } = b.from('employee')(b => b.selectAs('name_length', b.fn.charLength('name'))).__testingGet()
 })
-
-    const afff5: { name_length: string } = b.from('employee')(b => b.selectAs('name_length', b.fn.charLength('name'))).__testingGet()

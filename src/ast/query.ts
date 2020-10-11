@@ -8,7 +8,7 @@ interface Query<Ext extends Extension = NoExtension> extends Tagged<'Query', {
     readonly ordering: Array<OrderingExpr<Ext>>,
     readonly limit: Expr<Ext> | null,
     readonly offset: Expr<Ext> | null,
-    readonly extensions: Ext['query'] | null,
+    readonly extensions: Ext['Query'] | null,
 }> {};
 const Query = <Ext extends Extension = NoExtension>(args: UnTag<Query<Ext>>): Query<Ext> => tag('Query', args);
 
@@ -57,7 +57,7 @@ interface Select<Ext extends Extension = NoExtension> extends Tagged<'Select', {
     readonly where: Expr | null,
     readonly groupBy: Array<Expr>,
     readonly having: Expr | null,
-    readonly extensions: Ext['select'] | null,
+    readonly extensions: Ext['Select'] | null,
 }> {};
 const Select = <Ext extends Extension = NoExtension>(args: UnTag<Select<Ext>>): Select<Ext> => tag('Select', args);
 

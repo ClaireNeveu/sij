@@ -6,15 +6,15 @@ type UnTag<T> = Omit<T, '_tag'>;
 const tag = <Tag, O extends {}>(tag: Tag, obj: O): Tagged<Tag, O> => ({ _tag: tag, ...obj });
 
 type Extension = {
-    expression: any,
-    query: any,
-    select: any,
+    Expr: any,
+    Query: any,
+    Select: any,
 };
 
 type NoExtension = {
-    expression: unknown,
-    query: unknown,
-    select: unknown,
+    Expr: unknown,
+    Query: unknown,
+    Select: unknown,
 };
 
 const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });

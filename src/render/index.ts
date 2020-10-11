@@ -71,7 +71,7 @@ class Renderer<Ext extends Extension = NoExtension> {
         }
         return 'OOPS, FORGOT TO IMPLEMENT A CASE';
     }
-    renderCustomExpr(dt: Ext['expression']): string {
+    renderCustomExpr(dt: Ext['Expr']): string {
         throw Error('Custom expression encountered, please extend the renderer');
     }
 

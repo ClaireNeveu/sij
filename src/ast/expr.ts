@@ -197,9 +197,9 @@ const UnaryApp = <Ext extends Extension = NoExtension>(args: UnTag<UnaryApp<Ext>
  * Wrapper for any expression extensions.
  */
 interface ExprExtension<Ext extends Extension = NoExtension> extends Tagged<'ExprExtension', {
-    readonly val: Ext['expression']
+    readonly val: Ext['Expr']
 }> {};
-const ExprExtension = <Ext extends Extension = NoExtension>(val: Ext['expression']): ExprExtension<Ext> =>
+const ExprExtension = <Ext extends Extension = NoExtension>(val: Ext['Expr']): ExprExtension<Ext> =>
     tag('ExprExtension', { val });
 
 export {

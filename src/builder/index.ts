@@ -42,12 +42,6 @@ const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Ex
     return Lit(lit);
 };
 
-type ColumnFinal<P> =
-    P extends `${infer Key}.${infer Rest}` ? Rest : never;
-
-type ColumnInit<P> =
-    P extends `${infer Key}.${infer Rest}` ? Key : never;
-
 type UnQualifiedId<P> =
     P extends `${infer Key}.${infer Rest}` ? Rest : P;
 
@@ -148,16 +142,6 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
         } as unknown as TypedAst<Schema, Return, Expr<Ext>>
     }
 }
-
-export type QualifiedIds<Schema, Tn extends ((keyof Schema) & string)> =
-    ({ [K in Tn]: `${K}.${StringKeys<Schema[K]>}` })[Tn];
-// Need to carry this out or the constraint is lost in the .d.ts files
-export type ValuesOf<
-    Schema,
-    Table,
-    Ext extends Extension,
-    Id, C, K extends [any, any]
-> = K[1]
 
 /**
  * Builds a SELECT statement.
