@@ -1,6 +1,10 @@
 import type { Expr, Ident } from '../ast/expr';
 import type { DataType } from '../ast/data-type';
-import type { Query, Select } from '../ast/query';
+import type {
+    Query,
+    Select,
+    Table,
+} from '../ast/query';
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
 
@@ -14,7 +18,9 @@ class Renderer<Ext extends Extension = NoExtension> {
         if (typeof expr === 'string') {
             return this.renderIdent(expr);
         }
+        const tag = expr._tag;
         switch (expr._tag) {
+            case 'Ident': throw new Error('Impossible'); // Here for exhaustiveness
             case 'Wildcard': return '*';
             case 'QualifiedWildcard': {
                 const qualifiers = expr.qualifiers.map(e => this.renderExpr(e)).join('.');
@@ -69,7 +75,7 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'UnaryApp': return `${expr.op}${this.renderExpr(expr.expr)}`;
             case 'ExprExtension': return this.renderCustomExpr(expr.val);
         }
-        return 'OOPS, FORGOT TO IMPLEMENT A CASE';
+        const n: never = expr;
     }
     renderCustomExpr(dt: Ext['Expr']): string {
         throw Error('Custom expression encountered, please extend the renderer');
@@ -143,14 +149,26 @@ class Renderer<Ext extends Extension = NoExtension> {
         );
 
         const table = (() => {
-            const initTable = this.renderIdent(select.from.name);
+            const initTable = this.renderTable(select.from.table);
             const joins = select.from.joins.map(join => (
-                ` ${join.kind} JOIN ${this.renderIdent(join.name)} ON ${this.renderExpr(join.on)}`
+                ` ${join.kind} JOIN ${this.renderTable(join.table)} ON ${this.renderExpr(join.on)}`
             )).join('');
             return initTable + joins;
         })();
 
         return `SELECT ${selections} FROM ${table}${where}${groupBy}${having}`;
+    }
+
+    renderTable(table: Table<any>): string {
+        switch (table._tag) {
+            case 'BasicTable': return this.renderIdent(table.name);
+            case 'DerivedTable':
+                return `(${this.renderQuery(table.subQuery)}) AS ${this.renderIdent(table.alias)}`;
+            case 'TableExtension': return this.renderCustomTable(table.val);
+        }
+    }
+    renderCustomTable(dt: Ext['Table']): string {
+        throw Error('Custom table encountered, please extend the renderer');
     }
     
     renderLiteral(literal: Literal): string {

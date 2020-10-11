@@ -81,17 +81,38 @@ const AliasedSelection = <Ext extends Extension = NoExtension>(args: UnTag<Alias
 
 // TODO aliased tables
 interface JoinedTable<Ext extends Extension = NoExtension> extends Tagged<'JoinedTable', {
-    readonly name: Ident,
+    readonly table: Table<Ext>,
     readonly joins: Array<Join>,
 }> {};
 const JoinedTable = <Ext extends Extension = NoExtension>(args: UnTag<JoinedTable<Ext>>): JoinedTable<Ext> => tag('JoinedTable', args);
 
 interface Join<Ext extends Extension = NoExtension> extends Tagged<'Join', {
-    readonly name: Ident,
+    readonly table: Table<Ext>,
     readonly kind: JoinKind,
     readonly on: Expr<Ext>,
 }> {};
 const Join = <Ext extends Extension = NoExtension>(args: UnTag<Join<Ext>>): Join<Ext> => tag('Join', args);
+
+type Table<Ext extends Extension> =
+    | BasicTable
+    | DerivedTable
+    | TableExtension<Ext>;
+
+interface BasicTable extends Tagged<'BasicTable', {
+    readonly name: Ident,
+}> {};
+const BasicTable = (name: Ident): BasicTable => tag('BasicTable', { name });
+
+interface DerivedTable<Ext extends Extension = NoExtension> extends Tagged<'DerivedTable', {
+    readonly subQuery: Query<Ext>,
+    readonly alias: Ident,
+}> {};
+const DerivedTable = <Ext extends Extension = NoExtension>(args: UnTag<DerivedTable<Ext>>): DerivedTable<Ext> => tag('DerivedTable', args);
+
+interface TableExtension<Ext extends Extension = NoExtension> extends Tagged<'TableExtension', {
+    readonly val: Ext['Table'],
+}> {};
+const TableExtension = <Ext extends Extension = NoExtension>(args: UnTag<TableExtension<Ext>>): TableExtension<Ext> => tag('TableExtension', args);
 
 type JoinKind =
     | 'INNER'
@@ -112,7 +133,11 @@ export {
     JoinedTable,
     Join,
     JoinKind,
-}
+    Table,
+    BasicTable,
+    DerivedTable,
+    TableExtension,
+};
 
 /* Extensions that will be needed
  * LIMIT ALL for Netezza

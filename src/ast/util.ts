@@ -9,12 +9,14 @@ type Extension = {
     Expr: any,
     Query: any,
     Select: any,
+    Table: any,
 };
 
 type NoExtension = {
     Expr: unknown,
     Query: unknown,
     Select: unknown,
+    Table: unknown,
 };
 
 const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });

@@ -16,6 +16,7 @@ import {
     Select,
     SetOp,
     TableAlias,
+    BasicTable,
 } from '../ast/query';
 import {
     Literal,
@@ -73,7 +74,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
     ): QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext> {
         const select = Select({
             selections: [],
-            from: JoinedTable({ name: Ident(table), joins: [] }),
+            from: JoinedTable({ table: BasicTable(Ident(table)), joins: [] }),
             where: null,
             groupBy: [],
             having: null,
@@ -287,7 +288,7 @@ class QueryBuilder<
     ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
         const on_ = on instanceof Function ? on(this as any) : on;
         const newJoin = Join({
-            name: Ident(table),
+            table: BasicTable(Ident(table)),
             kind: kind,
             on: on_.ast,
         });
