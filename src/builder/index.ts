@@ -17,6 +17,7 @@ import {
     SetOp,
     TableAlias,
     BasicTable,
+    DerivedTable,
 } from '../ast/query';
 import {
     Literal,
@@ -49,8 +50,15 @@ type UnQualifiedId<P> =
 export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 export type QualifiedTable<Schema, TableName extends keyof Schema & string> =
     { [Key in StringKeys<Schema[TableName]> as `${TableName}.${Key}`]: Schema[TableName][Key] };
+export type QualifyTable<TableName extends string, Table> =
+    { [Key in StringKeys<Table> as `${TableName}.${Key}`]: Table[Key] };
 export type UnQualifiedTable<Table> =
     { [Key in keyof Table as UnQualifiedId<Key>]: Table[Key] };
+
+type MakeJoinTable<Schema, J, Alias extends string> =
+    J extends keyof Schema & string ? Schema[J] & QualifiedTable<Schema, J>
+    : J extends WithAlias<infer A, QueryBuilder<any, any, infer T, any>> ? QualifyTable<A, T>
+    : never;
 
 export type SubBuilder<T, R> = R | ((t: T) => R);
 
@@ -66,6 +74,11 @@ type TableOf<Table, T> = { [K in
     : never]: K extends keyof Table ? Table[K]
     : T extends TypedAlias<any, infer P, infer T, any> ? T
     : never};
+
+type WithAlias<A extends string, T> = {
+    alias: A,
+    val: T,
+};
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
 
@@ -109,6 +122,12 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
             selection: expr.ast,
             alias: Ident(name),
         }) as TypedAlias<Schema, Col, R, Ext>;
+    }
+    asNew<Col extends string, T>(name: Col, val: T) {
+        return {
+            alias: name,
+            val,
+        };
     }
 
     /**
@@ -268,6 +287,7 @@ class QueryBuilder<
     // joinAs
 
     // TODO join on expressions
+    // Am I crazy enough to fully-type json_table?
     /**
      * `[kind] JOIN [table] ON [on]`
      *
@@ -275,9 +295,14 @@ class QueryBuilder<
      *        as a function from the builder to your ON expression so that you have the extra
      *        columns from the join available on the builder.
      */
-    join<TableName extends keyof Schema & string>(
+    join<
+        TableName extends keyof Schema & string,
+        Alias extends string,
+        SubTable,
+        JoinTable extends TableName | WithAlias<Alias, QueryBuilder<Schema, any, SubTable, Ext>>
+    >(
         kind: JoinKind,
-        table: TableName,
+        table: JoinTable,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
@@ -287,14 +312,25 @@ class QueryBuilder<
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
+    ): QueryBuilder<Schema, Table & MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext> {
+        // Put up ^ there
         const on_ = on instanceof Function ? on(this as any) : on;
+        const newTable = (() => {
+            if (typeof table === 'string') {
+                return BasicTable(Ident(table));
+            }
+            const wa = table as WithAlias<Alias, QueryBuilder<Schema, any, SubTable, Ext>>;
+            return DerivedTable({
+                alias: Ident(wa.alias),
+                subQuery: wa.val._query,
+            });
+        })();
         const newJoin = Join({
-            table: BasicTable(Ident(table)),
+            table: newTable,
             kind: kind,
             on: on_.ast,
         });
-        return new QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext>(
+        return new QueryBuilder<Schema, MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext>(
             lens<Query>().selection.from.joins.set(js => [...js, newJoin])(this._query),
             this.fn
         );
@@ -303,8 +339,13 @@ class QueryBuilder<
     /**
      * `LEFT OUTER JOIN [table] ON [on]`
      */
-    leftJoin<TableName extends keyof Schema & string>(
-        table: TableName,
+    leftJoin<
+        TableName extends keyof Schema & string,
+        Alias extends string,
+        SubTable,
+        JoinTable extends TableName | WithAlias<Alias, QueryBuilder<Schema, any, SubTable, Ext>>
+    >(
+        table: JoinTable,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
@@ -314,15 +355,20 @@ class QueryBuilder<
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
+    ): QueryBuilder<Schema, Table & MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext> {
         return this.join('LEFT OUTER', table, on);
     }
 
     /**
      * `RIGHT OUTER JOIN [table] ON [on]`
      */
-    rightJoin<TableName extends keyof Schema & string>(
-        table: TableName,
+    rightJoin<
+        TableName extends keyof Schema & string,
+        Alias extends string,
+        SubTable,
+        JoinTable extends TableName | WithAlias<Alias, QueryBuilder<Schema, any, SubTable, Ext>>
+    >(
+        table: JoinTable,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
@@ -332,15 +378,20 @@ class QueryBuilder<
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
+    ): QueryBuilder<Schema, Table & MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext> {
         return this.join('RIGHT OUTER', table, on);
     }
 
     /**
      * `FULL OUTER JOIN [table] ON [on]`
      */
-    fullOuterJoin<TableName extends keyof Schema & string>(
-        table: TableName,
+    fullOuterJoin<
+        TableName extends keyof Schema & string,
+        Alias extends string,
+        SubTable,
+        JoinTable extends TableName | WithAlias<Alias, QueryBuilder<Schema, any, SubTable, Ext>>
+    >(
+        table: JoinTable,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
@@ -350,15 +401,20 @@ class QueryBuilder<
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
+    ): QueryBuilder<Schema, Table & MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext> {
         return this.join('FULL OUTER', table, on);
     }
 
     /**
      * `INNER JOIN [table] ON [on]`
      */
-    innerJoin<TableName extends keyof Schema & string>(
-        table: TableName,
+    innerJoin<
+        TableName extends keyof Schema & string,
+        Alias extends string,
+        SubTable,
+        JoinTable extends TableName | WithAlias<Alias, QueryBuilder<Schema, any, SubTable, Ext>>
+    >(
+        table: JoinTable,
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
@@ -368,7 +424,7 @@ class QueryBuilder<
                 >,
                 TypedAst<Schema, any, Expr<Ext>>
             >,
-    ): QueryBuilder<Schema, Table & Schema[TableName] & QualifiedTable<Schema, TableName>, Return, Ext> {
+    ): QueryBuilder<Schema, Table & MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext> {
         return this.join('INNER', table, on);
     }
 

@@ -47,5 +47,4 @@ sql.from('my_table').selectAs('my_alias', sql.fn.sum('col'))
 // SELECT SUM(col) AS my_alias FROM my_table
 ```
 
-
 1. This is because we need to narrow the arguments' sum type to one variant in order to extract the return type.
