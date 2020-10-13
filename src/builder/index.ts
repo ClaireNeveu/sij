@@ -85,7 +85,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
     from<TableName extends ((keyof Schema) & string)>(
         table: TableName
     ): QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext> {
-        const select = Select({
+        const select = Select<Ext>({
             selections: [],
             from: JoinedTable({ table: BasicTable(Ident(table)), joins: [] }),
             where: null,
@@ -93,7 +93,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
             having: null,
             extensions: null
         });
-        const query = Query({
+        const query = Query<Ext>({
             commonTableExprs: [],
             selection: select,
             unions: [],
@@ -170,10 +170,10 @@ class QueryBuilder<
     Schema,
     Table,
     Return,
-    Ext extends Extension = NoExtension
+    Ext,
 > extends CallableInstance<Array<unknown>, unknown> {
 
-    constructor(readonly _query: Query, readonly fn: Functions<Schema, Table, Ext>) {
+    constructor(readonly _query: Query<Ext>, readonly fn: Functions<Schema, Table, Ext>) {
         super('apply');
     }
 
@@ -230,14 +230,14 @@ class QueryBuilder<
             }
             const idParts = (c as string).split('.');
             if (idParts.length === 1) {
-                return AnonymousSelection(Ident(idParts[0] as string));
+                return AnonymousSelection<Ext>(Ident(idParts[0] as string));
             } else {
-                return AnonymousSelection(CompoundIdentifier(idParts.map(Ident)));
+                return AnonymousSelection<Ext>(CompoundIdentifier(idParts.map(Ident)));
             }
         });
         if (this._query.unions.length === 0) {
             return new QueryBuilder(
-                lens<Query>().selection.selections.set(s => [...s, ...selections])(this._query),
+                lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._query),
                 this.fn,
             );
         }
@@ -249,7 +249,7 @@ class QueryBuilder<
         )(currentUnion);
 
         return new QueryBuilder(
-            lens<Query>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
+            lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
             this.fn,
         );
     }
@@ -267,7 +267,7 @@ class QueryBuilder<
         type NewTable = { [K in Alias]: ColType } & Table;
         if (this._query.unions.length === 0) {
             return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
-                lens<Query>().selection.selections.set(s => [...s, ...selections])(this._query),
+                lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._query),
                 this.fn,
             );
         }
@@ -279,7 +279,7 @@ class QueryBuilder<
         )(currentUnion);
 
         return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
-            lens<Query>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
+            lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
             this.fn,
         );
     }
@@ -331,7 +331,7 @@ class QueryBuilder<
             on: on_.ast,
         });
         return new QueryBuilder<Schema, MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext>(
-            lens<Query>().selection.from.joins.set(js => [...js, newJoin])(this._query),
+            lens<Query<Ext>>().selection.from.joins.set(js => [...js, newJoin])(this._query),
             this.fn
         );
     }
@@ -435,7 +435,7 @@ class QueryBuilder<
         const tAlias = TableAlias({ name: Ident(alias), columns: [] });
         const newCte = CommonTableExpr({ alias: tAlias, query: sub._query });
         return new QueryBuilder<Schema, Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] }, Return, Ext>(
-            lens<Query>().commonTableExprs.set(ctes => [...ctes, newCte])(this._query),
+            lens<Query<Ext>>().commonTableExprs.set(ctes => [...ctes, newCte])(this._query),
             this.fn,
         );
     }
@@ -465,7 +465,7 @@ class QueryBuilder<
             nullHandling: opts?.nullHandling ?? null,
         });
         return new QueryBuilder<Schema, Table, Return, Ext>(
-            lens<Query>().ordering.set(os => [...os, newOrder])(this._query),
+            lens<Query<Ext>>().ordering.set(os => [...os, newOrder])(this._query),
             this.fn
         );
     }
@@ -500,7 +500,7 @@ class QueryBuilder<
     limit(expr: Expr<Ext> | number) {
         const lim = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
         return new QueryBuilder<Schema, Table, Return, Ext>(
-            lens<Query>().limit.set(() => lim)(this._query),
+            lens<Query<Ext>>().limit.set(() => lim)(this._query),
             this.fn
         );
     }
@@ -511,7 +511,7 @@ class QueryBuilder<
     offset(expr: Expr<Ext> | number) {
         const off = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
         return new QueryBuilder<Schema, Table, Return, Ext>(
-            lens<Query>().offset.set(() => off)(this._query),
+            lens<Query<Ext>>().offset.set(() => off)(this._query),
             this.fn
         );
     }
@@ -531,8 +531,17 @@ class QueryBuilder<
             }
             return clause.ast;
         })();
+        const updateWhere = (old: Expr<Ext> | null): Expr<Ext> => {
+            if (old === null) {
+                return expr;
+            }
+            return this.fn.and(
+                ast<Schema, boolean, Expr<Ext>>(old),
+                ast<Schema, boolean, Expr<Ext>>(expr)
+            ).ast;
+        };
         return new QueryBuilder<Schema, Table, Return, Ext>(
-            lens<Query>().selection.where.set(() => expr)(this._query),
+            lens<Query<Ext>>().selection.where.set(e => updateWhere(e))(this._query),
             this.fn
         );
     }
@@ -630,5 +639,6 @@ const fffbar = b.from('employee').select('id', 'name').selectAs('name_length', '
 const blaahhh = b.from('employee').select('id', 'name').where({ id: 5 })
 
 export {
-    Builder
+    Builder,
+    QueryBuilder,
 };

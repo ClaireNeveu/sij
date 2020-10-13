@@ -52,18 +52,18 @@ interface SetOp<Ext extends Extension = NoExtension> extends Tagged<'SetOp', {
 const SetOp = <Ext extends Extension = NoExtension>(args: UnTag<SetOp<Ext>>): SetOp<Ext> => tag('SetOp', args);
 
 interface Select<Ext extends Extension = NoExtension> extends Tagged<'Select', {
-    readonly selections: Array<Selection>,
-    readonly from: JoinedTable,
-    readonly where: Expr | null,
-    readonly groupBy: Array<Expr>,
-    readonly having: Expr | null,
+    readonly selections: Array<Selection<Ext>>,
+    readonly from: JoinedTable<Ext>,
+    readonly where: Expr<Ext> | null,
+    readonly groupBy: Array<Expr<Ext>>,
+    readonly having: Expr<Ext> | null,
     readonly extensions: Ext['Select'] | null,
 }> {};
 const Select = <Ext extends Extension = NoExtension>(args: UnTag<Select<Ext>>): Select<Ext> => tag('Select', args);
 
-type Selection =
-    | AnonymousSelection
-    | AliasedSelection;
+type Selection<Ext extends Extension> =
+    | AnonymousSelection<Ext>
+    | AliasedSelection<Ext>;
 
 interface AnonymousSelection<Ext extends Extension = NoExtension> extends Tagged<'AnonymousSelection', {
     readonly selection: Expr<Ext>,
