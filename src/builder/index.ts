@@ -81,6 +81,11 @@ type WithAlias<A extends string, T> = {
 };
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
+    fn: Functions<Schema, {}, Ext>
+
+    constructor() {
+        this.fn = new Functions<Schema, {}, Ext>();
+    }
 
     from<TableName extends ((keyof Schema) & string)>(
         table: TableName
@@ -102,7 +107,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
             offset: null,
             extensions: null,
         });
-        return new QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(query, new Functions());
+        return new QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(query, this.fn);
     }
 
     insertInto<Table extends ((keyof Schema) & string)>(table: Table) {
@@ -179,6 +184,28 @@ class QueryBuilder<
 
     apply<T>(fn: (arg: QueryBuilder<Schema, Table, Return, Ext>) => T): T {
         return fn(this);
+    }
+
+    /**
+     * Allows you to insert a literal into the query.
+     */
+    lit<Return extends number | string | boolean | null>(
+        l: Return
+    ): TypedAst<Schema, Return, Expr<Ext>>{
+        const lit = (() => {
+            if (typeof l === 'number') {
+                return NumLit(l);
+            } else if (typeof l === 'string') {
+                return StringLit(l);
+            } else if (typeof l === 'boolean') {
+                return BoolLit(l);
+            } else {
+                return NullLit;
+            }
+        })();
+        return {
+            ast: Lit(lit)
+        } as unknown as TypedAst<Schema, Return, Expr<Ext>>
     }
 
     /**

@@ -27,6 +27,23 @@ test('basic select works', isSql,
      'SELECT "id", "name" FROM "employee"',
     );
 
+test('where with > works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(b.fn.greaterThan('id', b.lit(5)))),
+     'SELECT "id", "name" FROM "employee" WHERE "id" > 5',
+    );
+
+test('where with < works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(b.fn.lessThan('id', b.lit(5)))),
+     'SELECT "id", "name" FROM "employee" WHERE "id" < 5',
+    );
+
+test('where with or works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(
+         b.fn.or(b.fn.lessThan('id', b.lit(5)), b.fn.greaterThan('id', b.lit(50)))
+     )),
+     'SELECT "id", "name" FROM "employee" WHERE "id" < 5 OR "id" > 50',
+    );
+
 test('where shorthand works', isSql,
      b.from('employee').select('id', 'name').where({ id: 5 }),
      'SELECT "id", "name" FROM "employee" WHERE "id" = 5',
