@@ -30,7 +30,7 @@ import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions, ast } from './functions';
 
 const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Expr<Ext> => {
-    const lit = (() => {
+    const lit: Literal = (() => {
         if (typeof l === 'number') {
             return NumLit(l);
         } else if (typeof l === 'string') {

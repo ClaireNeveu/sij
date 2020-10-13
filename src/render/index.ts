@@ -8,7 +8,17 @@ import type {
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
 
+const exhaustive = (n: never): void => {};
+
 class Renderer<Ext extends Extension = NoExtension> {
+    params: Array<any>
+    _paramsMode: boolean
+    
+    constructor(opts: { paramsMode?: boolean } = {}) {
+        this.params = [];
+        this._paramsMode = opts.paramsMode ?? false;
+    }
+    
     renderIdent(ident: Ident): string {
         return `"${ident}"`;
     }
@@ -75,7 +85,7 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'UnaryApp': return `${expr.op}${this.renderExpr(expr.expr)}`;
             case 'ExprExtension': return this.renderCustomExpr(expr.val);
         }
-        const n: never = expr;
+        exhaustive(expr);
     }
     renderCustomExpr(dt: Ext['Expr']): string {
         throw Error('Custom expression encountered, please extend the renderer');
@@ -168,13 +178,28 @@ class Renderer<Ext extends Extension = NoExtension> {
                 return `(${this.renderExpr(table.func)}) AS ${this.renderIdent(table.alias)}`;
             case 'TableExtension': return this.renderCustomTable(table.val);
         }
+        exhaustive(table);
     }
     renderCustomTable(dt: Ext['Table']): string {
         throw Error('Custom table encountered, please extend the renderer');
     }
     
     renderLiteral(literal: Literal): string {
-        return literal;
+        if (this._paramsMode) {
+            const val = literal._tag === 'NullLit' ? null : literal.val;
+            const l = this.params.push(val);
+            return '$' + l;
+        }
+        switch (literal._tag) {
+            case 'NumLit': {
+                const v = literal.val;
+                return (typeof v === 'string' ? v : '' + v);
+            }
+            case 'StringLit': return `'${literal.val}'`;
+            case 'BoolLit': return (literal.val ? 'TRUE' : 'FALSE');
+            case 'NullLit': return 'NULL';
+        }
+        exhaustive(literal);
     }
 }
 

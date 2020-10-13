@@ -7,7 +7,7 @@
   "scripts": {
     "prepublish": "npm run build",
     "build": "npx tsc && copyfiles -u 2 \"src/types/*.d.ts\" dist",
-    "test": "ava -v",
+    "test": "ava -v && tsd",
     "docs": "npx typedoc src/ --out docs/ --includeDeclarations --excludeExternals --excludeNotExported --excludePrivate && touch docs/.nojekyll"
   },
   "keywords": [

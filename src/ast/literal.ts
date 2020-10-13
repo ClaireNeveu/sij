@@ -1,4 +1,4 @@
-import type { VTagged } from './util';
+import { Tagged, tag } from './util';
 
 type Literal =
   | NumLit
@@ -7,17 +7,17 @@ type Literal =
   | NullLit;
 
 
-type NumLit = VTagged<'NumLit', string>;
-const NumLit = (val: number | string): NumLit => (typeof val === 'string' ? val : '' + val) as NumLit;
+type NumLit = Tagged<'NumLit', { val: number | string }>;
+const NumLit = (val: number | string): Literal => tag('NumLit', { val });
 
-type StringLit = VTagged<'StringLit', string>;
-const StringLit = (val: string): StringLit => `'${val}'` as StringLit;
+type StringLit = Tagged<'StringLit', { val: string }>;
+const StringLit = (val: string): Literal => tag('StringLit', { val });
 
-type BoolLit = VTagged<'BoolLit', string>;
-const BoolLit = (val: boolean): BoolLit => (val ? 'TRUE' : 'FALSE') as BoolLit;
+type BoolLit = Tagged<'BoolLit', { val: boolean }>;
+const BoolLit = (val: boolean): Literal => tag('BoolLit', { val });
 
-type NullLit = VTagged<'NullLit', string>;
-const NullLit = 'NULL' as NullLit;
+type NullLit = Tagged<'NullLit', {}>;
+const NullLit: Literal = { _tag: 'NullLit' };
 
 export {
     Literal,

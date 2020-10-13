@@ -15,6 +15,7 @@ export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
 // TODO functions need to properly hande compound identifiers
 export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
+    /** `CHAR_LENGTH([value])` */
     charLength<
         Id extends ((keyof Table) & string),
         Exp extends TypedAst<Schema, string, Expr<Ext>>,
@@ -28,6 +29,7 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
             args,
         }));
     }
+    /** `[left] = [right]` */
     eq<
         Col extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
         Col2 extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
@@ -43,9 +45,10 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
             right,
         }));
     }
+    /** `[left] > [right]` */
     greaterThan<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
+        Col extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+        Col2 extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
     >(
         left_: Col,
         right_: Col2,
@@ -58,9 +61,10 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
             right,
         }));
     }
+    /** `[left] < [right]` */
     lessThan<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
+        Col extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+        Col2 extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
     >(
         left_: Col,
         right_: Col2,
@@ -73,6 +77,7 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
             right,
         }));
     }
+    /** `[left] AND [right]` */
     and<
         Col extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
         Col2 extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
@@ -88,6 +93,7 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
             right,
         }));
     }
+    /** `[left] OR [right]` */
     or<
         Col extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
         Col2 extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
@@ -99,6 +105,70 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
         return  ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Or,
+            left,
+            right,
+        }));
+    }
+    /** `[left] + [right]` */
+    add<
+        Col extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+        Col2 extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+    >(
+        left_: Col,
+        right_: Col2,
+    ): TypedAst<Schema, number, BinaryApp<Ext>> {
+        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        return ast<Schema, number, BinaryApp<Ext>>(BinaryApp({
+            op: BinOp.Plus,
+            left,
+            right,
+        }));
+    }
+    /** `[left] - [right]` */
+    subtract<
+        Col extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+        Col2 extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+    >(
+        left_: Col,
+        right_: Col2,
+    ): TypedAst<Schema, number, BinaryApp<Ext>> {
+        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        return ast<Schema, number, BinaryApp<Ext>>(BinaryApp({
+            op: BinOp.Minus,
+            left,
+            right,
+        }));
+    }
+    /** `[left] * [right]` */
+    multiply<
+        Col extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+        Col2 extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+    >(
+        left_: Col,
+        right_: Col2,
+    ): TypedAst<Schema, number, BinaryApp<Ext>> {
+        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        return ast<Schema, number, BinaryApp<Ext>>(BinaryApp({
+            op: BinOp.Multiply,
+            left,
+            right,
+        }));
+    }
+    /** `[left] / [right]` */
+    divide<
+        Col extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+        Col2 extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+    >(
+        left_: Col,
+        right_: Col2,
+    ): TypedAst<Schema, number, BinaryApp<Ext>> {
+        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        return ast<Schema, number, BinaryApp<Ext>>(BinaryApp({
+            op: BinOp.Divide,
             left,
             right,
         }));
