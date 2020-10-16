@@ -65,20 +65,26 @@ export type SubBuilder<T, R> = R | ((t: T) => R);
 export type TypedAlias<Schema, Col extends string, Return, Ext extends Extension> =
     AliasedSelection<Ext> & { __schemaType: Schema, __returnType: Return };
 
-export type AstToAlias<T, A extends string> =
-    T extends TypedAst<infer S, infer R, Expr<infer E>> ? TypedAlias<S, A, R, E> : never;
-
-type TableOf<Table, T> = { [K in 
-    T extends keyof Table ? T
-    : T extends TypedAlias<any, infer P, infer T, any> ? P
-    : never]: K extends keyof Table ? Table[K]
-    : T extends TypedAlias<any, infer P, infer T, any> ? T
-    : never};
-
 type WithAlias<A extends string, T> = {
     alias: A,
     val: T,
 };
+const withAlias = <Col extends string, T>(name: Col, val: T): WithAlias<Col, T> => {
+    return {
+        alias: name,
+        val,
+    };
+};
+
+export type AstToAlias<T, A extends string> =
+    T extends TypedAst<infer S, infer R, infer E> ? WithAlias<A, TypedAst<S, R, E>> : never;
+
+type TableOf<Table, T> = { [K in 
+    T extends keyof Table ? T
+    : T extends WithAlias<infer P, TypedAst<any, infer T, any>> ? P
+    : never]: K extends keyof Table ? Table[K]
+    : T extends WithAlias<infer P, TypedAst<any, infer T, any>> ? T
+    : never};
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
     fn: Functions<Schema, {}, Ext>
@@ -122,13 +128,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
     /**
      * Aliases an expression for use in a select.
      */
-    as<Col extends string, R>(name: Col, expr: TypedAst<Schema, R, Expr<Ext>>) {
-        return AliasedSelection({
-            selection: expr.ast,
-            alias: Ident(name),
-        }) as TypedAlias<Schema, Col, R, Ext>;
-    }
-    asNew<Col extends string, T>(name: Col, val: T) {
+    as<Col extends string, T>(name: Col, val: T): WithAlias<Col, T> {
         return {
             alias: name,
             val,
@@ -225,12 +225,12 @@ class QueryBuilder<
         UnQualifiedTable<TableOf<Table, AstToAlias<Col, Alias>>> & Return,
         Ext
     > {
-        const selection: TypedAlias<Schema, Alias, Ret, Ext> | Id = (() => {
+        const selection: WithAlias<Alias, TypedAst<Schema, Ret, Expr<Ext>>> | Id = (() => {
             if (typeof col === 'object' && 'ast' in col ) {
-                return AliasedSelection({
-                    selection: (col as unknown as TypedAst<Schema, Ret, Expr<Ext>>).ast,
-                    alias: Ident(alias),
-                }) as TypedAlias<Schema, Alias, any, Ext>;
+                return withAlias(
+                    alias,
+                    (col as unknown as TypedAst<Schema, Ret, Expr<Ext>>)
+                );
             }
             return col as Id;
         })();
@@ -246,14 +246,18 @@ class QueryBuilder<
         Alias extends string,
         ColType,
         Id extends ((keyof Table) & string),
-        Col extends Id | TypedAlias<Schema, Alias, ColType, Ext>,
+        Col extends Id | WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>,
     >(
         ...cols: Array<Col>
     ): QueryBuilder<Schema, TableOf<Table, Col> & Table, UnQualifiedTable<TableOf<Table, Col>> & Return, Ext> {
         // ^ modify Table to pick up any new aliases
         const selections = cols.map(c => {
             if (typeof c === 'object') {
-                return c as AliasedSelection<Ext>;
+                const wa = c as WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>;
+                return AliasedSelection<Ext>({
+                    selection: wa.val.ast,
+                    alias: Ident(wa.alias),
+                })
             }
             const idParts = (c as string).split('.');
             if (idParts.length === 1) {
@@ -285,9 +289,15 @@ class QueryBuilder<
         Alias extends string,
         ColType,
     >(
-        ...cols: Array<TypedAlias<Schema, Alias, ColType, Ext>>
+        ...cols: Array<WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>>
     ) {
-        const selections = cols;
+        const selections = cols.map(c => {
+            const wa = c as WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>;
+            return AliasedSelection<Ext>({
+                selection: wa.val.ast,
+                alias: Ident(wa.alias),
+            })
+        });
 
         type NewReturn = UnQualifiedTable<{ [K in Alias]: ColType }> & Return;
         // Pick up any new aliases

@@ -13,6 +13,15 @@ export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => ({
 }) as TypedAst<Schema, Return, E>;
 export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
+const makeIdent = <Ext extends Extension>(name: string): Expr<Ext> => {
+    const idParts = (name).split('.');
+    if (idParts.length === 1) {
+        return Ident(idParts[0] as string);
+    } else {
+        return CompoundIdentifier(idParts.map(Ident));
+    }
+};
+
 // TODO functions need to properly hande compound identifiers
 export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
     /** `CHAR_LENGTH([value])` */
@@ -23,7 +32,7 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
     >(
         value: Col
     ): TypedAst<Schema, number, FunctionApp<Ext>> {
-        const args = typeof value === 'string' ? [Ident(value)] : [(value as TypedAst<Schema, string, Expr<Ext>>).ast];
+        const args = typeof value === 'string' ? [makeIdent<Ext>(value)] : [(value as TypedAst<Schema, string, Expr<Ext>>).ast];
         return ast<Schema, number, FunctionApp<Ext>>(FunctionApp({
             name: CompoundIdentifier([Ident('CHAR_LENGTH')]),
             args,
@@ -37,8 +46,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
         return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Equal,
             left,
@@ -53,8 +62,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
         return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Greater,
             left,
@@ -69,8 +78,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
         return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Less,
             left,
@@ -85,8 +94,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
         return  ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.And,
             left,
@@ -101,8 +110,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
         return  ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Or,
             left,
@@ -117,8 +126,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, number, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
         return ast<Schema, number, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Plus,
             left,
@@ -133,8 +142,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, number, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
         return ast<Schema, number, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Minus,
             left,
@@ -149,8 +158,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, number, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
         return ast<Schema, number, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Multiply,
             left,
@@ -165,8 +174,8 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         left_: Col,
         right_: Col2,
     ): TypedAst<Schema, number, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? Ident(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? Ident(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
+        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
         return ast<Schema, number, BinaryApp<Ext>>(BinaryApp({
             op: BinOp.Divide,
             left,

@@ -44,7 +44,7 @@ expectError(() => {
     const a2: { name: string, id: number } = b.from('employee').select('name').__testingGet()
 })
 expectError(() => {
-    const a2: { name_length: number, name: string } = b.from('employee')(b1 => b1.selectExpr(b.as<'name_length', number>('name_length', b1.fn.charLength('name')))).__testingGet()
+    const a2: { name_length: number, name: string } = b.from('employee')(b1 => b1.selectExpr(b.as('name_length', b1.fn.charLength('name')))).__testingGet()
 })
 
 // Should return correct types for qualified selects

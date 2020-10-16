@@ -8,6 +8,7 @@ type MySchema = {
         id: number,
         name: string,
         salary: number,
+        department_id: number
     },
     department: {
         id: number,
@@ -94,4 +95,12 @@ test('multiple where shorthand works', isSql,
 test('multiple where clauses works', isSql,
      b.from('employee').select('id', 'name').where({ id: 5 }).where({ name: 'Charlie' }),
      `SELECT "id", "name" FROM "employee" WHERE "id" = 5 AND "name" = 'Charlie'`,
+    );
+
+test('joining on derived tables works', isSql,
+     b.from('employee').leftJoin(
+         b.as('t1', b.from('department').select('id', 'budget')),
+         b => b.fn.eq('department.id', 'employee.department_id')
+     ).select('name', 't1.budget'),
+     `SELECT "name", "t1"."budget" FROM "employee" LEFT OUTER JOIN (SELECT "id", "budget" FROM "department") AS "t1" ON "department"."id" = "employee"."department_id"`
     );
