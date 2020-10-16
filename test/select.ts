@@ -97,10 +97,18 @@ test('multiple where clauses works', isSql,
      `SELECT "id", "name" FROM "employee" WHERE "id" = 5 AND "name" = 'Charlie'`,
     );
 
-test('joining on derived tables works', isSql,
+test('joining on regular table works', isSql,
+     b.from('employee').leftJoin(
+         'department',
+         b => b.fn.eq('department.id', 'employee.department_id')
+     ).select('name', 'department.budget'),
+     `SELECT "name", "department"."budget" FROM "employee" LEFT OUTER JOIN "department" ON "department"."id" = "employee"."department_id"`
+    );
+
+test('joining on derived table works', isSql,
      b.from('employee').leftJoin(
          b.as('t1', b.from('department').select('id', 'budget')),
-         b => b.fn.eq('department.id', 'employee.department_id')
+         b => b.fn.eq('t1.id', 'employee.department_id')
      ).select('name', 't1.budget'),
-     `SELECT "name", "t1"."budget" FROM "employee" LEFT OUTER JOIN (SELECT "id", "budget" FROM "department") AS "t1" ON "department"."id" = "employee"."department_id"`
+     `SELECT "name", "t1"."budget" FROM "employee" LEFT OUTER JOIN (SELECT "id", "budget" FROM "department") AS "t1" ON "t1"."id" = "employee"."department_id"`
     );

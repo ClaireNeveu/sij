@@ -343,7 +343,7 @@ class QueryBuilder<
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
+                    Table & MakeJoinTable<Schema, JoinTable, Alias>,
                     Return,
                     Ext
                 >,
@@ -386,7 +386,7 @@ class QueryBuilder<
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
+                    Table & MakeJoinTable<Schema, JoinTable, Alias>,
                     Return,
                     Ext
                 >,
@@ -409,7 +409,7 @@ class QueryBuilder<
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
+                    Table & MakeJoinTable<Schema, JoinTable, Alias>,
                     Return,
                     Ext
                 >,
@@ -432,7 +432,7 @@ class QueryBuilder<
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
+                    Table & MakeJoinTable<Schema, JoinTable, Alias>,
                     Return,
                     Ext
                 >,
@@ -455,7 +455,7 @@ class QueryBuilder<
         on: SubBuilder<
                 QueryBuilder<
                     Schema,
-                    Table & Schema[TableName] & QualifiedTable<Schema, TableName>,
+                    Table & MakeJoinTable<Schema, JoinTable, Alias>,
                     Return,
                     Ext
                 >,
