@@ -1,6 +1,6 @@
 import { Extension, NoExtension } from '../ast/util';
-import { BinaryApp, FunctionApp, Ident, Expr, CompoundIdentifier } from '../ast/expr';
-import { BinaryOperator as BinOp } from '../ast/operator';
+import { BinaryApp, FunctionApp, Ident, Expr, CompoundIdentifier, UnaryApp } from '../ast/expr';
+import { BinaryOperator as BinOp, UnaryOperator as UnOp } from '../ast/operator';
 
 // Boxing to improve error messages.
 export interface TypedAst<Schema, Return, E> {
@@ -36,6 +36,42 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         return ast<Schema, number, FunctionApp<Ext>>(FunctionApp({
             name: CompoundIdentifier([Ident('CHAR_LENGTH')]),
             args,
+        }));
+    }
+    /** `+[val]` */
+    pos<
+        Col extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+    >(
+        val: Col,
+    ): TypedAst<Schema, number, UnaryApp<Ext>> {
+        const expr = typeof val === 'string' ? makeIdent<Ext>(val) : (val as TypedAst<Schema, any, Expr<Ext>>).ast;
+        return ast<Schema, number, UnaryApp<Ext>>(UnaryApp({
+            op: UnOp.Plus,
+            expr
+        }));
+    }
+    /** `-[val]` */
+    neg<
+        Col extends ((keyof Table) & string) | TypedAst<Schema, number, Expr<Ext>>,
+    >(
+        val: Col,
+    ): TypedAst<Schema, number, UnaryApp<Ext>> {
+        const expr = typeof val === 'string' ? makeIdent<Ext>(val) : (val as TypedAst<Schema, any, Expr<Ext>>).ast;
+        return ast<Schema, number, UnaryApp<Ext>>(UnaryApp({
+            op: UnOp.Minus,
+            expr
+        }));
+    }
+    /** `NOT [val]` */
+    not<
+        Col extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
+    >(
+        val: Col,
+    ): TypedAst<Schema, boolean, UnaryApp<Ext>> {
+        const expr = typeof val === 'string' ? makeIdent<Ext>(val) : (val as TypedAst<Schema, any, Expr<Ext>>).ast;
+        return ast<Schema, boolean, UnaryApp<Ext>>(UnaryApp({
+            op: UnOp.Not,
+            expr
         }));
     }
     /** `[left] = [right]` */
