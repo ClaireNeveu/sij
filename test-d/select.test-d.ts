@@ -27,6 +27,12 @@ expectError(() => {
     const a1: { name: number } = b.from('employee').select('name').__testingGet()
 })
 
+// Should return correct types for wildcard selects
+const a8: { name: string, id: number } = b.from('employee').select('*').__testingGet()
+expectError(() => {
+    const a1: { name: number, id: number } = b.from('employee').select('*').__testingGet()
+})
+
 // Should return correct types for multi selects
 const a2: { name: string, id: number } = b.from('employee').select('name', 'id').__testingGet()
 expectError(() => {

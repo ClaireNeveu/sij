@@ -2,7 +2,7 @@ import CallableInstance from 'callable-instance';
 import { lens } from 'lens.ts';
 import type { Any } from 'ts-toolbelt';
 
-import { Expr, Ident, CompoundIdentifier, Lit } from '../ast/expr';
+import { Expr, Ident, CompoundIdentifier, Lit, Wildcard } from '../ast/expr';
 import { DataType } from '../ast/data-type';
 import {
     AliasedSelection,
@@ -79,12 +79,15 @@ const withAlias = <Col extends string, T>(name: Col, val: T): WithAlias<Col, T> 
 export type AstToAlias<T, A extends string> =
     T extends TypedAst<infer S, infer R, infer E> ? WithAlias<A, TypedAst<S, R, E>> : never;
 
-type TableOf<Table, T> = { [K in 
-    T extends keyof Table ? T
-    : T extends WithAlias<infer P, TypedAst<any, infer T, any>> ? P
-    : never]: K extends keyof Table ? Table[K]
-    : T extends WithAlias<infer P, TypedAst<any, infer T, any>> ? T
-    : never};
+type TableOf<Table, T> = {
+    [K in T extends keyof Table ? T
+          : T extends '*' ? keyof Table
+          : T extends WithAlias<infer P, TypedAst<any, infer T, any>> ? P
+          : never
+    ]: K extends keyof Table ? Table[K]
+       : T extends WithAlias<infer P, TypedAst<any, infer T, any>> ? T
+       : never
+};
 
 class Builder<Schema, Ext extends Extension = NoExtension> {
     fn: Functions<Schema, {}, Ext>
@@ -246,7 +249,7 @@ class QueryBuilder<
         Alias extends string,
         ColType,
         Id extends ((keyof Table) & string),
-        Col extends Id | WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>,
+        Col extends Id | '*' | WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>,
     >(
         ...cols: Array<Col>
     ): QueryBuilder<Schema, TableOf<Table, Col> & Table, UnQualifiedTable<TableOf<Table, Col>> & Return, Ext> {
@@ -258,6 +261,8 @@ class QueryBuilder<
                     selection: wa.val.ast,
                     alias: Ident(wa.alias),
                 })
+            } else if (c === '*') {
+                return AnonymousSelection<Ext>(Wildcard);
             }
             const idParts = (c as string).split('.');
             if (idParts.length === 1) {

@@ -37,6 +37,11 @@ test('basic select works', isSql,
      'SELECT "id", "name" FROM "employee"',
     );
 
+test('wildcard select works', isSql,
+     b.from('employee').select('*'),
+     'SELECT * FROM "employee"',
+    );
+
 test('select with + works', isSql,
      b.from('employee').select('id', 'name')(b => b.selectAs('new_salary', b.fn.add('salary', b.lit(5)))),
      'SELECT "id", "name", "salary" + 5 AS "new_salary" FROM "employee"',
@@ -47,7 +52,7 @@ test('select with - works', isSql,
      'SELECT "id", "name", "salary" - 5 AS "new_salary" FROM "employee"',
     );
 
-test('select with * works', isSql,
+test('select with * (mult) works', isSql,
      b.from('employee').select('id', 'name')(b => b.selectAs('new_salary', b.fn.multiply('salary', b.lit(5)))),
      'SELECT "id", "name", "salary" * 5 AS "new_salary" FROM "employee"',
     );

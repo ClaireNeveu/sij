@@ -42,7 +42,7 @@ type Expr<Ext extends Extension = NoExtension> =
     | ExprExtension<Ext>;
 
 interface Wildcard { _tag: 'Wildcard' };
-const Wildcard = { _tag: 'Wildcard' };
+const Wildcard: Wildcard = { _tag: 'Wildcard' };
 
 /**
  * Wildcard with qualifiers, e.g. `table.*` or `db.table.*`.
@@ -206,6 +206,7 @@ export {
     Ident,
     identToString,
     Expr,
+    Wildcard,
     QualifiedWildcard,
     CompoundIdentifier,
     Between,
