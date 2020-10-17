@@ -26,6 +26,7 @@ import {
     BoolLit,
     NullLit,
 } from '../ast/literal';
+import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions, ast } from './functions';
 
@@ -179,7 +180,7 @@ class QueryBuilder<
     Table,
     Return,
     Ext,
-> extends CallableInstance<Array<unknown>, unknown> {
+> extends CallableInstance<Array<never>, unknown> {
 
     constructor(readonly _query: Query<Ext>, readonly fn: Functions<Schema, Table, Ext>) {
         super('apply');
@@ -619,7 +620,7 @@ class InsertBuilder<
     Tn extends ((keyof Schema) & string),
     Ext extends Extension = NoExtension
 > {
-    values(...vs: Array<{ [Key in keyof Table]?: Table[Key] }>) {
+    values(...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }>) {
         // This is where reflection would be really nice
         /*
         if (this._statement.columns.length === 0) {
@@ -647,6 +648,12 @@ class InsertBuilder<
      * extra computation.
      */
     columns(...cols: Array<string>) {
+    }
+
+    /**
+     * Insert the result of a query into the table.
+     */
+    fromQuery<QReturn>(query: QueryBuilder<Schema, any, QReturn, Ext>) {
     }
 }
 
