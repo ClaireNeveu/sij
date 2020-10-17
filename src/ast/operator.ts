@@ -20,9 +20,6 @@ enum BinaryOperator {
     Or = 'OR',
     Like = 'LIKE',
     NotLike = 'NOT LIKE',
-    BitwiseOr = '|',
-    BitwiseAnd = '&',
-    BitwiseXor = '^',
 };
 
 export {

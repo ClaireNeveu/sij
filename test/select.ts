@@ -62,6 +62,36 @@ test('select with / works', isSql,
      'SELECT "id", "name", "salary" / 5 AS "new_salary" FROM "employee"',
     );
 
+test('select with % works', isSql,
+     b.from('employee').select('id', 'name')(b => b.selectAs('new_salary', b.fn.mod('salary', b.lit(5)))),
+     'SELECT "id", "name", "salary" % 5 AS "new_salary" FROM "employee"',
+    );
+
+test('select with || works', isSql,
+     b.from('employee').select('id', 'name')(b => b.selectAs('new_name', b.fn.concat('name', b.lit(' baz')))),
+     `SELECT "id", "name", "name" || ' baz' AS "new_name" FROM "employee"`,
+    );
+
+test('where with = works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(b.fn.eq('id', b.lit(5)))),
+     'SELECT "id", "name" FROM "employee" WHERE "id" = 5',
+    );
+
+test('where with <> works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(b.fn.neq('id', b.lit(5)))),
+     'SELECT "id", "name" FROM "employee" WHERE "id" <> 5',
+    );
+
+test('where with LIKE works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(b.fn.like('id', b.lit(5)))),
+     'SELECT "id", "name" FROM "employee" WHERE "id" LIKE 5',
+    );
+
+test('where with NOT LIKE works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(b.fn.notLike('id', b.lit(5)))),
+     'SELECT "id", "name" FROM "employee" WHERE "id" NOT LIKE 5',
+    );
+
 test('where with > works', isSql,
      b.from('employee').select('id', 'name')(b => b.where(b.fn.greaterThan('id', b.lit(5)))),
      'SELECT "id", "name" FROM "employee" WHERE "id" > 5',
@@ -70,6 +100,16 @@ test('where with > works', isSql,
 test('where with < works', isSql,
      b.from('employee').select('id', 'name')(b => b.where(b.fn.lessThan('id', b.lit(5)))),
      'SELECT "id", "name" FROM "employee" WHERE "id" < 5',
+    );
+
+test('where with >= works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(b.fn.gte('id', b.lit(5)))),
+     'SELECT "id", "name" FROM "employee" WHERE "id" >= 5',
+    );
+
+test('where with <= works', isSql,
+     b.from('employee').select('id', 'name')(b => b.where(b.fn.lte('id', b.lit(5)))),
+     'SELECT "id", "name" FROM "employee" WHERE "id" <= 5',
     );
 
 test('where with or works', isSql,
