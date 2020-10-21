@@ -9,7 +9,7 @@ sql.from('my_table').select('col1', 'my_table.col2').selectAs('upper_col3', sql.
 ```
 If you write that as a single `.select` you will get a type error.^1
 
-## Sub-Builder Syntax
+### Sub-Builder Syntax
 
 Because of Typescript's (mostly) unidirectional type inference, everything in SIJ is attached to a fluent builder to avoid repetitive type annotations. This can be cumbersome when constructing complicated queries, especially those that involve functions. Take for example the following rather simple query:
 ```typescript
@@ -21,6 +21,60 @@ We have to introduce the intermediate value `sql1` so that our `ABS` function kn
 sql.from('my_table')(sql => sql.selectAs('pos_col', sql.fn.abs('col'));
 ```
 You can call any builder as a function to get a locally scoped version of the query built up to that point.
+
+### Joins
+
+Joins make use of sub-builders to provide context for the `ON` clause. So to perform a simple join you would do:
+```typescript
+sql.from('my_table').join('other_table', sql => sql.fn.eq('my_table.col', 'other_table.col')).select('my_table.col', 'my_table.col2', 'other_table.col2')
+```
+Here `other_table` will be available to the `eq` functions in the join clause.
+
+If you're using javascript without typescript, you can omit the sub-builder and simply do
+```javascript
+sql.from('my_table').join('other_table', sql.fn.eq('my_table.col', 'other_table.col')).select('my_table.col', 'my_table.col2', 'other_table.col2')
+```
+
+### Where Clause
+
+The `where` method will accept any SQL expression that evaluates to a boolean. Usually this means a function like so:
+```typescript
+sql.from('my_table').select('col', 'col2')(sql => sql.where(sql.fn.gt('col3', sql.lit(5))))
+// SELECT "col", "col2" FROM "my_table" WHERE "col3" > 5
+```
+Multiple invocations of `where` will be combined with `AND`.
+```typescript
+sql.from('my_table').select('col', 'col2')(sql => 
+  sql.where(sql.fn.gt('col3', sql.lit(5)))
+     .where(sql.fn.lt('col3', sql.lit(50)))
+)
+// SELECT "col", "col2" FROM "my_table" WHERE "col3" > 5 AND "col3" < 50
+```
+If you need to `OR` the clauses together use `sql.fn.or`
+```typescript
+sql.from('my_table').select('col', 'col2')(sql => 
+  sql.where(sql.fn.or(sql.fn.lt('col3', sql.lit(5)), sql.fn.gt('col3', sql.lit(50))))
+)
+// SELECT "col", "col2" FROM "my_table" WHERE "col3" < 5 OR "col3" > 50
+```
+When you only need to test equality you can use the shorthand syntax:
+```typescript
+sql.from('my_table').select('col', 'col2').where({
+  col3: 5,
+  col4: 'foo',
+})
+// SELECT "col", "col2" FROM "my_table" WHERE "col3" = 5 AND "col4" = 'foo'
+```
+
+#### Derived Tables
+
+To join on a derived table, just alias another builder and pass it into the `join` method in lieu of a table name:
+```typescript
+sql.from('employee').leftJoin(
+  sql.as('t1', b.from('department').select('id', 'budget')),
+  sql => sql.fn.eq('t1.id', 'employee.department_id')
+).select('name', 't1.budget')
+```
 
 ## Differences from SQL
 
@@ -46,5 +100,24 @@ As a convenient shorthand you can use the `selectAs` builder method:
 sql.from('my_table').selectAs('my_alias', sql.fn.sum('col'))
 // SELECT SUM(col) AS my_alias FROM my_table
 ```
+
+## Limitations
+
+SQL does not allow selects where columns are ambiguous. This occurs in joins when both tables have a column with the same, e.g.
+```sql
+CREATE TABLE my_table (
+  id bigint,
+  name text,
+  other_table_id bigint
+);
+
+CREATE TABLE other_table (
+  id bigint,
+  name text,
+);
+
+SELECT name FROM my_table LEFT JOIN other_table ON my_table.other_table_id = other_table.id;
+```
+`name` in this query is ambiguous and SQL will reject the query. Sij however will not prevent you from constructing this query because it has no knowledge of conflicting columns.
 
 1. This is because we need to narrow the arguments' sum type to one variant in order to extract the return type.

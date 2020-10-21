@@ -327,15 +327,15 @@ class QueryBuilder<
         );
     }
 
-    // joinAs
-
-    // TODO join on expressions
+    // TODO join on table-derived functions
     // Am I crazy enough to fully-type json_table?
+    // TODO create ON shorthand so you can do:
+    // `sql.from('my_table').leftJoin('other_table', { 'my_table.col': 'other_table.col' })`
     /**
      * `[kind] JOIN [table] ON [on]`
      *
      * @param on Expression to condition the join on. If using Typescript, this must be provided
-     *        as a function from the builder to your ON expression so that you have the extra
+     *        as a function from the builder to your ON expression so you have the extra
      *        columns from the join available on the builder.
      */
     join<
@@ -356,7 +356,6 @@ class QueryBuilder<
                 TypedAst<Schema, any, Expr<Ext>>
             >,
     ): QueryBuilder<Schema, Table & MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext> {
-        // Put up ^ there
         const on_ = on instanceof Function ? on(this as any) : on;
         const newTable = (() => {
             if (typeof table === 'string') {

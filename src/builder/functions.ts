@@ -24,7 +24,6 @@ const makeIdent = <Ext extends Extension>(name: string): Expr<Ext> => {
 
 type Numeric = number | bigint;
 
-// TODO functions need to properly hande compound identifiers
 export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
     /** `CHAR_LENGTH([value])` */
     charLength<
@@ -33,9 +32,9 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
         Col extends Id | Exp,
     >(
         value: Col
-    ): TypedAst<Schema, Numeric, FunctionApp<Ext>> {
+    ): TypedAst<Schema, number, FunctionApp<Ext>> {
         const args = typeof value === 'string' ? [makeIdent<Ext>(value)] : [(value as TypedAst<Schema, string, Expr<Ext>>).ast];
-        return ast<Schema, Numeric, FunctionApp<Ext>>(FunctionApp({
+        return ast<Schema, number, FunctionApp<Ext>>(FunctionApp({
             name: CompoundIdentifier([Ident('CHAR_LENGTH')]),
             args,
         }));

@@ -119,6 +119,14 @@ test('where with or works', isSql,
      'SELECT "id", "name" FROM "employee" WHERE "id" < 5 OR "id" > 50',
     );
 
+test('where with shorthand works', isSql,
+     b.from('employee').select('id', 'name').where({
+         id: 5,
+         name: 'Charlie',
+     }),
+     `SELECT "id", "name" FROM "employee" WHERE "id" = 5 AND "name" = 'Charlie'`,
+    );
+
 test('where with params works', isParamsSql,
      b.from('employee').select('id', 'name')(b => b.where(
          b.fn.or(b.fn.lessThan('id', b.lit(5)), b.fn.greaterThan('id', b.lit(50)))
