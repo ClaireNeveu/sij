@@ -39,6 +39,16 @@ sql.from('my_table')
    .select('my_table.col', 'my_table.col2', 'other_table.col2')
 ```
 
+#### Derived Tables
+
+To join on a derived table, just alias another builder and pass it into the `join` method in lieu of a table name:
+```typescript
+sql.from('employee').leftJoin(
+  sql.as('t1', b.from('department').select('id', 'budget')),
+  sql => sql.fn.eq('t1.id', 'employee.department_id')
+).select('name', 't1.budget')
+```
+
 ### Where Clause
 
 The `where` method will accept any SQL expression that evaluates to a boolean. Usually this means a function like so:
@@ -68,16 +78,6 @@ sql.from('my_table').select('col', 'col2').where({
   col4: 'foo',
 })
 // SELECT "col", "col2" FROM "my_table" WHERE "col3" = 5 AND "col4" = 'foo'
-```
-
-#### Derived Tables
-
-To join on a derived table, just alias another builder and pass it into the `join` method in lieu of a table name:
-```typescript
-sql.from('employee').leftJoin(
-  sql.as('t1', b.from('department').select('id', 'budget')),
-  sql => sql.fn.eq('t1.id', 'employee.department_id')
-).select('name', 't1.budget')
 ```
 
 ## Differences from SQL
