@@ -26,13 +26,17 @@ You can call any builder as a function to get a locally scoped version of the qu
 
 Joins make use of sub-builders to provide context for the `ON` clause. So to perform a simple join you would do:
 ```typescript
-sql.from('my_table').join('other_table', sql => sql.fn.eq('my_table.col', 'other_table.col')).select('my_table.col', 'my_table.col2', 'other_table.col2')
+sql.from('my_table')
+   .join('other_table', sql => sql.fn.eq('my_table.col', 'other_table.col'))
+   .select('my_table.col', 'my_table.col2', 'other_table.col2')
 ```
 Here `other_table` will be available to the `eq` functions in the join clause.
 
 If you're using javascript without typescript, you can omit the sub-builder and simply do
 ```javascript
-sql.from('my_table').join('other_table', sql.fn.eq('my_table.col', 'other_table.col')).select('my_table.col', 'my_table.col2', 'other_table.col2')
+sql.from('my_table')
+   .join('other_table', sql.fn.eq('my_table.col', 'other_table.col'))
+   .select('my_table.col', 'my_table.col2', 'other_table.col2')
 ```
 
 ### Where Clause
