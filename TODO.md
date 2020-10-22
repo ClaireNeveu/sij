@@ -8,4 +8,4 @@ type MySchema = {
   },
 };
 ```
-The database connector might convert this into a numeric type which means that you can use `+`, `-`, etc. but the functions on the builder won't work on `Natural` because they're specialized. Type-classes would be useful here but requiring users to manually pass a type class instsance would be annoying and at that point you might as well do `sql.unTyped().fn.add(...)`.
+The database connector might convert this into a numeric type which means that you can use `+`, `-`, etc. but the functions on the builder won't work on `Natural` because they're specialized. Type-classes would be useful here but requiring users to manually pass a type class instance would be annoying and at that point you might as well do `sql.unTyped().fn.add(...)`.
