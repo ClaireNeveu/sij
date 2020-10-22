@@ -29,6 +29,7 @@ import {
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions, ast } from './functions';
+import { BuilderExtension, NoBuilderExtension } from './util';
 
 const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Expr<Ext> => {
     const lit: Literal = (() => {
@@ -90,7 +91,7 @@ type TableOf<Table, T> = {
        : never
 };
 
-class Builder<Schema, Ext extends Extension = NoExtension> {
+class Builder<Schema, Ext extends BuilderExtension> {
     fn: Functions<Schema, {}, Ext>
 
     constructor() {
@@ -98,7 +99,7 @@ class Builder<Schema, Ext extends Extension = NoExtension> {
     }
 
     from<TableName extends ((keyof Schema) & string)>(
-        table: TableName
+        table: TableName | '_NO_TABLE_'
     ): QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext> {
         const select = Select<Ext>({
             selections: [],
@@ -179,7 +180,7 @@ class QueryBuilder<
     Schema,
     Table,
     Return,
-    Ext,
+    Ext extends BuilderExtension,
 > extends CallableInstance<Array<never>, unknown> {
 
     constructor(readonly _query: Query<Ext>, readonly fn: Functions<Schema, Table, Ext>) {
@@ -608,7 +609,7 @@ interface QueryBuilder<
     Schema,
     Table,
     Return,
-    Ext extends Extension = NoExtension
+    Ext extends BuilderExtension,
 > {
     <T>(fn: (arg: QueryBuilder<Schema, Table, Return, Ext>) => T): T
 }
@@ -617,7 +618,7 @@ class InsertBuilder<
     Schema,
     Table,
     Tn extends ((keyof Schema) & string),
-    Ext extends Extension = NoExtension
+    Ext extends BuilderExtension,
 > {
     values(...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }>) {
         // This is where reflection would be really nice
@@ -668,7 +669,7 @@ type MySchema = {
 };
 
 
-const b = new Builder<MySchema, NoExtension>();
+const b = new Builder<MySchema, NoBuilderExtension>();
 
 /*
 const ggg: { name: string, id: number, asc: string } = b.from('employee')

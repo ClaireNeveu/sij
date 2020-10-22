@@ -1,6 +1,6 @@
 import { expectError, expectType } from 'tsd';
 import { Builder } from '../src/builder';
-import { NoExtension } from '../src/ast/util';
+import { NoBuilderExtension } from '../src/builder/util';
 
 type MySchema = {
     employee: {
@@ -13,7 +13,7 @@ type MySchema = {
     },
 };
 
-const b = new Builder<MySchema, NoExtension>();
+const b = new Builder<MySchema, NoBuilderExtension>();
 
 // Should error on bad tables
 expectError(b.from('no_table'))

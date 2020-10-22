@@ -1,6 +1,7 @@
 import test, { Macro } from 'ava';
 
 import { Builder, QueryBuilder } from '../src/builder';
+import { NoBuilderExtension } from '../src/builder/util';
 import { Renderer } from '../src/render';
 
 type MySchema = {
@@ -17,7 +18,7 @@ type MySchema = {
 };
 
 const r = new Renderer();
-const b = new Builder<MySchema>();
+const b = new Builder<MySchema, NoBuilderExtension>();
 
 const isSql: Macro<[QueryBuilder<any, any, any, any>, string]> = (t, query, out) => (
     t.is(r.renderQuery(query._query), out)
@@ -40,6 +41,11 @@ test('basic select works', isSql,
 test('wildcard select works', isSql,
      b.from('employee').select('*'),
      'SELECT * FROM "employee"',
+    );
+
+test('select without table works', isSql,
+     b.from('_NO_TABLE_').selectAs('my_val', b.lit(1)),
+     'SELECT 1 AS "my_val"',
     );
 
 test('select with + works', isSql,

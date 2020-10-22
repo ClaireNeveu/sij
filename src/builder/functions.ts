@@ -2,6 +2,8 @@ import { Extension, NoExtension } from '../ast/util';
 import { BinaryApp, FunctionApp, Ident, Expr, CompoundIdentifier, UnaryApp } from '../ast/expr';
 import { BinaryOperator as BinOp, UnaryOperator as UnOp } from '../ast/operator';
 
+import { BuilderExtension } from './util';
+
 // Boxing to improve error messages.
 export interface TypedAst<Schema, Return, E> {
     __schemaType: Schema,
@@ -24,12 +26,13 @@ const makeIdent = <Ext extends Extension>(name: string): Expr<Ext> => {
 
 type Numeric = number | bigint;
 
-export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
+// TODO functions need their return type determined by their input
+// so if `add` is called with a `number` column it needs to return a TypedAst of number
+// and a bigint for bigint columns.
+export class Functions<Schema, Table, Ext extends BuilderExtension> {
     /** `CHAR_LENGTH([value])` */
     charLength<
-        Id extends ((keyof Table) & string),
-        Exp extends TypedAst<Schema, string, Expr<Ext>>,
-        Col extends Id | Exp,
+        Col extends ((keyof Table) & string) | TypedAst<Schema, string, Expr<Ext>>,
     >(
         value: Col
     ): TypedAst<Schema, number, FunctionApp<Ext>> {
@@ -41,6 +44,7 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
     }
     /** `+[val]` */
     pos<
+        Numeric extends Ext['builder']['types']['numeric'],
         Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
     >(
         val: Col,
@@ -243,6 +247,7 @@ export class Functions<Schema, Table, Ext extends Extension = NoExtension> {
     }
     /** `[left] + [right]` */
     add<
+        Numeric extends Ext['builder']['types']['numeric'],
         Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
         Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
     >(

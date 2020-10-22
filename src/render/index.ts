@@ -160,18 +160,26 @@ class Renderer<Ext extends Extension = NoExtension> {
 
         const table = (() => {
             const initTable = this.renderTable(select.from.table);
+            if (initTable === null) {
+                return '';
+            }
             const joins = select.from.joins.map(join => (
                 ` ${join.kind} JOIN ${this.renderTable(join.table)} ON ${this.renderExpr(join.on)}`
             )).join('');
-            return initTable + joins;
+            return ' FROM ' + initTable + joins;
         })();
 
-        return `SELECT ${selections} FROM ${table}${where}${groupBy}${having}`;
+        return `SELECT ${selections}${table}${where}${groupBy}${having}`;
     }
 
-    renderTable(table: Table<any>): string {
+    renderTable(table: Table<any>): string | null {
         switch (table._tag) {
-            case 'BasicTable': return this.renderIdent(table.name);
+            case 'BasicTable': {
+                if (table.name === '_NO_TABLE_') {
+                    return null;
+                }
+                return this.renderIdent(table.name);
+            }
             case 'DerivedTable':
                 return `(${this.renderQuery(table.subQuery)}) AS ${this.renderIdent(table.alias)}`;
             case 'FunctionTable':
