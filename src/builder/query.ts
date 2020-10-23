@@ -42,6 +42,8 @@ import {
     QualifiedTable,
     UnQualifiedTable,
     TableOf,
+    TypeTag,
+    typeTag,
 } from './util';
 
 
@@ -476,9 +478,8 @@ class QueryBuilder<
         return this;
     }
 
-    /** Method used in the tsd tests */
-    __testingGet(): Any.Compute<Return> {
-        throw new Error('Do not call this method, it only exists for testing');
+    returnTag(): TypeTag<Return> {
+        return typeTag<Return>();
     }
 }
 // Merges with above class to provide calling as a function

@@ -25,7 +25,8 @@ export type NoBuilderExtension = NoExtension & {
     }
 };
 
-
+export type TypeTag<T> = { __tag: T };
+export const typeTag = <T>(): TypeTag<T> => null as unknown as TypeTag<T>;
 
 export const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Expr<Ext> => {
     const lit: Literal = (() => {

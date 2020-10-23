@@ -1,6 +1,6 @@
 import { expectError, expectType } from 'tsd';
 import { Builder } from '../src/builder';
-import { NoBuilderExtension } from '../src/builder/util';
+import { NoBuilderExtension, TypeTag } from '../src/builder/util';
 
 type MySchema = {
     employee: {
@@ -22,41 +22,41 @@ expectError(b.from('no_table'))
 expectError(b.from('employee').select('badColumn'))
 
 // Should return correct types for simple selects
-const a1: { name: string } = b.from('employee').select('name').__testingGet()
+const a1: TypeTag<{ name: string }> = b.from('employee').select('name').returnTag()
 expectError(() => {
-    const a1: { name: number } = b.from('employee').select('name').__testingGet()
+    const a1: TypeTag<{ name: number }> = b.from('employee').select('name').returnTag()
 })
 
 // Should return correct types for wildcard selects
-const a8: { name: string, id: number } = b.from('employee').select('*').__testingGet()
+const a8: TypeTag<{ name: string, id: number }> = b.from('employee').select('*').returnTag()
 expectError(() => {
-    const a1: { name: number, id: number } = b.from('employee').select('*').__testingGet()
+    const a1: TypeTag<{ name: number, id: number }> = b.from('employee').select('*').returnTag()
 })
 
 // Should return correct types for multi selects
-const a2: { name: string, id: number } = b.from('employee').select('name', 'id').__testingGet()
+const a2: TypeTag<{ name: string, id: number }> = b.from('employee').select('name', 'id').returnTag()
 expectError(() => {
-    const a2: { name: boolean, id: boolean } = b.from('employee').select('name', 'id').__testingGet()
+    const a2: TypeTag<{ name: boolean, id: boolean }> = b.from('employee').select('name', 'id').returnTag()
 })
 
 // Should return correct types for multi selects #2
-const a3: { name: string, id: number } = b.from('employee').select('name').select('id').__testingGet()
+const a3: TypeTag<{ name: string, id: number }> = b.from('employee').select('name').select('id').returnTag()
 expectError(() => {
-    const a2: { name: boolean, id: boolean } = b.from('employee').select('name').select('id').__testingGet()
+    const a2: TypeTag<{ name: boolean, id: boolean }> = b.from('employee').select('name').select('id').returnTag()
 })
 
 // Extra properties are not left around
 expectError(() => {
-    const a2: { name: string, id: number } = b.from('employee').select('name').__testingGet()
+    const a2: TypeTag<{ name: string, id: number }> = b.from('employee').select('name').returnTag()
 })
 expectError(() => {
-    const a2: { name_length: number, name: string } = b.from('employee')(b1 => b1.selectExpr(b.as('name_length', b1.fn.charLength('name')))).__testingGet()
+    const a2: TypeTag<{ name_length: number, name: string }> = b.from('employee')(b1 => b1.selectExpr(b.as('name_length', b1.fn.charLength('name')))).returnTag()
 })
 
 // Should return correct types for qualified selects
-const a4: { name: string, id: number } = b.from('employee').select('employee.name', 'id').__testingGet()
+const a4: TypeTag<{ name: string, id: number }> = b.from('employee').select('employee.name', 'id').returnTag()
 expectError(() => {
-    const a4: { name: boolean, id: number } = b.from('employee').select('employee.name', 'id').__testingGet()
+    const a4: TypeTag<{ name: boolean, id: number }> = b.from('employee').select('employee.name', 'id').returnTag()
 })
 
 // Should disallow qualified selects for the wrong table
@@ -67,9 +67,12 @@ expectError(b.from('employee').select('id', 'name')(b => b.selectAs('name_length
 expectError(b.from('employee').select('id', 'name').selectAs('name_length', 'name').where({ fid: 5 }))
 
 // Should return correct types for aliased functions
-const a5: { name_length: number } = b.from('employee')(b => b.selectAs('name_length', b.fn.charLength('name'))).__testingGet()
-const a7: { name_length: number } = b.from('employee')(b1 => b1.select(b.as('name_length', b1.fn.charLength('name')))).__testingGet()
-const a6: { name_length: number } = b.from('employee')(b1 => b1.selectExpr(b.as('name_length', b1.fn.charLength('name')))).__testingGet()
+const a5: TypeTag<{ name_length: number }> =
+    b.from('employee')(b => b.selectAs('name_length', b.fn.charLength('name'))).returnTag()
+const a7: TypeTag<{ name_length: number }> =
+    b.from('employee')(b1 => b1.select(b.as('name_length', b1.fn.charLength('name')))).returnTag()
+const a6: TypeTag<{ name_length: number }> =
+    b.from('employee')(b1 => b1.selectExpr(b.as('name_length', b1.fn.charLength('name')))).returnTag()
 expectError(() => {
-    const a5: { name_length: string } = b.from('employee')(b => b.selectAs('name_length', b.fn.charLength('name'))).__testingGet()
+    const a5: TypeTag<{ name_length: string }> = b.from('employee')(b => b.selectAs('name_length', b.fn.charLength('name'))).returnTag()
 })
