@@ -86,7 +86,7 @@ Although SIJ aims to be just "SQL in Javascript", it makes a few changes to incr
 
 ### FROM SELECT
 
-The order of FROM and SELECT are reversed in SIJ. Instead of `SELECT * FROM my_table` in SIJ you would write `sql.from('my_table').select('*')`. In the rare case that you need to perform a select without referencing a table you can select from the table `_NO_TABLE_`. E.g. `sql.from('_NO_TABLE_').select(sql.as('col', sql.plus(1, 1)))` becomes `SELECT 1 + 1 AS col`.
+The order of FROM and SELECT are reversed in SIJ. Instead of `SELECT * FROM my_table` in SIJ you would write `sql.from('my_table').select('*')`. In the rare case that you need to perform a select without referencing a table you can omit the table when you call `.from`. E.g. `sql.from().select(sql.as('col', sql.plus(1, 1)))` becomes `SELECT 1 + 1 AS col`.
 
 Similarly, if you want to select from columns on a join, you need to order the join _before_ the selections as below:
 ```typescript

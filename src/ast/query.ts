@@ -53,7 +53,7 @@ const SetOp = <Ext extends Extension = NoExtension>(args: UnTag<SetOp<Ext>>): Se
 
 interface Select<Ext extends Extension = NoExtension> extends Tagged<'Select', {
     readonly selections: Array<Selection<Ext>>,
-    readonly from: JoinedTable<Ext>,
+    readonly from: JoinedTable<Ext> | null,
     readonly where: Expr<Ext> | null,
     readonly groupBy: Array<Expr<Ext>>,
     readonly having: Expr<Ext> | null,

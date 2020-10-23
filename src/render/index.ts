@@ -159,10 +159,10 @@ class Renderer<Ext extends Extension = NoExtension> {
         );
 
         const table = (() => {
-            const initTable = this.renderTable(select.from.table);
-            if (initTable === null) {
+            if (select.from === null) {
                 return '';
             }
+            const initTable = this.renderTable(select.from.table);
             const joins = select.from.joins.map(join => (
                 ` ${join.kind} JOIN ${this.renderTable(join.table)} ON ${this.renderExpr(join.on)}`
             )).join('');
@@ -174,12 +174,7 @@ class Renderer<Ext extends Extension = NoExtension> {
 
     renderTable(table: Table<any>): string | null {
         switch (table._tag) {
-            case 'BasicTable': {
-                if (table.name === '_NO_TABLE_') {
-                    return null;
-                }
-                return this.renderIdent(table.name);
-            }
+            case 'BasicTable': return this.renderIdent(table.name);
             case 'DerivedTable':
                 return `(${this.renderQuery(table.subQuery)}) AS ${this.renderIdent(table.alias)}`;
             case 'FunctionTable':

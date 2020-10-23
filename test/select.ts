@@ -44,7 +44,7 @@ test('wildcard select works', isSql,
     );
 
 test('select without table works', isSql,
-     b.from('_NO_TABLE_').selectAs('my_val', b.lit(1)),
+     b.from().selectAs('my_val', b.lit(1)),
      'SELECT 1 AS "my_val"',
     );
 
