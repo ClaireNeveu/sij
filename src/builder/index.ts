@@ -5,6 +5,9 @@ import {
     BasicTable,
     JoinedTable,
 } from '../ast/query';
+import {
+    Insert
+} from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions, ast } from './functions';
@@ -16,6 +19,7 @@ import {
     makeLit
 } from './util';
 import { QueryBuilder } from './query';
+import { InsertBuilder } from './insert';
 
 class Builder<Schema, Ext extends BuilderExtension> {
     fn: Functions<Schema, {}, Ext>
@@ -52,7 +56,16 @@ class Builder<Schema, Ext extends BuilderExtension> {
         return new QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(query, this.fn);
     }
 
-    insertInto<Table extends ((keyof Schema) & string)>(table: Table) {
+    insertInto<TableName extends ((keyof Schema) & string)>(
+        table: TableName
+    ): InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext> {
+        const insert = Insert<Ext>({
+            table: Ident(table),
+            columns: [],
+            values: null,
+            extensions: null,
+        })
+        return new InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(insert, this.fn);
     }
 
     update<Table extends ((keyof Schema) & string)>(table: Table) {
@@ -90,49 +103,6 @@ class Builder<Schema, Ext extends BuilderExtension> {
         return {
             ast: makeLit(l)
         } as TypedAst<Schema, Return, Expr<Ext>>
-    }
-}
-
-class InsertBuilder<
-    Schema,
-    Table,
-    Tn extends ((keyof Schema) & string),
-    Ext extends BuilderExtension,
-> {
-    values(...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }>) {
-        // This is where reflection would be really nice
-        /*
-        if (this._statement.values.length === 0) { // Check if this is the first set of passed values
-         */
-        const columns = new Set();
-        vs.forEach(v => {
-            Object.keys(v).forEach(k => columns.add(k));
-        });
-    }
-    /**
-     * When inserting values SIJ automatically determines the columns
-     * of your dataset by traversing all the keys in all the values.
-     * In large datasets this can be a performance issue. `values1`
-     * only looks at the first value in your dataset to determine
-     * the columns.
-     */
-    values1(...vs: Array<{ [Key in keyof Table]?: Table[Key] }>) {
-    }
-
-    /**
-     * When inserting values SIJ automatically determines the columns
-     * of your dataset by traversing all the keys in all the values.
-     * In large datasets this can be a performance issue so you can
-     * use `columns` to specify the columns manually and avoid the
-     * extra computation.
-     */
-    columns(...cols: Array<string>) {
-    }
-
-    /**
-     * Insert the result of a query into the table.
-     */
-    fromQuery<QReturn>(query: QueryBuilder<Schema, any, QReturn, Ext>) {
     }
 }
 

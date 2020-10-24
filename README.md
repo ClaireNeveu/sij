@@ -3,7 +3,7 @@
 
 Selecting columns is as easy as calling `sql.from('my_table').select('col1', 'col2')`. You can call select as many times as you like; each time simply adds columns to the selection. These two are equivalent: `.select('col1', 'col2')`, `.select('col1').select('col2')`.
 
-As with regular SQL you can select qualified identifiers like `my_table.col` and expressions like `UPPERCASE(col)`. Because of the limitations of typescript, you do need to separate columsn and expressions into different `.select`s. E.g. to write `SELECT col1, my_table.col2, UPPERCASE(col3) as upper_col3 FROM my_table` you would write
+As with regular SQL you can select qualified identifiers like `my_table.col` and expressions like `UPPERCASE(col)`. Because of the limitations of typescript, you do need to separate columns and expressions into different `.select`s. E.g. to write `SELECT col1, my_table.col2, UPPERCASE(col3) as upper_col3 FROM my_table` you would write
 ```typescript
 sql.from('my_table').select('col1', 'my_table.col2').selectAs('upper_col3', sql.upperCase(`col3))
 ```
@@ -15,10 +15,12 @@ Because of Typescript's (mostly) unidirectional type inference, everything in SI
 ```typescript
 const sql1 = sql.from('my_table');
 sql1.selectAs('pos_col', sql1.fn.abs('col'));
+// SELECT ABS("col") AS "pos_col" FROM "my_table"
 ```
 We have to introduce the intermediate value `sql1` so that our `ABS` function knows about the available columns. SIJ provides a convenient syntax to work around this limitation which leverages Typescript's limited contextual typing:
 ```typescript
 sql.from('my_table')(sql => sql.selectAs('pos_col', sql.fn.abs('col'));
+// SELECT ABS("col") AS "pos_col" FROM "my_table"
 ```
 You can call any builder as a function to get a locally scoped version of the query built up to that point.
 
@@ -27,8 +29,10 @@ You can call any builder as a function to get a locally scoped version of the qu
 Joins make use of sub-builders to provide context for the `ON` clause. So to perform a simple join you would do:
 ```typescript
 sql.from('my_table')
-   .join('other_table', sql => sql.fn.eq('my_table.col', 'other_table.col'))
+   .leftJoin('other_table', sql => sql.fn.eq('my_table.col', 'other_table.col'))
    .select('my_table.col', 'my_table.col2', 'other_table.col2')
+// SELECT "my_table"."col", "my_table"."col2", "other_table"."col2"
+// FROM "my_table" LEFT OUTER JOIN "other_table" ON "my_table"."col" = "other_table"."col"
 ```
 Here `other_table` will be available to the `eq` functions in the join clause.
 
@@ -43,10 +47,14 @@ sql.from('my_table')
 
 To join on a derived table, just alias another builder and pass it into the `join` method in lieu of a table name:
 ```typescript
-sql.from('employee').leftJoin(
-  sql.as('t1', b.from('department').select('id', 'budget')),
-  sql => sql.fn.eq('t1.id', 'employee.department_id')
-).select('name', 't1.budget')
+sql.from('my_table').leftJoin(
+  sql.as('t1', b.from(other_table).select('col2', 'col3')),
+  sql => sql.fn.eq('t1.col2', my_table.col2')
+).select('col', 't1.col3')
+// SELECT "my_table"."col", "t1"."col3"
+// FROM "my_table" LEFT OUTER JOIN 
+//         (SELECT "col2", "col3" FROM "other_table") AS "t1" 
+//     ON "t1"."col2" = "my_table"."col2"
 ```
 
 ### Where Clause
@@ -80,7 +88,7 @@ sql.from('my_table').select('col', 'col2').where({
 // SELECT "col", "col2" FROM "my_table" WHERE "col3" = 5 AND "col4" = 'foo'
 ```
 
-## Differences from SQL
+## Differences From SQL
 
 Although SIJ aims to be just "SQL in Javascript", it makes a few changes to increase type-safety. None of these changes reduce the expressiveness of the language but they might require you to write your SQL in a slightly different manner than you would otherwise.
 
@@ -94,6 +102,10 @@ sql.from('my_table')(sql => sql.leftJoin('other_table', sql.fn.eq('my_table.foo'
   .select('my_table.col', 'other_table.col2')
 ```
 Ordering it the other way will produce a valid query, but typescript will complain that `other_table.col2` does not exist.
+
+### INSERT Columns
+
+SQL allows you to form insert statements without a column list like so: `INSERT INTO "my_table" VALUES (...)`. This form relies on the ordering of the columns to identify the values. SIJ does not know what the ordering of the columns is and cannot guarantee that queries generated in this form are correct so it is omitted.
 
 ### Bare Expressions in Selects
 
@@ -122,6 +134,6 @@ CREATE TABLE other_table (
 
 SELECT name FROM my_table LEFT JOIN other_table ON my_table.other_table_id = other_table.id;
 ```
-`name` in this query is ambiguous and SQL will reject the query. Sij however will not prevent you from constructing this query because it has no knowledge of conflicting columns.
+`name` in this query is ambiguous and SQL will reject the query. SIJ however will not prevent you from constructing this query because it has no knowledge of conflicting columns.
 
 1. This is because we need to narrow the arguments' sum type to one variant in order to extract the return type.

@@ -3,18 +3,13 @@ import type { Query } from './query';
 import type { Ident, Expr } from './expr';
 
 type Statement<Ext extends Extension> =
-    | SelectStatement<Ext>
+    | Query<Ext>
     | Insert<Ext>;
-
-interface SelectStatement<Ext extends Extension> extends Tagged<'SelectStatement', {
-    readonly query: Query<Ext>,
-}> {};
-const SelectStatement = <Ext extends Extension>(args: UnTag<SelectStatement<Ext>>): SelectStatement<Ext> => tag('SelectStatement', args);
 
 interface Insert<Ext extends Extension> extends Tagged<'Insert', {
     readonly table: Ident,
     readonly columns: Array<Ident>,
-    readonly values: Values<Ext>,
+    readonly values: Values<Ext> | null,
     readonly extensions: Ext['Insert'] | null,
 }> {};
 const Insert = <Ext extends Extension>(args: UnTag<Insert<Ext>>): Insert<Ext> => tag('Insert', args);
@@ -50,4 +45,5 @@ const ValuesQuery = <Ext extends Extension>(
 export {
     Statement,
     DefaultValue,
+    Insert,
 };

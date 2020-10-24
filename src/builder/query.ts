@@ -76,20 +76,9 @@ class QueryBuilder<
     lit<Return extends number | string | boolean | null>(
         l: Return
     ): TypedAst<Schema, Return, Expr<Ext>>{
-        const lit = (() => {
-            if (typeof l === 'number') {
-                return NumLit(l);
-            } else if (typeof l === 'string') {
-                return StringLit(l);
-            } else if (typeof l === 'boolean') {
-                return BoolLit(l);
-            } else {
-                return NullLit;
-            }
-        })();
         return {
-            ast: Lit(lit)
-        } as unknown as TypedAst<Schema, Return, Expr<Ext>>
+            ast: makeLit(l)
+        } as TypedAst<Schema, Return, Expr<Ext>>
     }
 
     /**
@@ -207,7 +196,7 @@ class QueryBuilder<
         );
     }
 
-    // TODO join on table-derived functions
+    // TODO join on table-valued functions
     // Am I crazy enough to fully-type json_table?
     // TODO create ON shorthand so you can do:
     // `sql.from('my_table').leftJoin('other_table', { 'my_table.col': 'other_table.col' })`
