@@ -1,9 +1,13 @@
+import type { Any, Object } from 'ts-toolbelt';
+
 import { Expr, Ident, CompoundIdentifier, Lit, Wildcard } from '../ast/expr';
 import {
     Literal,
     NumLit,
     StringLit,
     BoolLit,
+    DateLit,
+    CustomLit,
     NullLit,
 } from '../ast/literal';
 import { Extension, NoExtension } from '../ast/util';
@@ -12,7 +16,10 @@ import { TypedAst, Functions, ast } from './functions';
 export type BuilderExtension = Extension & {
     builder: {
         types: {
-            numeric: number | bigint
+            numeric: number | bigint | any,
+            boolean: boolean,
+            string: string,
+            date: Date,
         }
     }
 };
@@ -20,15 +27,20 @@ export type BuilderExtension = Extension & {
 export type NoBuilderExtension = NoExtension & {
     builder: {
         types: {
-            numeric: number | bigint
+            numeric: number | bigint,
+            boolean: boolean,
+            string: string,
+            date: Date,
         }
     }
 };
 
+export type Extend<O extends object> = Object.Merge<O, NoBuilderExtension, 'deep'>
+
 export type TypeTag<T> = { __tag: T };
 export const typeTag = <T>(): TypeTag<T> => null as unknown as TypeTag<T>;
 
-export const makeLit = <Ext extends Extension>(l: number | string | boolean | null): Expr<Ext> => {
+export const makeLit = <Ext extends Extension>(l: number | string | boolean | Date | null): Expr<Ext> => {
     const lit: Literal = (() => {
         if (typeof l === 'number') {
             return NumLit(l);
@@ -36,8 +48,12 @@ export const makeLit = <Ext extends Extension>(l: number | string | boolean | nu
             return StringLit(l);
         } else if (typeof l === 'boolean') {
             return BoolLit(l);
-        } else {
+        } else if (l instanceof Date) {
+            return DateLit(l);
+        } else if (l === null) {
             return NullLit;
+        } else {
+            return CustomLit(l);
         }
     })();
     return Lit(lit);
@@ -66,6 +82,10 @@ export const withAlias = <Col extends string, T>(name: Col, val: T): WithAlias<C
         val,
     };
 };
+
+export type KeysOfType<T, O> = Any.Compute<{
+    [Key in keyof O]: O[Key] extends T ? Key : never
+}[keyof O]>;
 
 export type AstToAlias<T, A extends string> =
     T extends TypedAst<infer S, infer R, infer E> ? WithAlias<A, TypedAst<S, R, E>> : never;

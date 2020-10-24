@@ -201,6 +201,8 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'StringLit': return `'${literal.val}'`;
             case 'BoolLit': return (literal.val ? 'TRUE' : 'FALSE');
             case 'NullLit': return 'NULL';
+            case 'DateLit': return `DATE '${literal.val.toISOString()}'`;
+            case 'CustomLit': throw new Error('Custom literal encountered, please extend the renderer');
         }
         exhaustive(literal);
     }

@@ -2,7 +2,7 @@ import { Extension, NoExtension } from '../ast/util';
 import { BinaryApp, FunctionApp, Ident, Expr, CompoundIdentifier, UnaryApp } from '../ast/expr';
 import { BinaryOperator as BinOp, UnaryOperator as UnOp } from '../ast/operator';
 
-import { BuilderExtension } from './util';
+import { BuilderExtension, KeysOfType } from './util';
 
 // Boxing to improve error messages.
 export interface TypedAst<Schema, Return, E> {
@@ -45,7 +45,7 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
     /** `+[val]` */
     pos<
         Numeric extends Ext['builder']['types']['numeric'],
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Col extends KeysOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
     >(
         val: Col,
     ): TypedAst<Schema, Numeric, UnaryApp<Ext>> {
@@ -57,7 +57,8 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
     }
     /** `-[val]` */
     neg<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Numeric extends Ext['builder']['types']['numeric'],
+        Col extends KeysOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
     >(
         val: Col,
     ): TypedAst<Schema, Numeric, UnaryApp<Ext>> {

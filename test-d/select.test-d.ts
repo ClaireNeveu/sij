@@ -76,3 +76,7 @@ const a6: TypeTag<{ name_length: number }> =
 expectError(() => {
     const a5: TypeTag<{ name_length: string }> = b.from('employee')(b => b.selectAs('name_length', b.fn.charLength('name'))).returnTag()
 })
+
+// Should disallow columns of incorrect type in functions
+expectError(b.from('employee')(b => b.selectAs('foo', b.fn.pos('name'))));
+b.from('employee')(b => b.selectAs('foo', b.fn.pos('id')))

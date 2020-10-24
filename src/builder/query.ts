@@ -73,11 +73,15 @@ class QueryBuilder<
     /**
      * Allows you to insert a literal into the query.
      */
-    lit<Return extends number | string | boolean | null>(
+    lit<Return extends Ext['builder']['types']['numeric']
+        | Ext['builder']['types']['string']
+        | Ext['builder']['types']['boolean']
+        | Ext['builder']['types']['date']
+        | null>(
         l: Return
     ): TypedAst<Schema, Return, Expr<Ext>>{
         return {
-            ast: makeLit(l)
+            ast: makeLit(l as any)
         } as TypedAst<Schema, Return, Expr<Ext>>
     }
 

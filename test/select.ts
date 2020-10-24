@@ -1,7 +1,7 @@
 import test, { Macro } from 'ava';
 
 import { Builder, QueryBuilder } from '../src/builder';
-import { NoBuilderExtension } from '../src/builder/util';
+import { NoBuilderExtension, Extend } from '../src/builder/util';
 import { Renderer } from '../src/render';
 
 type MySchema = {
@@ -17,8 +17,18 @@ type MySchema = {
     },
 };
 
+const realNumber: { _tag: 'Real', val: string } = ({ _tag: 'Real', val: '5000' })
+
+type MyExtension = Extend<{
+    builder: {
+        types: {
+            numeric: number | bigint | { _tag: 'Real', val: string },
+        }
+    }
+}>;
+
 const r = new Renderer();
-const b = new Builder<MySchema, NoBuilderExtension>();
+const b = new Builder<MySchema, MyExtension>();
 
 const isSql: Macro<[QueryBuilder<any, any, any, any>, string]> = (t, query, out) => (
     t.is(r.renderQuery(query._query), out)
@@ -46,6 +56,12 @@ test('wildcard select works', isSql,
 test('select without table works', isSql,
      b.from().selectAs('my_val', b.lit(1)),
      'SELECT 1 AS "my_val"',
+    );
+
+test('select with custom literal works', isParamsSql,
+     b.from().selectAs('my_val', b.lit(realNumber)),
+     'SELECT $1 AS "my_val"',
+     [realNumber]
     );
 
 test('select with + works', isSql,
