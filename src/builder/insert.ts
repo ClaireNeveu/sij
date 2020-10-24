@@ -1,9 +1,12 @@
 import CallableInstance from 'callable-instance';
+import { lens } from 'lens.ts';
+
 import { Expr, Ident, Lit } from '../ast/expr';
 import {
-    Insert
+    DefaultValue,
+    Insert,
+    ValuesConstructor,
 } from '../ast/statement';
-import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions, ast } from './functions';
 import {
@@ -43,16 +46,48 @@ class InsertBuilder<
 
     values(
         ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }>
-    ): InsertBuilder<Schema, Table, Return, Ext> {
+    ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'fromQuery'> {
         /*
         if (this._statement.values === null) { // Check if this is the first set of passed values
-         */
-        // This is where reflection would be really nice
-        const columns = new Set();
-        vs.forEach(v => {
-            Object.keys(v).forEach(k => columns.add(k));
-        });
-        return null as any;
+        */
+        const newInsert = (() => {
+            if (this._statement.values === null) {
+                // This is where reflection would be really nice
+                const columnSet: Set<string> = new Set();
+                vs.forEach(v => {
+                    Object.keys(v).forEach(k => columnSet.add(k));
+                });
+                const columns: Array<string> = Array.from(columnSet);
+                const values = ValuesConstructor<Ext>({
+                    values: vs.map((o: { [p: string]: any }) => (
+                        columns.map(c => {
+                            const v = o[c];
+                            return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
+                        })
+                    ))
+                });
+                const insertLens = lens<Insert<Ext>>()
+                return insertLens.values.set(values)(
+                    insertLens.columns.set(columns.map(Ident))(this._statement)
+                );
+            } else {
+                const columns = this._statement.columns;
+                const values: Array<Array<DefaultValue | Expr<Ext>>> = vs.map((o: { [p: string]: any }) => (
+                    columns.map(c => {
+                        const v = o[c];
+                        return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
+                    })
+                ));
+                const oldValues = this._statement.values;
+                if (oldValues?._tag === 'ValuesConstructor') {
+                    return lens<Insert<Ext>>().values.set(
+                        lens<ValuesConstructor<Ext>>().values.set(vs => [...vs, ...values])(oldValues)
+                    )(this._statement);
+                }
+                throw new Error('Invalid insertion');
+            }
+        })();
+        return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn);
     }
     /**
      * When inserting values SIJ automatically determines the columns
@@ -76,8 +111,12 @@ class InsertBuilder<
 
     /**
      * Insert the result of a query into the table.
+     * You cannot insert further values if inserting from a query.
      */
-    fromQuery<QReturn>(query: QueryBuilder<Schema, any, QReturn, Ext>) {
+    fromQuery<QReturn>(
+        query: QueryBuilder<Schema, any, QReturn, Ext>
+    ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'values' | 'values1'> {
+        return null as any;
     }
 }
 // Merges with above class to provide calling as a function

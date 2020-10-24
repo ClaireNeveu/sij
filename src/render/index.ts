@@ -5,6 +5,7 @@ import type {
     Select,
     Table,
 } from '../ast/query';
+import type { Insert, Statement } from '../ast/statement';
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
 
@@ -23,12 +24,19 @@ class Renderer<Ext extends Extension = NoExtension> {
         return `"${ident}"`;
     }
     
+    renderStatement(statement: Statement<any>): string {
+        switch (statement._tag) {
+            case 'Query': return this.renderQuery(statement);
+            case 'Insert': return this.renderInsert(statement);
+        }
+        exhaustive(statement);
+    }
+    
     renderExpr(expr: Expr): string {
         // Ident
         if (typeof expr === 'string') {
             return this.renderIdent(expr);
         }
-        const tag = expr._tag;
         switch (expr._tag) {
             case 'Ident': throw new Error('Impossible'); // Here for exhaustiveness
             case 'Wildcard': return '*';
@@ -205,6 +213,38 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'CustomLit': throw new Error('Custom literal encountered, please extend the renderer');
         }
         exhaustive(literal);
+    }
+
+    renderInsert(insert: Insert<any>): string {
+        const columns = (() => {
+            if (insert.columns.length === 0) {
+                return '';
+            }
+            return ` (${insert.columns.map(c => this.renderIdent(c)).join(', ')})`;
+        })();
+        const values = (() => {
+            if (insert.values === null) {
+                throw new Error('Invalid Insert. Insert must have VALUES');
+            }
+            switch (insert.values._tag) {
+                case 'DefaultValues': return 'DEFAULT VALUES';
+                case 'ValuesConstructor': {
+                    const rows = insert.values.values.map(r => {
+                        const vals = r.map(c => {
+                            switch (c._tag) {
+                                case 'DefaultValue': return 'DEFAULT';
+                                default: return this.renderExpr(c);
+                            }
+                        }).join(', ');
+                        return `(${vals})`;
+                    });
+                    return `VALUES ${rows.join(', ')}`;
+                }
+                case 'ValuesQuery': return this.renderQuery(insert.values.query);
+            }
+            exhaustive(insert.values);
+        })();
+        return `INSERT INTO ${this.renderIdent(insert.table)}${columns} ${values}`;
     }
 }
 

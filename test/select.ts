@@ -1,7 +1,7 @@
 import test, { Macro } from 'ava';
 
 import { Builder, QueryBuilder } from '../src/builder';
-import { NoBuilderExtension, Extend } from '../src/builder/util';
+import { NoBuilderExtension, Extend, StatementBuilder } from '../src/builder/util';
 import { Renderer } from '../src/render';
 
 type MySchema = {
@@ -30,13 +30,13 @@ type MyExtension = Extend<{
 const r = new Renderer();
 const b = new Builder<MySchema, MyExtension>();
 
-const isSql: Macro<[QueryBuilder<any, any, any, any>, string]> = (t, query, out) => (
-    t.is(r.renderQuery(query._query), out)
+const isSql: Macro<[StatementBuilder<any>, string]> = (t, builder, out) => (
+    t.is(r.renderStatement(builder._statement), out)
 );
 
-const isParamsSql: Macro<[QueryBuilder<any, any, any, any>, string, Array<any>]> = (t, query, str, par) => {
+const isParamsSql: Macro<[StatementBuilder<any>, string, Array<any>]> = (t, builder, str, par) => {
     const r = new Renderer({ paramsMode: true });
-    const q = r.renderQuery(query._query);
+    const q = r.renderStatement(builder._statement);
     const { params } = r;
     t.is(q, str);
     t.deepEqual(params, par);
@@ -186,4 +186,17 @@ test('joining on derived table works', isSql,
          b => b.fn.eq('t1.id', 'employee.department_id')
      ).select('name', 't1.budget'),
      `SELECT "name", "t1"."budget" FROM "employee" LEFT OUTER JOIN (SELECT "id", "budget" FROM "department") AS "t1" ON "t1"."id" = "employee"."department_id"`
+    );
+
+//////////////////////////////INSERTS///////////////////////////////////////////
+
+test('basic insert works', isParamsSql,
+     b.insertInto('employee').values({
+         id: 5,
+         name: 'Charlotte',
+         salary: 5000,
+         department_id: 55
+     }),
+     'INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES ($1, $2, $3, $4)',
+     [5, 'Charlotte', 5000, 55]
     );

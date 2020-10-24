@@ -80,3 +80,6 @@ expectError(() => {
 // Should disallow columns of incorrect type in functions
 expectError(b.from('employee')(b => b.selectAs('foo', b.fn.pos('name'))));
 b.from('employee')(b => b.selectAs('foo', b.fn.pos('id')))
+
+// Should disallow literals of incorrect type in functions
+expectError(b.from().selectAs('my_val', b.fn.pos(b.lit('foo'))))

@@ -62,7 +62,7 @@ class QueryBuilder<
     Ext extends BuilderExtension,
 > extends CallableInstance<Array<never>, unknown> {
 
-    constructor(readonly _query: Query<Ext>, readonly fn: Functions<Schema, Table, Ext>) {
+    constructor(readonly _statement: Query<Ext>, readonly fn: Functions<Schema, Table, Ext>) {
         super('apply');
     }
 
@@ -145,21 +145,21 @@ class QueryBuilder<
                 return AnonymousSelection<Ext>(CompoundIdentifier(idParts.map(Ident)));
             }
         });
-        if (this._query.unions.length === 0) {
+        if (this._statement.unions.length === 0) {
             return new QueryBuilder(
-                lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._query),
+                lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._statement),
                 this.fn,
             );
         }
-        const numUnions = this._query.unions.length;
-        const currentUnion = this._query.unions[numUnions - 1];
+        const numUnions = this._statement.unions.length;
+        const currentUnion = this._statement.unions[numUnions - 1];
 
         const newUnion = lens<SetOp<any>>().select.selections.set(
             s => [...s, ...selections]
         )(currentUnion);
 
         return new QueryBuilder(
-            lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
+            lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._statement),
             this.fn,
         );
     }
@@ -181,21 +181,21 @@ class QueryBuilder<
         type NewReturn = UnQualifiedTable<{ [K in Alias]: ColType }> & Return;
         // Pick up any new aliases
         type NewTable = { [K in Alias]: ColType } & Table;
-        if (this._query.unions.length === 0) {
+        if (this._statement.unions.length === 0) {
             return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
-                lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._query),
+                lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._statement),
                 this.fn,
             );
         }
-        const numUnions = this._query.unions.length;
-        const currentUnion = this._query.unions[numUnions - 1];
+        const numUnions = this._statement.unions.length;
+        const currentUnion = this._statement.unions[numUnions - 1];
 
         const newUnion = lens<SetOp<any>>().select.selections.set(
             s => [...s, ...selections]
         )(currentUnion);
 
         return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
-            lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._query),
+            lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._statement),
             this.fn,
         );
     }
@@ -237,7 +237,7 @@ class QueryBuilder<
             const wa = table as WithAlias<Alias, QueryBuilder<Schema, any, SubTable, Ext>>;
             return DerivedTable({
                 alias: Ident(wa.alias),
-                subQuery: wa.val._query,
+                subQuery: wa.val._statement,
             });
         })();
         const newJoin = Join({
@@ -246,7 +246,7 @@ class QueryBuilder<
             on: on_.ast,
         });
         return new QueryBuilder<Schema, MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext>(
-            lens<Query<Ext>>().selection.from.joins.set(js => [...js, newJoin])(this._query),
+            lens<Query<Ext>>().selection.from.joins.set(js => [...js, newJoin])(this._statement),
             this.fn
         );
     }
@@ -348,9 +348,9 @@ class QueryBuilder<
         sub: QueryBuilder<Schema, Table2, Return, Ext>,
     ): QueryBuilder<Schema, Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] }, Return, Ext> {
         const tAlias = TableAlias({ name: Ident(alias), columns: [] });
-        const newCte = CommonTableExpr({ alias: tAlias, query: sub._query });
+        const newCte = CommonTableExpr({ alias: tAlias, query: sub._statement });
         return new QueryBuilder<Schema, Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] }, Return, Ext>(
-            lens<Query<Ext>>().commonTableExprs.set(ctes => [...ctes, newCte])(this._query),
+            lens<Query<Ext>>().commonTableExprs.set(ctes => [...ctes, newCte])(this._statement),
             this.fn,
         );
     }
@@ -380,7 +380,7 @@ class QueryBuilder<
             nullHandling: opts?.nullHandling ?? null,
         });
         return new QueryBuilder<Schema, Table, Return, Ext>(
-            lens<Query<Ext>>().ordering.set(os => [...os, newOrder])(this._query),
+            lens<Query<Ext>>().ordering.set(os => [...os, newOrder])(this._statement),
             this.fn
         );
     }
@@ -415,7 +415,7 @@ class QueryBuilder<
     limit(expr: Expr<Ext> | number) {
         const lim = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
         return new QueryBuilder<Schema, Table, Return, Ext>(
-            lens<Query<Ext>>().limit.set(() => lim)(this._query),
+            lens<Query<Ext>>().limit.set(() => lim)(this._statement),
             this.fn
         );
     }
@@ -426,7 +426,7 @@ class QueryBuilder<
     offset(expr: Expr<Ext> | number) {
         const off = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
         return new QueryBuilder<Schema, Table, Return, Ext>(
-            lens<Query<Ext>>().offset.set(() => off)(this._query),
+            lens<Query<Ext>>().offset.set(() => off)(this._statement),
             this.fn
         );
     }
@@ -456,7 +456,7 @@ class QueryBuilder<
             ).ast;
         };
         return new QueryBuilder<Schema, Table, Return, Ext>(
-            lens<Query<Ext>>().selection.where.set(e => updateWhere(e))(this._query),
+            lens<Query<Ext>>().selection.where.set(e => updateWhere(e))(this._statement),
             this.fn
         );
     }

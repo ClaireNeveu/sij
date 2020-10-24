@@ -10,16 +10,17 @@ import {
     CustomLit,
     NullLit,
 } from '../ast/literal';
+import { Statement } from '../ast/statement';
 import { Extension, NoExtension } from '../ast/util';
 import { TypedAst, Functions, ast } from './functions';
 
 export type BuilderExtension = Extension & {
     builder: {
         types: {
-            numeric: number | bigint | any,
-            boolean: boolean,
-            string: string,
-            date: Date,
+            numeric: any,
+            boolean: any,
+            string: any,
+            date: any,
         }
     }
 };
@@ -36,6 +37,10 @@ export type NoBuilderExtension = NoExtension & {
 };
 
 export type Extend<O extends object> = Object.Merge<O, NoBuilderExtension, 'deep'>
+
+export interface StatementBuilder<Ext extends BuilderExtension> {
+    _statement: Statement<Ext>
+}
 
 export type TypeTag<T> = { __tag: T };
 export const typeTag = <T>(): TypeTag<T> => null as unknown as TypeTag<T>;

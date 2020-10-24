@@ -46,4 +46,5 @@ export {
     Statement,
     DefaultValue,
     Insert,
+    ValuesConstructor,
 };
