@@ -6,7 +6,8 @@ import {
     JoinedTable,
 } from '../ast/query';
 import {
-    Insert
+    Insert,
+    Update,
 } from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
@@ -20,14 +21,25 @@ import {
 } from './util';
 import { QueryBuilder } from './query';
 import { InsertBuilder } from './insert';
+import { UpdateBuilder } from './update';
 
 class Builder<Schema, Ext extends BuilderExtension> {
     fn: Functions<Schema, {}, Ext>
     dialect: string
+    QueryBuilder: typeof QueryBuilder
+    InsertBuilder: typeof InsertBuilder
+    UpdateBuilder: typeof UpdateBuilder
 
-    constructor() {
+    constructor(
+        qb: typeof QueryBuilder = QueryBuilder,
+        ib: typeof InsertBuilder = InsertBuilder,
+        ub: typeof UpdateBuilder = UpdateBuilder,
+    ) {
         this.fn = new Functions<Schema, {}, Ext>();
         this.dialect = 'SQL-92';
+        this.QueryBuilder = qb;
+        this.InsertBuilder = ib;
+        this.UpdateBuilder = ub;
     }
 
     from<TableName extends ((keyof Schema) & string)>(
@@ -55,7 +67,7 @@ class Builder<Schema, Ext extends BuilderExtension> {
             offset: null,
             extensions: null,
         });
-        return new QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(query, this.fn);
+        return new this.QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(query, this.fn);
     }
 
     insertInto<TableName extends ((keyof Schema) & string)>(
@@ -67,10 +79,17 @@ class Builder<Schema, Ext extends BuilderExtension> {
             values: null,
             extensions: null,
         })
-        return new InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(insert, this.fn);
+        return new this.InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(insert, this.fn);
     }
 
-    update<Table extends ((keyof Schema) & string)>(table: Table) {
+    update<TableName extends ((keyof Schema) & string)>(table: TableName) {
+        const update = Update<Ext>({
+            table: Ident(table),
+            assignments: [],
+            where: null,
+            extensions: null,
+        });
+        return new this.UpdateBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(update, this.fn);
     }
 
     deleteFrom<Table extends ((keyof Schema) & string)>(table: Table) {

@@ -11,6 +11,7 @@ type Extension = {
     Select: any,
     Table: any,
     Insert: any,
+    Update: any,
 };
 
 type NoExtension = {
@@ -19,6 +20,7 @@ type NoExtension = {
     Select: unknown,
     Table: unknown,
     Insert: unknown,
+    Update: unknown,
 };
 
 const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });

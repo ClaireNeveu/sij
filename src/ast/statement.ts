@@ -42,10 +42,19 @@ const ValuesQuery = <Ext extends Extension>(
     args: UnTag<ValuesQuery<Ext>>
 ): ValuesQuery<Ext> => tag('ValuesQuery', args);
 
+interface Update<Ext extends Extension> extends Tagged<'Update', {
+    readonly table: Ident,
+    readonly assignments: Array<[Ident, Expr]>,
+    readonly where: Expr<Ext> | null,
+    readonly extensions: Ext['Update'] | null,
+}> {};
+const Update = <Ext extends Extension>(args: UnTag<Update<Ext>>): Update<Ext> => tag('Update', args);
+
 export {
     Statement,
     DefaultValue,
     Insert,
+    Update,
     ValuesConstructor,
     ValuesQuery,
 };

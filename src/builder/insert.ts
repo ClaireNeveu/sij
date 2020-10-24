@@ -47,10 +47,7 @@ class InsertBuilder<
 
     values(
         ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }>
-    ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'fromQuery'> {
-        /*
-        if (this._statement.values === null) { // Check if this is the first set of passed values
-        */
+    ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'fromQuery' | 'columns'> {
         const newInsert = (() => {
             if (this._statement.values === null) {
                 // This is where reflection would be really nice
@@ -97,7 +94,45 @@ class InsertBuilder<
      * only looks at the first value in your dataset to determine
      * the columns.
      */
-    values1(...vs: Array<{ [Key in keyof Table]?: Table[Key] }>) {
+    values1(
+        ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }>
+    ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'fromQuery' | 'columns'> {
+        if (vs.length === 0) {
+            throw new Error('Cannot insert with no values');
+        }
+        const newInsert = (() => {
+            if (this._statement.values === null) {
+                const columns: Array<string> = Array.from(Object.keys(vs[0]));
+                const values = ValuesConstructor<Ext>({
+                    values: vs.map((o: { [p: string]: any }) => (
+                        columns.map(c => {
+                            const v = o[c];
+                            return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
+                        })
+                    ))
+                });
+                const insertLens = lens<Insert<Ext>>()
+                return insertLens.values.set(values)(
+                    insertLens.columns.set(columns.map(Ident))(this._statement)
+                );
+            } else {
+                const columns = this._statement.columns;
+                const values: Array<Array<DefaultValue | Expr<Ext>>> = vs.map((o: { [p: string]: any }) => (
+                    columns.map(c => {
+                        const v = o[c];
+                        return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
+                    })
+                ));
+                const oldValues = this._statement.values;
+                if (oldValues?._tag === 'ValuesConstructor') {
+                    return lens<Insert<Ext>>().values.set(
+                        lens<ValuesConstructor<Ext>>().values.set(vs => [...vs, ...values])(oldValues)
+                    )(this._statement);
+                }
+                throw new Error('Invalid insertion');
+            }
+        })();
+        return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn);
     }
 
     /**
@@ -107,7 +142,10 @@ class InsertBuilder<
      * use `columns` to specify the columns manually and avoid the
      * extra computation.
      */
-    columns(...cols: Array<string>) {
+    columns(...cols: Array<keyof Table>) {
+        if (this._statement.values !== null) {
+            throw new Error('Cannot set columns after values');
+        }
     }
 
     /**
@@ -116,7 +154,7 @@ class InsertBuilder<
      */
     fromQuery<QReturn extends { [Key in keyof Table]?: Table[Key] }>(
         query: QueryBuilder<Schema, any, QReturn, Ext>
-    ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'values' | 'values1'> {
+    ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'values' | 'values1' | 'columns'> {
         return new InsertBuilder<Schema, Table, Return, Ext>(
             lens<Insert<Ext>>().values.set(ValuesQuery({ query: query._statement }))(this._statement),
             this.fn
