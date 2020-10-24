@@ -23,9 +23,11 @@ import { InsertBuilder } from './insert';
 
 class Builder<Schema, Ext extends BuilderExtension> {
     fn: Functions<Schema, {}, Ext>
+    dialect: string
 
     constructor() {
         this.fn = new Functions<Schema, {}, Ext>();
+        this.dialect = 'SQL-92';
     }
 
     from<TableName extends ((keyof Schema) & string)>(

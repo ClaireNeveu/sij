@@ -13,15 +13,21 @@ const exhaustive = (n: never): void => {};
 
 class Renderer<Ext extends Extension = NoExtension> {
     params: Array<any>
-    _paramsMode: boolean
+    readonly _paramsMode: boolean
+    readonly _placeHolderStyle: '$' | '?'
     
-    constructor(opts: { paramsMode?: boolean } = {}) {
+    constructor(opts: { paramsMode?: boolean, placeHolderStyle?: '$' | '?' } = {}) {
         this.params = [];
         this._paramsMode = opts.paramsMode ?? false;
+        this._placeHolderStyle = opts.placeHolderStyle ?? '$';
     }
     
     renderIdent(ident: Ident): string {
         return `"${ident}"`;
+    }
+
+    renderPlaceholder(n: number): string {
+        return this._placeHolderStyle === '?' ? '?' : '$' + n;
     }
     
     renderStatement(statement: Statement<any>): string {
@@ -199,7 +205,7 @@ class Renderer<Ext extends Extension = NoExtension> {
         if (this._paramsMode) {
             const val = literal._tag === 'NullLit' ? null : literal.val;
             const l = this.params.push(val);
-            return '$' + l;
+            return this.renderPlaceholder(l);
         }
         switch (literal._tag) {
             case 'NumLit': {

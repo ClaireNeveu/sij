@@ -200,3 +200,20 @@ test('basic insert works', isParamsSql,
      'INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES ($1, $2, $3, $4)',
      [5, 'Charlotte', 5000, 55]
     );
+
+test('basic insert no params works', isSql,
+     b.insertInto('employee').values({
+         id: 5,
+         name: 'Charlotte',
+         salary: 5000,
+         department_id: 55
+     }),
+     `INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES (5, 'Charlotte', 5000, 55)`,
+    );
+
+test('insert from select works', isSql,
+     b.insertInto('employee').fromQuery(
+         b.from('employee').select('*')
+     ),
+     'INSERT INTO "employee" SELECT * FROM "employee"',
+    );

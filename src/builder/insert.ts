@@ -6,6 +6,7 @@ import {
     DefaultValue,
     Insert,
     ValuesConstructor,
+    ValuesQuery,
 } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { TypedAst, Functions, ast } from './functions';
@@ -24,7 +25,7 @@ class InsertBuilder<
     Return,
     Ext extends BuilderExtension,
 > extends CallableInstance<Array<never>, unknown> {
-
+    
     constructor(readonly _statement: Insert<Ext>, readonly fn: Functions<Schema, Table, Ext>) {
         super('apply');
     }
@@ -113,10 +114,13 @@ class InsertBuilder<
      * Insert the result of a query into the table.
      * You cannot insert further values if inserting from a query.
      */
-    fromQuery<QReturn>(
+    fromQuery<QReturn extends { [Key in keyof Table]?: Table[Key] }>(
         query: QueryBuilder<Schema, any, QReturn, Ext>
     ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'values' | 'values1'> {
-        return null as any;
+        return new InsertBuilder<Schema, Table, Return, Ext>(
+            lens<Insert<Ext>>().values.set(ValuesQuery({ query: query._statement }))(this._statement),
+            this.fn
+        );
     }
 }
 // Merges with above class to provide calling as a function

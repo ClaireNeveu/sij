@@ -47,4 +47,5 @@ export {
     DefaultValue,
     Insert,
     ValuesConstructor,
+    ValuesQuery,
 };
