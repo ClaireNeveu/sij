@@ -11,13 +11,15 @@ import {
 } from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
-import { TypedAst, Functions, ast } from './functions';
+import { Functions } from './functions';
 import {
     BuilderExtension,
     NoBuilderExtension,
     WithAlias,
     QualifiedTable,
-    makeLit
+    makeLit,
+    TypedAst,
+    ast,
 } from './util';
 import { QueryBuilder } from './query';
 import { InsertBuilder } from './insert';

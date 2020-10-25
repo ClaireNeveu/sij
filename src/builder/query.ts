@@ -28,7 +28,7 @@ import {
 } from '../ast/literal';
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
-import { TypedAst, Functions, ast } from './functions';
+import { Functions } from './functions';
 import {
     BuilderExtension,
     NoBuilderExtension,
@@ -44,6 +44,8 @@ import {
     TableOf,
     TypeTag,
     typeTag,
+    TypedAst,
+    ast,
 } from './util';
 
 

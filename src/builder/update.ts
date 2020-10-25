@@ -9,7 +9,7 @@ import {
     ValuesQuery,
 } from '../ast/statement';
 import { Extension, NoExtension } from '../ast/util';
-import { TypedAst, Functions, ast } from './functions';
+import { Functions } from './functions';
 import {
     BuilderExtension,
     NoBuilderExtension,
@@ -17,6 +17,8 @@ import {
     QualifiedTable,
     makeLit,
     StringKeys,
+    TypedAst,
+    ast,
 } from './util';
 
 class UpdateBuilder<
@@ -45,11 +47,16 @@ class UpdateBuilder<
         } as TypedAst<Schema, Return, Expr<Ext>>
     }
 
-    // sql.update('my_table').set('col', value)
-    // sql.update('my_table').set({
-    //   col: value,
-    //   col2: value2,
-    // })
+    /**
+     * Because the `set` method interprets strings as literals instead of columns
+     * you must use the `col` method to set a column to another column as in:
+     * `sql.update('my_table')(sql => sql.set('col1', sql.col('col2')))`
+     */
+    col<Column extends StringKeys<Table>>(
+        column: Column,
+    ): TypedAst<Schema, Table[Column], Expr<Ext>> {
+        return ast(Ident(column));
+    }
 
     /**
      * Set has two forms `.set('col', value)` and `.set({ col1: value, col2: value2 })`

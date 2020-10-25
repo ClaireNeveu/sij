@@ -12,7 +12,6 @@ import {
 } from '../ast/literal';
 import { Statement } from '../ast/statement';
 import { Extension, NoExtension } from '../ast/util';
-import { TypedAst, Functions, ast } from './functions';
 
 export type BuilderExtension = Extension & {
     builder: {
@@ -63,6 +62,16 @@ export const makeLit = <Ext extends Extension>(l: number | string | boolean | Da
     })();
     return Lit(lit);
 };
+
+// Boxing to improve error messages.
+export interface TypedAst<Schema, Return, E> {
+    __schemaType: Schema,
+    __returnType: Return,
+    ast: E,
+};
+export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => ({
+    ast: e
+}) as TypedAst<Schema, Return, E>;
 
 type UnQualifiedId<P> =
     P extends `${infer Key}.${infer Rest}` ? Rest : P;

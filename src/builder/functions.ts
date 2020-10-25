@@ -2,17 +2,8 @@ import { Extension, NoExtension } from '../ast/util';
 import { BinaryApp, FunctionApp, Ident, Expr, CompoundIdentifier, UnaryApp } from '../ast/expr';
 import { BinaryOperator as BinOp, UnaryOperator as UnOp } from '../ast/operator';
 
-import { BuilderExtension, KeysOfType } from './util';
+import { BuilderExtension, KeysOfType, TypedAst, ast } from './util';
 
-// Boxing to improve error messages.
-export interface TypedAst<Schema, Return, E> {
-    __schemaType: Schema,
-    __returnType: Return,
-    ast: E,
-};
-export const ast = <Schema, Return, E>(e: E): TypedAst<Schema, Return, E> => ({
-    ast: e
-}) as TypedAst<Schema, Return, E>;
 export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
 
 const makeIdent = <Ext extends Extension>(name: string): Expr<Ext> => {
