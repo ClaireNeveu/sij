@@ -62,3 +62,10 @@ test('no params', isSql,
      }),
      `UPDATE "employee" SET "id" = 5, "name" = 'Charlotte', "salary" = 5000, "department_id" = 55`,
     );
+
+test('with function', isSql,
+     b.update('employee')(b => b.set({
+         salary: b.fn.add(b.col('salary'), b.lit(500)),
+     })),
+     `UPDATE "employee" SET "salary" = "salary" + 500`,
+    );

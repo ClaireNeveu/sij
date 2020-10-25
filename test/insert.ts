@@ -42,7 +42,7 @@ const isParamsSql: Macro<[StatementBuilder<any>, string, Array<any>]> = (t, buil
     t.deepEqual(params, par);
 };
 
-test('basic insert works', isParamsSql,
+test('basic insert', isParamsSql,
      b.insertInto('employee').values({
          id: 5,
          name: 'Charlotte',
@@ -53,7 +53,7 @@ test('basic insert works', isParamsSql,
      [5, 'Charlotte', 5000, 55]
     );
 
-test('basic insert no params works', isSql,
+test('no params', isSql,
      b.insertInto('employee').values({
          id: 5,
          name: 'Charlotte',
@@ -63,9 +63,20 @@ test('basic insert no params works', isSql,
      `INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES (5, 'Charlotte', 5000, 55)`,
     );
 
-test('insert from select works', isSql,
+test('from select', isSql,
      b.insertInto('employee').fromQuery(
          b.from('employee').select('*')
      ),
      'INSERT INTO "employee" SELECT * FROM "employee"',
+    );
+
+test('with function', isParamsSql,
+     b.insertInto('employee')(sql => sql.values({
+         id: 5,
+         name: 'Charlotte',
+         salary: sql.fn.add(sql.lit(5000), sql.lit(5)),
+         department_id: 55
+     })),
+     'INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES ($1, $2, $3 + $4, $5)',
+     [5, 'Charlotte', 5000, 5, 55]
     );

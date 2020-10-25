@@ -48,7 +48,7 @@ class InsertBuilder<
     }
 
     values(
-        ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }>
+        ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Expr<Ext>> }>
     ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'fromQuery' | 'columns'> {
         const newInsert = (() => {
             if (this._statement.values === null) {
@@ -64,9 +64,9 @@ class InsertBuilder<
                             const v = o[c];
                             return (
                                 v === undefined ? DefaultValue
-                                    : typeof v === 'object' && '_tag' in v ? v
+                                    : typeof v === 'object' && 'ast' in v ? v.ast
                                     : makeLit(v)
-                            ) as DefaultValue | Expr<Ext>;
+                            );
                         })
                     ))
                 });
@@ -79,7 +79,11 @@ class InsertBuilder<
                 const values: Array<Array<DefaultValue | Expr<Ext>>> = vs.map((o: { [p: string]: any }) => (
                     columns.map(c => {
                         const v = o[c.name];
-                        return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
+                        return (
+                            v === undefined ? DefaultValue
+                                : typeof v === 'object' && 'ast' in v ? v.ast
+                                : makeLit(v)
+                        );
                     })
                 ));
                 const oldValues = this._statement.values;
@@ -101,7 +105,7 @@ class InsertBuilder<
      * the columns.
      */
     values1(
-        ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }>
+        ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Expr<Ext>> }>
     ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'fromQuery' | 'columns'> {
         if (vs.length === 0) {
             throw new Error('Cannot insert with no values');
@@ -113,7 +117,11 @@ class InsertBuilder<
                     values: vs.map((o: { [p: string]: any }) => (
                         columns.map(c => {
                             const v = o[c];
-                            return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
+                            return (
+                                v === undefined ? DefaultValue
+                                    : typeof v === 'object' && 'ast' in v ? v.ast
+                                    : makeLit(v)
+                            );
                         })
                     ))
                 });
@@ -126,7 +134,11 @@ class InsertBuilder<
                 const values: Array<Array<DefaultValue | Expr<Ext>>> = vs.map((o: { [p: string]: any }) => (
                     columns.map(c => {
                         const v = o[c.name];
-                        return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
+                        return (
+                            v === undefined ? DefaultValue
+                                : typeof v === 'object' && 'ast' in v ? v.ast
+                                : makeLit(v)
+                        );
                     })
                 ));
                 const oldValues = this._statement.values;

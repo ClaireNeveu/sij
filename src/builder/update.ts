@@ -41,7 +41,7 @@ class UpdateBuilder<
      */
     lit<Return extends number | string | boolean | null>(
         l: Return
-    ): TypedAst<Schema, Return, Expr<Ext>>{
+    ): TypedAst<Schema, Return, Expr<Ext>> {
         return {
             ast: makeLit(l)
         } as TypedAst<Schema, Return, Expr<Ext>>
@@ -63,23 +63,23 @@ class UpdateBuilder<
      */
     set<Column extends keyof Table>(
         column: Column,
-        value: Table[Column] | DefaultValue | TypedAst<Schema, Table[Column], Ext>,
+        value: Table[Column] | DefaultValue | TypedAst<Schema, Table[Column], Expr<Ext>>,
     ): UpdateBuilder<Schema, Table, Return, Ext>;
     set(
-        updates: { [Key in StringKeys<Table>]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> }
+        updates: { [Key in StringKeys<Table>]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Expr<Ext>> }
     ): UpdateBuilder<Schema, Table, Return, Ext>;
     set<Column extends StringKeys<Table>>(
-        arg1: Column | { [Key in StringKeys<Table>]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> },
-        arg2?: Table[Column] | DefaultValue | TypedAst<Schema, Table[Column], Ext>,
+        arg1: Column | { [Key in StringKeys<Table>]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Expr<Ext>> },
+        arg2?: Table[Column] | DefaultValue | TypedAst<Schema, Table[Column], Expr<Ext>>,
     ): UpdateBuilder<Schema, Table, Return, Ext> {
         if (arg2 === undefined) {
-            const updates = arg1 as { [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Ext> };
+            const updates = arg1 as { [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Expr<Ext>> };
             const assignments: Array<[Ident, Expr<Ext> | DefaultValue]> = Object.keys(updates).map(key => {
                 const column = key as StringKeys<Table>;
-                const value = (updates as any)[key] as Table[Column] | DefaultValue | TypedAst<Schema, Table[Column], Ext>;
+                const value = (updates as any)[key] as Table[Column] | DefaultValue | TypedAst<Schema, Table[Column], Expr<Ext>>;
                 const expr = (
-                    typeof value === 'object' && '_tag' in value
-                        ? value
+                    typeof value === 'object' && 'ast' in value
+                        ? value.ast
                         : makeLit(value as any)
                 ) as Expr<Ext> | DefaultValue;
                 return [Ident(column), expr];
