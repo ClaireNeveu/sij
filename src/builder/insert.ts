@@ -60,7 +60,11 @@ class InsertBuilder<
                     values: vs.map((o: { [p: string]: any }) => (
                         columns.map(c => {
                             const v = o[c];
-                            return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
+                            return (
+                                v === undefined ? DefaultValue
+                                    : typeof v === 'object' && '_tag' in v ? v
+                                    : makeLit(v)
+                            ) as DefaultValue | Expr<Ext>;
                         })
                     ))
                 });

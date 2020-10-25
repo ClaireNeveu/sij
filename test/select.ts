@@ -187,33 +187,3 @@ test('joining on derived table works', isSql,
      ).select('name', 't1.budget'),
      `SELECT "name", "t1"."budget" FROM "employee" LEFT OUTER JOIN (SELECT "id", "budget" FROM "department") AS "t1" ON "t1"."id" = "employee"."department_id"`
     );
-
-//////////////////////////////INSERTS///////////////////////////////////////////
-
-test('basic insert works', isParamsSql,
-     b.insertInto('employee').values({
-         id: 5,
-         name: 'Charlotte',
-         salary: 5000,
-         department_id: 55
-     }),
-     'INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES ($1, $2, $3, $4)',
-     [5, 'Charlotte', 5000, 55]
-    );
-
-test('basic insert no params works', isSql,
-     b.insertInto('employee').values({
-         id: 5,
-         name: 'Charlotte',
-         salary: 5000,
-         department_id: 55
-     }),
-     `INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES (5, 'Charlotte', 5000, 55)`,
-    );
-
-test('insert from select works', isSql,
-     b.insertInto('employee').fromQuery(
-         b.from('employee').select('*')
-     ),
-     'INSERT INTO "employee" SELECT * FROM "employee"',
-    );

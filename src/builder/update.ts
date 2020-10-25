@@ -70,7 +70,11 @@ class UpdateBuilder<
             const assignments: Array<[Ident, Expr<Ext> | DefaultValue]> = Object.keys(updates).map(key => {
                 const column = key as StringKeys<Table>;
                 const value = (updates as any)[key] as Table[Column] | DefaultValue | TypedAst<Schema, Table[Column], Ext>;
-                const expr = (typeof value === 'string' ? Ident(value) : value) as Expr<Ext> | DefaultValue;
+                const expr = (
+                    typeof value === 'object' && '_tag' in value
+                        ? value
+                        : makeLit(value as any)
+                ) as Expr<Ext> | DefaultValue;
                 return [Ident(column), expr];
             });
             return new UpdateBuilder<Schema, Table, Return, Ext>(
