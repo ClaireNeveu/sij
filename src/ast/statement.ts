@@ -4,7 +4,8 @@ import type { Ident, Expr } from './expr';
 
 type Statement<Ext extends Extension> =
     | Query<Ext>
-    | Insert<Ext>;
+    | Insert<Ext>
+    | Update<Ext>;
 
 interface Insert<Ext extends Extension> extends Tagged<'Insert', {
     readonly table: Ident,
@@ -44,7 +45,7 @@ const ValuesQuery = <Ext extends Extension>(
 
 interface Update<Ext extends Extension> extends Tagged<'Update', {
     readonly table: Ident,
-    readonly assignments: Array<[Ident, Expr]>,
+    readonly assignments: Array<[Ident, Expr | DefaultValue]>,
     readonly where: Expr<Ext> | null,
     readonly extensions: Ext['Update'] | null,
 }> {};

@@ -5,7 +5,7 @@ import type {
     Select,
     Table,
 } from '../ast/query';
-import type { Insert, Statement } from '../ast/statement';
+import type { Insert, Statement, Update } from '../ast/statement';
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
 
@@ -34,6 +34,7 @@ class Renderer<Ext extends Extension = NoExtension> {
         switch (statement._tag) {
             case 'Query': return this.renderQuery(statement);
             case 'Insert': return this.renderInsert(statement);
+            case 'Update': return this.renderUpdate(statement);
         }
         exhaustive(statement);
     }
@@ -251,6 +252,19 @@ class Renderer<Ext extends Extension = NoExtension> {
             exhaustive(insert.values);
         })();
         return `INSERT INTO ${this.renderIdent(insert.table)}${columns} ${values}`;
+    }
+
+    renderUpdate(update: Update<any>): string {
+        const sets = update.assignments.map(([name, value]) => {
+            switch (value._tag) {
+                case 'DefaultValue': return `${this.renderIdent(name)} = DEFAULT`;
+                default: return `${this.renderIdent(name)} = ${this.renderExpr(value)}`;
+            }
+        }).join(', ');
+        
+        const where = update.where === null ? '' : ' WHERE ' + this.renderExpr(update.where);
+        
+        return `UPDATE ${this.renderIdent(update.table)} SET ${sets}${where}`;
     }
 }
 
