@@ -7,9 +7,9 @@ import type { UnaryOperator, BinaryOperator } from './operator';
 /**
  * Identifier, e.g. for a table or column
  */
-type Ident = { _tag: 'Ident' } & string
-const Ident = (name: string): Ident => name as Ident;
-const identToString = (id: Ident): string => id;
+type Ident = { _tag: 'Ident', name: string }
+const Ident = (name: string): Ident => ({ _tag: 'Ident', name });
+const identToString = (id: Ident): string => id.name;
 
 type DateTimeField =
     | 'Year'

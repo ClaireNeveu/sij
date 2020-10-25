@@ -23,7 +23,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     }
     
     renderIdent(ident: Ident): string {
-        return `"${ident}"`;
+        return `"${ident.name}"`;
     }
 
     renderPlaceholder(n: number): string {
@@ -40,12 +40,8 @@ class Renderer<Ext extends Extension = NoExtension> {
     }
     
     renderExpr(expr: Expr): string {
-        // Ident
-        if (typeof expr === 'string') {
-            return this.renderIdent(expr);
-        }
         switch (expr._tag) {
-            case 'Ident': throw new Error('Impossible'); // Here for exhaustiveness
+            case 'Ident': return this.renderIdent(expr);
             case 'Wildcard': return '*';
             case 'QualifiedWildcard': {
                 const qualifiers = expr.qualifiers.map(e => this.renderExpr(e)).join('.');

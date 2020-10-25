@@ -76,7 +76,7 @@ class InsertBuilder<
                 const columns = this._statement.columns;
                 const values: Array<Array<DefaultValue | Expr<Ext>>> = vs.map((o: { [p: string]: any }) => (
                     columns.map(c => {
-                        const v = o[c];
+                        const v = o[c.name];
                         return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
                     })
                 ));
@@ -123,7 +123,7 @@ class InsertBuilder<
                 const columns = this._statement.columns;
                 const values: Array<Array<DefaultValue | Expr<Ext>>> = vs.map((o: { [p: string]: any }) => (
                     columns.map(c => {
-                        const v = o[c];
+                        const v = o[c.name];
                         return (v === undefined ? DefaultValue : makeLit(v)) as DefaultValue | Expr<Ext>;
                     })
                 ));
