@@ -150,7 +150,7 @@ class QueryBuilder<
         if (this._statement.unions.length === 0) {
             return new QueryBuilder(
                 lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._statement),
-                this.fn,
+                this.fn as Functions<Schema, any, Ext>,
             );
         }
         const numUnions = this._statement.unions.length;
@@ -162,7 +162,7 @@ class QueryBuilder<
 
         return new QueryBuilder(
             lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._statement),
-            this.fn,
+            this.fn as Functions<Schema, any, Ext>,
         );
     }
     
@@ -186,7 +186,7 @@ class QueryBuilder<
         if (this._statement.unions.length === 0) {
             return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
                 lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._statement),
-                this.fn,
+                this.fn as Functions<Schema, any, Ext>,
             );
         }
         const numUnions = this._statement.unions.length;
@@ -198,7 +198,7 @@ class QueryBuilder<
 
         return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
             lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._statement),
-            this.fn,
+            this.fn as Functions<Schema, any, Ext>,
         );
     }
 
@@ -242,14 +242,14 @@ class QueryBuilder<
                 subQuery: wa.val._statement,
             });
         })();
-        const newJoin = Join({
+        const newJoin = Join<Ext>({
             table: newTable,
             kind: kind,
             on: on_.ast,
         });
-        return new QueryBuilder<Schema, MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext>(
+        return new QueryBuilder<Schema, Table & MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext>(
             lens<Query<Ext>>().selection.from.joins.set(js => [...js, newJoin])(this._statement),
-            this.fn
+            this.fn as Functions<Schema, any, Ext>,
         );
     }
 
@@ -353,7 +353,7 @@ class QueryBuilder<
         const newCte = CommonTableExpr({ alias: tAlias, query: sub._statement });
         return new QueryBuilder<Schema, Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] }, Return, Ext>(
             lens<Query<Ext>>().commonTableExprs.set(ctes => [...ctes, newCte])(this._statement),
-            this.fn,
+            this.fn as Functions<Schema, any, Ext>,
         );
     }
 
@@ -383,7 +383,7 @@ class QueryBuilder<
         });
         return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query<Ext>>().ordering.set(os => [...os, newOrder])(this._statement),
-            this.fn
+            this.fn as Functions<Schema, any, Ext>
         );
     }
 
@@ -418,7 +418,7 @@ class QueryBuilder<
         const lim = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
         return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query<Ext>>().limit.set(() => lim)(this._statement),
-            this.fn
+            this.fn as Functions<Schema, any, Ext>
         );
     }
 
@@ -429,7 +429,7 @@ class QueryBuilder<
         const off = typeof expr === 'number' ? Lit(NumLit(expr)) : expr
         return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query<Ext>>().offset.set(() => off)(this._statement),
-            this.fn
+            this.fn as Functions<Schema, any, Ext>
         );
     }
 
@@ -459,7 +459,7 @@ class QueryBuilder<
         };
         return new QueryBuilder<Schema, Table, Return, Ext>(
             lens<Query<Ext>>().selection.where.set(e => updateWhere(e))(this._statement),
-            this.fn
+            this.fn as Functions<Schema, any, Ext>
         );
     }
 

@@ -77,6 +77,11 @@ type UnQualifiedId<P> =
     P extends `${infer Key}.${infer Rest}` ? Rest : P;
 
 export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
+export type ColumnOf<T> = (keyof T) extends string ? keyof T : never;
+export type ColumnOfType<T, O> = Any.Compute<{
+    [Key in ColumnOf<O>]: O[Key] extends T ? Key : never
+}[ColumnOf<O>]>;
+
 export type QualifiedTable<Schema, TableName extends keyof Schema & string> =
     { [Key in StringKeys<Schema[TableName]> as `${TableName}.${Key}`]: Schema[TableName][Key] };
 export type QualifyTable<TableName extends string, Table> =
@@ -96,10 +101,6 @@ export const withAlias = <Col extends string, T>(name: Col, val: T): WithAlias<C
         val,
     };
 };
-
-export type KeysOfType<T, O> = Any.Compute<{
-    [Key in keyof O]: O[Key] extends T ? Key : never
-}[keyof O]>;
 
 export type AstToAlias<T, A extends string> =
     T extends TypedAst<infer S, infer R, infer E> ? WithAlias<A, TypedAst<S, R, E>> : never;

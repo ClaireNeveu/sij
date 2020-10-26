@@ -89,11 +89,6 @@ test('select with % works', isSql,
      'SELECT "id", "name", "salary" % 5 AS "new_salary" FROM "employee"',
     );
 
-test('select with || works', isSql,
-     b.from('employee').select('id', 'name')(b => b.selectAs('new_name', b.fn.concat('name', b.lit(' baz')))),
-     `SELECT "id", "name", "name" || ' baz' AS "new_name" FROM "employee"`,
-    );
-
 test('where with = works', isSql,
      b.from('employee').select('id', 'name')(b => b.where(b.fn.eq('id', b.lit(5)))),
      'SELECT "id", "name" FROM "employee" WHERE "id" = 5',

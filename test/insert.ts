@@ -42,7 +42,7 @@ const isParamsSql: Macro<[StatementBuilder<any>, string, Array<any>]> = (t, buil
     t.deepEqual(params, par);
 };
 
-test('basic insert', isParamsSql,
+test('basic', isParamsSql,
      b.insertInto('employee').values({
          id: 5,
          name: 'Charlotte',

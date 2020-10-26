@@ -15,6 +15,7 @@ import { Functions } from './functions';
 import {
     BuilderExtension,
     NoBuilderExtension,
+    Extend,
     WithAlias,
     QualifiedTable,
     makeLit,
@@ -69,7 +70,10 @@ class Builder<Schema, Ext extends BuilderExtension> {
             offset: null,
             extensions: null,
         });
-        return new this.QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(query, this.fn);
+        return new this.QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(
+            query,
+            this.fn as Functions<Schema, any, Ext>
+        );
     }
 
     insertInto<TableName extends ((keyof Schema) & string)>(
@@ -81,7 +85,10 @@ class Builder<Schema, Ext extends BuilderExtension> {
             values: null,
             extensions: null,
         })
-        return new this.InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(insert, this.fn);
+        return new this.InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(
+            insert,
+            this.fn as Functions<Schema, any, Ext>
+        );
     }
 
     update<TableName extends ((keyof Schema) & string)>(table: TableName) {
@@ -91,7 +98,10 @@ class Builder<Schema, Ext extends BuilderExtension> {
             where: null,
             extensions: null,
         });
-        return new this.UpdateBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(update, this.fn);
+        return new this.UpdateBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(
+            update,
+            this.fn as Functions<Schema, any, Ext>
+        );
     }
 
     deleteFrom<Table extends ((keyof Schema) & string)>(table: Table) {
@@ -130,7 +140,8 @@ class Builder<Schema, Ext extends BuilderExtension> {
         return {
             ast: makeLit(l as any)
         } as TypedAst<Schema, Return, Expr<Ext>>
-    }
+        }
+    
 }
 
 export {

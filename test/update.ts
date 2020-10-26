@@ -53,6 +53,12 @@ test('basic', isParamsSql,
      [5, 'Charlotte', 5000, 55]
     );
 
+test('shorthand', isParamsSql,
+     b.update('employee').set('name', 'Charlotte'),
+     'UPDATE "employee" SET "name" = $1',
+     ['Charlotte']
+    );
+
 test('no params', isSql,
      b.update('employee').set({
          id: 5,

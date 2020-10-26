@@ -2,10 +2,11 @@ import { Extension, NoExtension } from '../ast/util';
 import { BinaryApp, FunctionApp, Ident, Expr, CompoundIdentifier, UnaryApp } from '../ast/expr';
 import { BinaryOperator as BinOp, UnaryOperator as UnOp } from '../ast/operator';
 
-import { BuilderExtension, KeysOfType, TypedAst, ast } from './util';
+import { BuilderExtension, ColumnOfType, TypedAst, ast, ColumnOf } from './util';
 
-export type StringKeys<T> = (keyof T) extends string ? keyof T : never;
-
+/**
+ * Creates an Identifier, handling '.' for compound identifiers.
+ */
 const makeIdent = <Ext extends Extension>(name: string): Expr<Ext> => {
     const idParts = (name).split('.');
     if (idParts.length === 1) {
@@ -15,12 +16,8 @@ const makeIdent = <Ext extends Extension>(name: string): Expr<Ext> => {
     }
 };
 
-type Numeric = number | bigint;
-
-// TODO functions need their return type determined by their input
-// so if `add` is called with a `number` column it needs to return a TypedAst of number
-// and a bigint for bigint columns.
 export class Functions<Schema, Table, Ext extends BuilderExtension> {
+    // TODO move char_length into tests
     /** `CHAR_LENGTH([value])` */
     charLength<
         Col extends ((keyof Table) & string) | TypedAst<Schema, string, Expr<Ext>>,
@@ -33,305 +30,315 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
             args,
         }));
     }
-    /** `+[val]` */
-    pos<
-        Numeric extends Ext['builder']['types']['numeric'],
-        Col extends KeysOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
-    >(
-        val: Col,
-    ): TypedAst<Schema, Numeric, UnaryApp<Ext>> {
-        const expr = typeof val === 'string' ? makeIdent<Ext>(val) : (val as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, Numeric, UnaryApp<Ext>>(UnaryApp({
-            op: UnOp.Plus,
-            expr
+
+    _unop<Type, Return>(
+        op: UnOp,
+        val: ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+    ): TypedAst<Schema, Return, UnaryApp<Ext>> {
+        const expr = (
+            typeof val === 'string'
+                ? makeIdent<Ext>(val)
+                : (val as TypedAst<Schema, Type, Expr<Ext>>).ast
+        );
+        return ast<Schema, Return, UnaryApp<Ext>>(UnaryApp({
+            op,
+            expr,
         }));
     }
-    /** `-[val]` */
-    neg<
-        Numeric extends Ext['builder']['types']['numeric'],
-        Col extends KeysOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
-    >(
-        val: Col,
-    ): TypedAst<Schema, Numeric, UnaryApp<Ext>> {
-        const expr = typeof val === 'string' ? makeIdent<Ext>(val) : (val as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, Numeric, UnaryApp<Ext>>(UnaryApp({
-            op: UnOp.Minus,
-            expr
+
+    _binop<Type, Return>(
+        op: BinOp,
+        left: ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        right: ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+    ): TypedAst<Schema, Return, BinaryApp<Ext>> {
+        const left_ = (
+            typeof left === 'string'
+                ? makeIdent<Ext>(left)
+                : (left as TypedAst<Schema, Type, Expr<Ext>>).ast
+        );
+        const right_ = (
+            typeof right === 'string'
+                ? makeIdent<Ext>(right)
+                : (right as TypedAst<Schema, Type, Expr<Ext>>).ast
+        );
+        return ast<Schema, Return, BinaryApp<Ext>>(BinaryApp({
+            op,
+            left: left_,
+            right: right_,
         }));
     }
-    /** `NOT [val]` */
-    not<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
-    >(
-        val: Col,
+    
+    /**
+     * `+[val]`
+     * Denotes an unsigned integer.
+     */
+    pos<Numeric extends Ext['builder']['types']['numeric']>(
+        val: ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
+    ): TypedAst<Schema, Numeric, UnaryApp<Ext>> {
+        return this._unop<Numeric, Numeric>(UnOp.Plus, val);
+    }
+    
+    /**
+     * `-[val]`
+     * Negates a numeric value.
+     */
+    neg<Numeric extends Ext['builder']['types']['numeric']>(
+        val: ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
+    ): TypedAst<Schema, Numeric, UnaryApp<Ext>> {
+        return this._unop<Numeric, Numeric>(UnOp.Minus, val);
+    }
+    
+    /**
+     * `NOT [val]`
+     * Negates a boolean value turning TRUE into FALSE and vice versa.
+     */
+    not<Boolean extends Ext['builder']['types']['boolean']>(
+        val: ColumnOfType<Boolean, Table> | TypedAst<Schema, Boolean, Expr<Ext>>,
     ): TypedAst<Schema, boolean, UnaryApp<Ext>> {
-        const expr = typeof val === 'string' ? makeIdent<Ext>(val) : (val as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, boolean, UnaryApp<Ext>>(UnaryApp({
-            op: UnOp.Not,
-            expr
-        }));
+        return this._unop<Boolean, boolean>(UnOp.Not, val);
     }
-    /** `[left] = [right]` */
+
+    //
+    // In the binary operators we need to add type parameters for the columns
+    // Otherwise Typescript treats ColumnOfType<Type, Table> as never. Not
+    // sure what exactly is at play there.
+    //
+    
+    /**
+     * `[left] = [right]`
+     * Tests whether two values are equivalent. NULL values are not equal to each other.
+     */
     equal<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
+        Type,
+        Col1 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        Col2 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Equal,
-            left,
-            right,
-        }));
+        return this._binop<Type, boolean>(BinOp.Equal, left, right);
     }
     eq = this.equal
-    /** `[left] <> [right]` */
+
+    /**
+     * `[left] <> [right]`
+     * Tests whether two values are not equivalent. NULL values are not equal to each other.
+     */
     notEqual<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
+        Type,
+        Col1 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        Col2 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.NotEqual,
-            left,
-            right,
-        }));
+        return this._binop<Type, boolean>(BinOp.NotEqual, left, right);
     }
     neq = this.notEqual
-    /** `[left] > [right]` */
+
+    /**
+     * `[left] > [right]`
+     * Tests whether the left value is greater than the right value.
+     * Numbers are compared numerically, string comparison uses the
+     * collation set for the column, dates are compared chronologically.
+     */
     greaterThan<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Type,
+        Col1 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        Col2 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Greater,
-            left,
-            right,
-        }));
+        return this._binop<Type, boolean>(BinOp.Greater, left, right);
     }
     gt = this.greaterThan
-    /** `[left] < [right]` */
+
+    /**
+     * `[left] < [right]`
+     * Tests whether the left value is less than the right value.
+     * Numbers are compared numerically, string comparison uses the
+     * collation set for the column, dates are compared chronologically.
+     */
     lessThan<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Type,
+        Col1 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        Col2 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Less,
-            left,
-            right,
-        }));
+        return this._binop<Type, boolean>(BinOp.Less, left, right);
     }
     lt = this.lessThan
-    /** `[left] >= [right]` */
+
+    /**
+     * `[left] >= [right]`
+     * Tests whether the left value is greater than or equal to the right value.
+     * Numbers are compared numerically, string comparison uses the
+     * collation set for the column, dates are compared chronologically.
+     */
     greaterThanOrEqualTo<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Type,
+        Col1 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        Col2 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.GreaterEqual,
-            left,
-            right,
-        }));
+        return this._binop<Type, boolean>(BinOp.GreaterEqual, left, right);
     }
     gte = this.greaterThanOrEqualTo
-    /** `[left] <= [right]` */
+
+    /**
+     * `[left] <= [right]`
+     * Tests whether the left value is less than or equal to the right value.
+     * Numbers are compared numerically, string comparison uses the
+     * collation set for the column, dates are compared chronologically.
+     */
     lessThanOrEqualTo<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Type,
+        Col1 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        Col2 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.LessEqual,
-            left,
-            right,
-        }));
+        return this._binop<Type, boolean>(BinOp.LessEqual, left, right);
     }
     lte = this.lessThanOrEqualTo
-    /** `[left] AND [right]` */
+
+    /**
+     * `[left] AND [right]`
+     */
     and<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
+        Boolean extends Ext['builder']['types']['boolean'],
+        Col1 extends ColumnOfType<Boolean, Table> | TypedAst<Schema, Boolean, Expr<Ext>>,
+        Col2 extends ColumnOfType<Boolean, Table> | TypedAst<Schema, Boolean, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        return  ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.And,
-            left,
-            right,
-        }));
+        return this._binop<Boolean, boolean>(BinOp.And, left, right);
     }
-    /** `[left] OR [right]` */
+
+    /**
+     * `[left] OR [right]`
+     */
     or<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, boolean, Expr<Ext>>,
+        Boolean extends Ext['builder']['types']['boolean'],
+        Col1 extends ColumnOfType<Boolean, Table> | TypedAst<Schema, Boolean, Expr<Ext>>,
+        Col2 extends ColumnOfType<Boolean, Table> | TypedAst<Schema, Boolean, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        return  ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Or,
-            left,
-            right,
-        }));
+        return this._binop<Boolean, boolean>(BinOp.Or, left, right);
     }
-    /** `[left] LIKE [right]` */
+
+    /**
+     * `[left] LIKE [right]`
+     */
     like<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
+        Type,
+        Col1 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        Col2 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        return  ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Like,
-            left,
-            right,
-        }));
+        return this._binop<Type, boolean>(BinOp.Like, left, right);
     }
-    /** `[left] NOT LIKE [right]` */
+
+    /**
+     * `[left] NOT LIKE [right]`
+     */
     notLike<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, any, Expr<Ext>>,
+        Type,
+        Col1 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
+        Col2 extends ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, boolean, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, boolean, Expr<Ext>>).ast;
-        return  ast<Schema, boolean, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.NotLike,
-            left,
-            right,
-        }));
+        return this._binop<Type, boolean>(BinOp.NotLike, left, right);
     }
-    /** `[left] + [right]` */
+
+    /**
+     * `[left] + [right]`
+     */
     add<
         Numeric extends Ext['builder']['types']['numeric'],
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Col1 extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Col2 extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, Numeric, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, Numeric, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Plus,
-            left,
-            right,
-        }));
+        return this._binop<Numeric, Numeric>(BinOp.Plus, left, right);
     }
+    
     /** `[left] - [right]` */
     subtract<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Numeric extends Ext['builder']['types']['numeric'],
+        Col1 extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Col2 extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, Numeric, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, Numeric, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Minus,
-            left,
-            right,
-        }));
+        return this._binop<Numeric, Numeric>(BinOp.Minus, left, right);
     }
+    
     /** `[left] * [right]` */
     multiply<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-    >(
-        left_: Col,
-        right_: Col2,
+        Numeric extends Ext['builder']['types']['numeric'],
+        Col1 extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Col2 extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
+   >(
+        left: Col1,
+        right: Col2,
     ): TypedAst<Schema, Numeric, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, Numeric, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Multiply,
-            left,
-            right,
-        }));
+        return this._binop<Numeric, Numeric>(BinOp.Multiply, left, right);
     }
+    
     /** `[left] / [right]` */
     divide<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Numeric extends Ext['builder']['types']['numeric'],
+        Col extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Col2 extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col,
+        right: Col2,
     ): TypedAst<Schema, Numeric, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, Numeric, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Divide,
-            left,
-            right,
-        }));
+        return this._binop<Numeric, Numeric>(BinOp.Divide, left, right);
     }
+    
     /** `[left] % [right]` */
     mod<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Numeric extends Ext['builder']['types']['numeric'],
+        Col extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
+        Col2 extends ColumnOfType<Numeric, Table> | TypedAst<Schema, Numeric, Expr<Ext>>,
     >(
-        left_: Col,
-        right_: Col2,
+        left: Col,
+        right: Col2,
     ): TypedAst<Schema, Numeric, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, Numeric, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.Modulus,
-            left,
-            right,
-        }));
+        return this._binop<Numeric, Numeric>(BinOp.Modulus, left, right);
     }
-    /** `[left] || [right]` */
+    
+    /*
+      MySQL incorrectly uses || as a synonym for OR unless a specific server option is set.
+      MS SQL uses + for string concatenation.
+      So unfortunately this needs to be moved downstream to the dialects.
     concat<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, string, Expr<Ext>>,
-        Col2 extends ((keyof Table) & string) | TypedAst<Schema, string, Expr<Ext>>,
+        String extends Ext['builder']['types']['string'],
+        Col extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
+        Col2 extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
     >(
         left_: Col,
         right_: Col2,
-    ): TypedAst<Schema, string, BinaryApp<Ext>> {
-        const left = typeof left_ === 'string' ? makeIdent<Ext>(left_) : (left_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        const right = typeof right_ === 'string' ? makeIdent<Ext>(right_) : (right_ as TypedAst<Schema, any, Expr<Ext>>).ast;
-        return ast<Schema, string, BinaryApp<Ext>>(BinaryApp({
-            op: BinOp.StringConcat,
-            left,
-            right,
-        }));
+    ): TypedAst<Schema, String, BinaryApp<Ext>> {
+        return this._binop<String, String>(BinOp.Modulus, left, right);
     }
+    */
 };

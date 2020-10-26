@@ -95,7 +95,10 @@ class InsertBuilder<
                 throw new Error('Invalid insertion');
             }
         })();
-        return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn);
+        return new InsertBuilder<Schema, Table, Return, Ext>(
+            newInsert,
+            this.fn as Functions<Schema, any, Ext>,
+        );
     }
     /**
      * When inserting values SIJ automatically determines the columns
@@ -150,7 +153,7 @@ class InsertBuilder<
                 throw new Error('Invalid insertion');
             }
         })();
-        return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn);
+        return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn as Functions<Schema, any, Ext>);
     }
 
     /**
@@ -175,7 +178,7 @@ class InsertBuilder<
     ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'values' | 'values1' | 'columns'> {
         return new InsertBuilder<Schema, Table, Return, Ext>(
             lens<Insert<Ext>>().values.set(ValuesQuery({ query: query._statement }))(this._statement),
-            this.fn
+            this.fn as Functions<Schema, any, Ext>
         );
     }
 }
