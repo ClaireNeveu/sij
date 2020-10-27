@@ -60,11 +60,12 @@ interface Delete<Ext extends Extension> extends Tagged<'Delete', {
 const Delete = <Ext extends Extension>(args: UnTag<Delete<Ext>>): Delete<Ext> => tag('Delete', args);
 
 export {
-    Statement,
     DefaultValue,
-    Insert,
-    Update,
+    DefaultValues,
     Delete,
+    Insert,
+    Statement,
+    Update,
     ValuesConstructor,
     ValuesQuery,
 };

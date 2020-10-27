@@ -149,5 +149,9 @@ class Builder<Schema, Ext extends BuilderExtension> {
 
 export {
     Builder,
+    Functions,
     QB as QueryBuilder,
+    IB as InsertBuilder,
+    UB as UpdateBuilder,
+    DB as DeleteBuilder,
 };
