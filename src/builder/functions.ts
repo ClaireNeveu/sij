@@ -17,21 +17,8 @@ const makeIdent = <Ext extends Extension>(name: string): Expr<Ext> => {
 };
 
 export class Functions<Schema, Table, Ext extends BuilderExtension> {
-    // TODO move char_length into tests
-    /** `CHAR_LENGTH([value])` */
-    charLength<
-        Col extends ((keyof Table) & string) | TypedAst<Schema, string, Expr<Ext>>,
-    >(
-        value: Col
-    ): TypedAst<Schema, number, FunctionApp<Ext>> {
-        const args = typeof value === 'string' ? [makeIdent<Ext>(value)] : [(value as TypedAst<Schema, string, Expr<Ext>>).ast];
-        return ast<Schema, number, FunctionApp<Ext>>(FunctionApp({
-            name: CompoundIdentifier([Ident('CHAR_LENGTH')]),
-            args,
-        }));
-    }
 
-    _unop<Type, Return>(
+    protected _unop<Type, Return>(
         op: UnOp,
         val: ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
     ): TypedAst<Schema, Return, UnaryApp<Ext>> {
@@ -46,7 +33,7 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
         }));
     }
 
-    _binop<Type, Return>(
+    protected _binop<Type, Return>(
         op: BinOp,
         left: ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
         right: ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>,
@@ -65,6 +52,21 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
             op,
             left: left_,
             right: right_,
+        }));
+    }
+
+    protected _function<Type, Return>(
+        name: string,
+        args: Array<ColumnOfType<Type, Table> | TypedAst<Schema, Type, Expr<Ext>>>,
+    ): TypedAst<Schema, Return, FunctionApp<Ext>> {
+        const args_ = args.map(a =>
+            typeof a === 'string'
+                ? makeIdent<Ext>(a)
+                : (a as TypedAst<Schema, Type, Expr<Ext>>).ast
+        );
+        return ast<Schema, Return, FunctionApp<Ext>>(FunctionApp({
+            name: CompoundIdentifier([Ident(name)]),
+            args: args_
         }));
     }
     

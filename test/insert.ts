@@ -1,6 +1,7 @@
 import test, { Macro } from 'ava';
 
 import { Builder, QueryBuilder } from '../src/builder';
+import { Functions } from '../src/builder/functions';
 import { NoBuilderExtension, Extend, StatementBuilder } from '../src/builder/util';
 import { Renderer } from '../src/render';
 
@@ -28,7 +29,7 @@ type MyExtension = Extend<{
 }>;
 
 const r = new Renderer();
-const b = new Builder<MySchema, MyExtension>();
+const b = new Builder<MySchema, MyExtension>(new Functions<MySchema, {}, MyExtension>());
 
 const isSql: Macro<[StatementBuilder<any>, string]> = (t, builder, out) => (
     t.is(r.renderStatement(builder._statement), out)

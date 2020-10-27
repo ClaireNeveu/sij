@@ -22,32 +22,23 @@ import {
     TypedAst,
     ast,
 } from './util';
-import { QueryBuilder } from './query';
-import { InsertBuilder } from './insert';
-import { UpdateBuilder } from './update';
+import { QueryBuilder as QB } from './query';
+import { InsertBuilder as IB } from './insert';
+import { UpdateBuilder as UB } from './update';
 
 class Builder<Schema, Ext extends BuilderExtension> {
-    fn: Functions<Schema, {}, Ext>
-    dialect: string
-    QueryBuilder: typeof QueryBuilder
-    InsertBuilder: typeof InsertBuilder
-    UpdateBuilder: typeof UpdateBuilder
+    dialect: string  = 'SQL-92'
 
     constructor(
-        qb: typeof QueryBuilder = QueryBuilder,
-        ib: typeof InsertBuilder = InsertBuilder,
-        ub: typeof UpdateBuilder = UpdateBuilder,
-    ) {
-        this.fn = new Functions<Schema, {}, Ext>();
-        this.dialect = 'SQL-92';
-        this.QueryBuilder = qb;
-        this.InsertBuilder = ib;
-        this.UpdateBuilder = ub;
-    }
+        readonly fn: Functions<Schema, {}, Ext>,
+        readonly QueryBuilder: typeof QB = QB,
+        readonly InsertBuilder: typeof IB = IB,
+        readonly UpdateBuilder: typeof UB = UB,
+    ) {}
 
     from<TableName extends ((keyof Schema) & string)>(
         table?: TableName
-    ): QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext> {
+    ): QB<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext> {
         const tableAst = (
             table === undefined
                 ? null
@@ -72,13 +63,13 @@ class Builder<Schema, Ext extends BuilderExtension> {
         });
         return new this.QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(
             query,
-            this.fn as Functions<Schema, any, Ext>
+            this.fn as any
         );
     }
 
     insertInto<TableName extends ((keyof Schema) & string)>(
         table: TableName
-    ): InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext> {
+    ): IB<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext> {
         const insert = Insert<Ext>({
             table: Ident(table),
             columns: [],
@@ -87,7 +78,7 @@ class Builder<Schema, Ext extends BuilderExtension> {
         })
         return new this.InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(
             insert,
-            this.fn as Functions<Schema, any, Ext>
+            this.fn as any
         );
     }
 
@@ -100,7 +91,7 @@ class Builder<Schema, Ext extends BuilderExtension> {
         });
         return new this.UpdateBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(
             update,
-            this.fn as Functions<Schema, any, Ext>
+            this.fn as any
         );
     }
 
@@ -146,5 +137,5 @@ class Builder<Schema, Ext extends BuilderExtension> {
 
 export {
     Builder,
-    QueryBuilder,
+    QB as QueryBuilder,
 };

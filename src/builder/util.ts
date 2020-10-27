@@ -20,8 +20,9 @@ export type BuilderExtension = Extension & {
             boolean: any,
             string: any,
             date: any,
-        }
-    }
+        },
+        functions: {},
+    },
 };
 
 export type NoBuilderExtension = NoExtension & {
@@ -31,8 +32,9 @@ export type NoBuilderExtension = NoExtension & {
             boolean: boolean,
             string: string,
             date: Date,
-        }
-    }
+        },
+        functions: {},
+    },
 };
 
 export type Extend<O extends object> = Object.Merge<O, NoBuilderExtension, 'deep'>

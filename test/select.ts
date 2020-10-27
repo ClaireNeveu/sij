@@ -1,7 +1,16 @@
 import test, { Macro } from 'ava';
 
 import { Builder, QueryBuilder } from '../src/builder';
-import { NoBuilderExtension, Extend, StatementBuilder } from '../src/builder/util';
+import { Functions } from '../src/builder/functions';
+import {
+    BuilderExtension,
+    NoBuilderExtension,
+    Extend,
+    ColumnOfType,
+    TypedAst,
+    StatementBuilder
+} from '../src/builder/util';
+import { Expr, FunctionApp } from '../src/ast/expr';
 import { Renderer } from '../src/render';
 
 type MySchema = {
@@ -19,6 +28,14 @@ type MySchema = {
 
 const realNumber: { _tag: 'Real', val: string } = ({ _tag: 'Real', val: '5000' })
 
+class MyFunctions<Schema, Table, Ext extends BuilderExtension> extends Functions<Schema, Table, Ext> {
+    charLength<String extends Ext['builder']['types']['string']>(
+        value: ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>
+    ): TypedAst<Schema, number, FunctionApp<Ext>> {
+        return this._function<String, number>('CHAR_LENGTH', [value]);
+    }
+}
+
 type MyExtension = Extend<{
     builder: {
         types: {
@@ -28,7 +45,7 @@ type MyExtension = Extend<{
 }>;
 
 const r = new Renderer();
-const b = new Builder<MySchema, MyExtension>();
+const b = new Builder<MySchema, MyExtension>(new MyFunctions<MySchema, {}, MyExtension>());
 
 const isSql: Macro<[StatementBuilder<any>, string]> = (t, builder, out) => (
     t.is(r.renderStatement(builder._statement), out)
