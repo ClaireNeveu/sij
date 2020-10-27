@@ -5,7 +5,8 @@ import type { Ident, Expr } from './expr';
 type Statement<Ext extends Extension> =
     | Query<Ext>
     | Insert<Ext>
-    | Update<Ext>;
+    | Update<Ext>
+    | Delete<Ext>;
 
 interface Insert<Ext extends Extension> extends Tagged<'Insert', {
     readonly table: Ident,
@@ -51,11 +52,19 @@ interface Update<Ext extends Extension> extends Tagged<'Update', {
 }> {};
 const Update = <Ext extends Extension>(args: UnTag<Update<Ext>>): Update<Ext> => tag('Update', args);
 
+interface Delete<Ext extends Extension> extends Tagged<'Delete', {
+    readonly table: Ident,
+    readonly where: Expr<Ext> | null,
+    readonly extensions: Ext['Delete'] | null,
+}> {};
+const Delete = <Ext extends Extension>(args: UnTag<Delete<Ext>>): Delete<Ext> => tag('Delete', args);
+
 export {
     Statement,
     DefaultValue,
     Insert,
     Update,
+    Delete,
     ValuesConstructor,
     ValuesQuery,
 };

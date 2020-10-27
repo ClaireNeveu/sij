@@ -5,7 +5,7 @@ import type {
     Select,
     Table,
 } from '../ast/query';
-import type { Insert, Statement, Update } from '../ast/statement';
+import type { Insert, Statement, Update, Delete } from '../ast/statement';
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
 
@@ -35,6 +35,7 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'Query': return this.renderQuery(statement);
             case 'Insert': return this.renderInsert(statement);
             case 'Update': return this.renderUpdate(statement);
+            case 'Delete': return this.renderDelete(statement);
         }
         exhaustive(statement);
     }
@@ -261,6 +262,12 @@ class Renderer<Ext extends Extension = NoExtension> {
         const where = update.where === null ? '' : ' WHERE ' + this.renderExpr(update.where);
         
         return `UPDATE ${this.renderIdent(update.table)} SET ${sets}${where}`;
+    }
+
+    renderDelete(del: Delete<any>): string {
+        const where = del.where === null ? '' : ' WHERE ' + this.renderExpr(del.where);
+        
+        return `DELETE FROM ${this.renderIdent(del.table)}${where}`;
     }
 }
 

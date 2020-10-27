@@ -8,6 +8,7 @@ import {
 import {
     Insert,
     Update,
+    Delete,
 } from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
@@ -25,6 +26,7 @@ import {
 import { QueryBuilder as QB } from './query';
 import { InsertBuilder as IB } from './insert';
 import { UpdateBuilder as UB } from './update';
+import { DeleteBuilder as DB } from './delete';
 
 class Builder<Schema, Ext extends BuilderExtension> {
     dialect: string  = 'SQL-92'
@@ -34,6 +36,7 @@ class Builder<Schema, Ext extends BuilderExtension> {
         readonly QueryBuilder: typeof QB = QB,
         readonly InsertBuilder: typeof IB = IB,
         readonly UpdateBuilder: typeof UB = UB,
+        readonly DeleteBuilder: typeof DB = DB,
     ) {}
 
     from<TableName extends ((keyof Schema) & string)>(
@@ -95,7 +98,16 @@ class Builder<Schema, Ext extends BuilderExtension> {
         );
     }
 
-    deleteFrom<Table extends ((keyof Schema) & string)>(table: Table) {
+    deleteFrom<TableName extends ((keyof Schema) & string)>(table: TableName) {
+        const del = Delete<Ext>({
+            table: Ident(table),
+            where: null,
+            extensions: null,
+        });
+        return new this.DeleteBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(
+            del,
+            this.fn as any
+        );
     }
 
     /**
@@ -127,11 +139,11 @@ class Builder<Schema, Ext extends BuilderExtension> {
         | Ext['builder']['types']['date']
         | null>(
         l: Return
-    ): TypedAst<Schema, Return, Expr<Ext>>{
+    ): TypedAst<Schema, Return, Expr<Ext>> {
         return {
             ast: makeLit(l as any)
         } as TypedAst<Schema, Return, Expr<Ext>>
-        }
+    }
     
 }
 
