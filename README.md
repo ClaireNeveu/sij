@@ -109,7 +109,7 @@ SQL allows you to form insert statements without a column list like so: `INSERT 
 
 ### Bare Expressions in Selects
 
-SIJ does not allow you to select an expression without aliasing it. In raw SQL it's possible to query `SELECT col + 1 from my_table` and get back an object that looks like `{ 'col + 1': 5 }`. Because the names of expression columns are not always statically determinable, sij forces you to alias any expressions you want to select. You can do this with `sql.as`, e.g. `sql.from('my_table').select(sql.as('col_plus_one', sql.fn.plus('col', sql.lit(1))))`
+SIJ does not allow you to select an expression without aliasing it. In raw SQL it's possible to query `SELECT col + 1 from my_table` and get back an object that looks like `{ 'col + 1': 5 }`. Because the names of expression columns are not always statically determinable, SIJ forces you to alias any expressions you want to select. You can do this with `sql.as`, e.g. `sql.from('my_table').select(sql.as('col_plus_one', sql.fn.plus('col', sql.lit(1))))`
 
 As a convenient shorthand you can use the `selectAs` builder method:
 ```typescript
