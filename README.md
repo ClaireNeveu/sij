@@ -136,11 +136,11 @@ SELECT name FROM my_table LEFT JOIN other_table ON my_table.other_table_id = oth
 ```
 `name` in this query is ambiguous and SQL will reject the query. SIJ however will not prevent you from constructing this query because it has no knowledge of conflicting columns.
 
-1. This is because we need to narrow the arguments' sum type to one variant in order to extract the return type.
-
 ## Why SIJ?
 
 Knex.js [doesn't support upsert](https://github.com/knex/knex/issues/3186), Sequelize doesn't support [basic](https://github.com/sequelize/sequelize/issues/5981) [data](https://github.com/sequelize/sequelize/issues/4900) [types](https://github.com/sequelize/sequelize/issues/2839), SQL-Bricks [doesn't support ordering](https://github.com/CSNW/sql-bricks/issues/73), Node-SQL is unmaintained, Slonik and Sqorn are postgres only. The current crop of SQL libraries is severely lacking. On top of these issues, many of these libraries were written with Typescript as an afterthought and their Typescript support is kludgy or extremely limited.
 
 SIJ is a Typescript-first library and it uses Typescript to help you write correct SQL. Further, SIJ is designed to be easily extensible and—through its dialects—support 100% of SQL.
+
+1. This is because we need to narrow the arguments' sum type to one variant in order to extract the return type.
 
