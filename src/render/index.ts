@@ -5,7 +5,7 @@ import type {
     Select,
     Table,
 } from '../ast/query';
-import type { Insert, Statement, Update, Delete } from '../ast/statement';
+import type { Insert, Statement, Update, Delete, UpdatePositioned, DeletePositioned } from '../ast/statement';
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
 
@@ -36,6 +36,8 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'Insert': return this.renderInsert(statement);
             case 'Update': return this.renderUpdate(statement);
             case 'Delete': return this.renderDelete(statement);
+            case 'UpdatePositioned': return this.renderUpdatePositioned(statement);
+            case 'DeletePositioned': return this.renderDeletePositioned(statement);
         }
         exhaustive(statement);
     }
@@ -264,10 +266,26 @@ class Renderer<Ext extends Extension = NoExtension> {
         return `UPDATE ${this.renderIdent(update.table)} SET ${sets}${where}`;
     }
 
+    renderUpdatePositioned(update: UpdatePositioned<any>): string {
+        const sets = update.assignments.map(([name, value]) => {
+            switch (value._tag) {
+                case 'DefaultValue': return `${this.renderIdent(name)} = DEFAULT`;
+                default: return `${this.renderIdent(name)} = ${this.renderExpr(value)}`;
+            }
+        }).join(', ');
+        
+        return `UPDATE ${this.renderIdent(update.table)} SET ${sets} WHERE CURRENT OF ${this.renderIdent(update.cursor)}`;
+    }
+
     renderDelete(del: Delete<any>): string {
         const where = del.where === null ? '' : ' WHERE ' + this.renderExpr(del.where);
         
         return `DELETE FROM ${this.renderIdent(del.table)}${where}`;
+    }
+
+    renderDeletePositioned(del: DeletePositioned<any>): string {
+        
+        return `DELETE FROM ${this.renderIdent(del.table)} WHERE CURRENT OF ${this.renderIdent(del.cursor)}`;
     }
 }
 

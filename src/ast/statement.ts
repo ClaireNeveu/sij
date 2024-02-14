@@ -6,7 +6,9 @@ type Statement<Ext extends Extension> =
     | Query<Ext>
     | Insert<Ext>
     | Update<Ext>
-    | Delete<Ext>;
+    | UpdatePositioned<Ext>
+    | Delete<Ext>
+    | DeletePositioned<Ext>;
 
 interface Insert<Ext extends Extension> extends Tagged<'Insert', {
     readonly table: Ident,
@@ -52,6 +54,14 @@ interface Update<Ext extends Extension> extends Tagged<'Update', {
 }> {};
 const Update = <Ext extends Extension>(args: UnTag<Update<Ext>>): Update<Ext> => tag('Update', args);
 
+interface UpdatePositioned<Ext extends Extension> extends Tagged<'UpdatePositioned', {
+    readonly table: Ident,
+    readonly assignments: Array<[Ident, Expr | DefaultValue]>,
+    readonly cursor: Ident,
+    readonly extensions: Ext['UpdatePositioned'] | null,
+}> {};
+const UpdatePositioned = <Ext extends Extension>(args: UnTag<UpdatePositioned<Ext>>): UpdatePositioned<Ext> => tag('UpdatePositioned', args);
+
 interface Delete<Ext extends Extension> extends Tagged<'Delete', {
     readonly table: Ident,
     readonly where: Expr<Ext> | null,
@@ -59,13 +69,23 @@ interface Delete<Ext extends Extension> extends Tagged<'Delete', {
 }> {};
 const Delete = <Ext extends Extension>(args: UnTag<Delete<Ext>>): Delete<Ext> => tag('Delete', args);
 
+
+interface DeletePositioned<Ext extends Extension> extends Tagged<'DeletePositioned', {
+    readonly table: Ident,
+    readonly cursor: Ident,
+    readonly extensions: Ext['DeletePositioned'] | null,
+}> {};
+const DeletePositioned = <Ext extends Extension>(args: UnTag<DeletePositioned<Ext>>): DeletePositioned<Ext> => tag('DeletePositioned', args);
+
 export {
     DefaultValue,
     DefaultValues,
     Delete,
+    DeletePositioned,
     Insert,
     Statement,
     Update,
+    UpdatePositioned,
     ValuesConstructor,
     ValuesQuery,
 };
