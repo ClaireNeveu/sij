@@ -5,6 +5,8 @@ import { Functions } from '../src/builder/functions';
 import { NoBuilderExtension, Extend, StatementBuilder } from '../src/builder/util';
 import { Renderer } from '../src/render';
 
+import { isSql, isParamsSql } from './_util';
+
 type MySchema = {
     employee: {
         id: number,
@@ -28,20 +30,7 @@ type MyExtension = Extend<{
     }
 }>;
 
-const r = new Renderer();
 const b = new Builder<MySchema, MyExtension>(new Functions<MySchema, {}, MyExtension>());
-
-const isSql: Macro<[StatementBuilder<any>, string]> = (t, builder, out) => (
-    t.is(r.renderStatement(builder._statement), out)
-);
-
-const isParamsSql: Macro<[StatementBuilder<any>, string, Array<any>]> = (t, builder, str, par) => {
-    const r = new Renderer({ paramsMode: true });
-    const q = r.renderStatement(builder._statement);
-    const { params } = r;
-    t.is(q, str);
-    t.deepEqual(params, par);
-};
 
 test('basic', isSql,
      b.deleteFrom('employee'),

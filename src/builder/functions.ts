@@ -16,7 +16,7 @@ const makeIdent = <Ext extends Extension>(name: string): Expr<Ext> => {
     }
 };
 
-export type GetFunctions<F> = F extends Functions<infer S, infer T, infer E> ? F & E['builder']['functions']<S, T, E> : nothing;
+// export type GetFunctions<F> = F extends Functions<infer S, infer T, infer E> ? F & E['builder']['functions']<S, T, E> : nothing;
 
 export class Functions<Schema, Table, Ext extends BuilderExtension> {
 

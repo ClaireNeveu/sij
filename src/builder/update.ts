@@ -85,7 +85,7 @@ class UpdateBuilder<
                 const column = key as StringKeys<Table>;
                 const value = (updates as any)[key] as ValueSource<Schema, Table, Column, Ext>;
                 const expr = (
-                    typeof value === 'object' && 'ast' in value
+                    typeof value === 'object' && 'ast' in value!!
                         ? value.ast
                         : makeLit(value as any)
                 ) as Expr<Ext> | DefaultValue;
@@ -100,7 +100,7 @@ class UpdateBuilder<
         const column = arg1 as Column;
         const value = arg2 as ValueSource<Schema, Table, Column, Ext>;
         const expr = (
-            typeof value === 'object' && 'ast' in value
+            typeof value === 'object' && 'ast' in value!!
                 ? value.ast
                 : makeLit(value as any)
         );
