@@ -4,6 +4,9 @@
   "description": "Embedding of SQL-92 into Javascript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "exports": {
+    "./": "./dist/"
+  },
   "scripts": {
     "prepublish": "npm run build",
     "build": "npx tsc && copyfiles -u 2 \"src/types/*.d.ts\" dist",

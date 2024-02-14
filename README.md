@@ -49,7 +49,7 @@ To join on a derived table, just alias another builder and pass it into the `joi
 ```typescript
 sql.from('my_table').leftJoin(
   sql.as('t1', b.from(other_table).select('col2', 'col3')),
-  sql => sql.fn.eq('t1.col2', my_table.col2')
+  sql => sql.fn.eq('t1.col2', 'my_table.col2')
 ).select('col', 't1.col3')
 // SELECT "my_table"."col", "t1"."col3"
 // FROM "my_table" LEFT OUTER JOIN 

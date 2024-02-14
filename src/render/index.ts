@@ -14,7 +14,7 @@ const exhaustive = (n: never): void => {};
 class Renderer<Ext extends Extension = NoExtension> {
     params: Array<any>
     readonly _paramsMode: boolean
-    readonly _placeHolderStyle: '$' | '?'
+    _placeHolderStyle: '$' | '?'
     
     constructor(opts: { paramsMode?: boolean, placeHolderStyle?: '$' | '?' } = {}) {
         this.params = [];

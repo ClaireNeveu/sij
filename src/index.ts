@@ -12,3 +12,5 @@ export {
 } from './render';
 
 export * as ast from './ast';
+
+export * as builder from './builder/util';

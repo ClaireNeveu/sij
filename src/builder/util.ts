@@ -21,7 +21,7 @@ export type BuilderExtension = Extension & {
             string: any,
             date: any,
         },
-        functions: {},
+        functions: <Schema, Table, Ext>(s: Schema, t: Table, e: Ext) => any,
     },
 };
 
@@ -33,7 +33,7 @@ export type NoBuilderExtension = NoExtension & {
             string: string,
             date: Date,
         },
-        functions: {},
+        functions: <Schema, Table, Ext>(s: Schema, t: Table, e: Ext) => {},
     },
 };
 
