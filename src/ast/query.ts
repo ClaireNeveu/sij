@@ -51,6 +51,7 @@ interface SetOp<Ext extends Extension = NoExtension> extends Tagged<'SetOp', {
 }> {};
 const SetOp = <Ext extends Extension = NoExtension>(args: UnTag<SetOp<Ext>>): SetOp<Ext> => tag('SetOp', args);
 
+// TODO: do table names need to be qualified?
 interface Select<Ext extends Extension = NoExtension> extends Tagged<'Select', {
     readonly selections: Array<Selection<Ext>>,
     readonly from: JoinedTable<Ext> | null,

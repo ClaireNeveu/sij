@@ -15,6 +15,10 @@ type Extension = {
     UpdatePositioned: any,
     Delete: any,
     DeletePositioned: any,
+    CreateSchema: any,
+    DomainDefinition: any,
+    TableDefinition: any,
+    ColumnDefinition: any,
 };
 
 type NoExtension = {
@@ -27,6 +31,10 @@ type NoExtension = {
     UpdatePositioned: unknown,
     Delete: unknown,
     DeletePositioned: unknown,
+    CreateSchema: unknown,
+    DomainDefinition: unknown,
+    TableDefinition: unknown,
+    ColumnDefinition: unknown,
 };
 
 const copy = <T extends {}>(obj: T, vals: Partial<T>): T => ({ ...obj, ...vals });

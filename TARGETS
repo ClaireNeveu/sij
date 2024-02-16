@@ -1,0 +1,6 @@
+The following databases are targeted for support:
+- MySQL
+- Postgres
+- Oracle (https://docs.oracle.com/en/database/oracle/oracle-database/23/sqlrf/index.html#Oracle%C2%AE-Database)
+- Microsoft SQL Server
+- SQlite

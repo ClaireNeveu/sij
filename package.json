@@ -10,6 +10,7 @@
   "scripts": {
     "prepublish": "npm run build",
     "build": "npx tsc && copyfiles -u 2 \"src/types/*.d.ts\" dist",
+    "format": "npx prettier . --write",
     "test": "ava -v && tsd",
     "docs": "npx typedoc src/ --out docs/ --includeDeclarations --excludeExternals --excludeNotExported --excludePrivate && touch docs/.nojekyll"
   },
@@ -35,6 +36,7 @@
     "ava": "^6.1.1",
     "copyfiles": "^2.4.0",
     "eslint": "^8.56.0",
+    "prettier": "3.2.5",
     "ts-node": "^10.9.2",
     "tsd": "^0.30.4",
     "typedoc": "^0.25.8",
