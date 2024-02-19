@@ -10,9 +10,9 @@ import { DataType } from './data-type';
   | <view definition>
   | <grant statement>
   | <domain definition>
-  | <character set definition>
-  | <collation definition>
-  | <translation definition>
+  | <character set definition> // Not implemented in major DBs
+  | <collation definition> // Not implemented in major DBs
+  | <translation definition> // Not implemented in major DBs
   | <assertion definition>
 */
 type SchemaDefinitionStatement<Ext extends Extension> =
@@ -519,4 +519,7 @@ export {
   UpdatePrivilege,
   ReferencePrivilege,
   UsagePrivilege,
+  ConstraintCheckTime,
+  ColumnDefinition,
+  TableConstraint,
 }
