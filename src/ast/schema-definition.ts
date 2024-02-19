@@ -2,6 +2,7 @@ import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
 import type { Query } from './query';
 import type { Ident, Expr, Lit } from './expr';
 import { DataType } from './data-type';
+import { NumLit } from './literal';
 
 /*
 <SQL schema definition statement> ::=
@@ -36,6 +37,11 @@ type SchemaDefinitionStatement<Ext extends Extension> =
 
 <schema authorization identifier> ::=
   <authorization identifier>
+
+<schema name> ::=
+  [ <catalog name> <period> ] <unqualified schema name>
+
+<authorization identifier> ::= <identifier>
 
 <schema character set specification> ::=
   DEFAULT CHARACTER SET <character set specification>
@@ -189,6 +195,33 @@ type ReferentialAction =
   | 'SetDefault'
   | 'NoAction'
 
+/*
+<default clause> ::=
+      DEFAULT <default option>
+
+<default option> ::=
+      <literal>
+    | <datetime value function>
+    | USER
+    | CURRENT_USER
+    | SESSION_USER
+    | SYSTEM_USER
+    | NULL
+
+<datetime value function> ::=
+      <current date value function>
+    | <current time value function>
+    | <current timestamp value function>
+
+<current date value function> ::= CURRENT_DATE
+
+<current time value function> ::=
+      CURRENT_TIME [ <left paren> <time precision> <right paren> ]
+
+
+<current timestamp value function> ::=
+      CURRENT_TIMESTAMP [ <left paren> <timestamp precision> <right paren> ]
+*/
 type DefaultOption =
   | Lit
   | CurrentDateDefault
@@ -201,12 +234,12 @@ type DefaultOption =
   | NullDefault
 
 interface CurrentTime extends Tagged<'CurrentTime', {}> {
-  readonly precision: number,
+  readonly precision: NumLit | null,
 };
 const CurrentTime = (args: UnTag<CurrentTime>): CurrentTime => tag('CurrentTime', args);
 
 interface CurrentTimeStamp extends Tagged<'CurrentTimeStamp', {}> {
-  readonly precision: number,
+  readonly precision: NumLit | null,
 };
 const CurrentTimeStamp = (args: UnTag<CurrentTimeStamp>): CurrentTimeStamp => tag('CurrentTimeStamp', args);
 
@@ -522,4 +555,5 @@ export {
   ConstraintCheckTime,
   ColumnDefinition,
   TableConstraint,
+  DefaultOption,
 }

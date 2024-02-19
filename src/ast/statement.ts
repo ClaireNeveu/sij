@@ -1,6 +1,8 @@
 import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
 import type { Query } from './query';
 import type { Ident, Expr } from './expr';
+import { SchemaDefinitionStatement } from './schema-definition';
+import { SchemaManipulationStatement } from './schema-manipulation';
 
 type Statement<Ext extends Extension> =
     | Query<Ext>
@@ -8,7 +10,9 @@ type Statement<Ext extends Extension> =
     | Update<Ext>
     | UpdatePositioned<Ext>
     | Delete<Ext>
-    | DeletePositioned<Ext>;
+    | DeletePositioned<Ext>
+    | SchemaDefinitionStatement<Ext>
+//    | SchemaManipulationStatement<Ext>;
 
 interface Insert<Ext extends Extension> extends Tagged<'Insert', {
     readonly table: Ident,

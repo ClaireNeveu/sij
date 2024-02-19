@@ -8,20 +8,22 @@ import type {
 import type { Insert, Statement, Update, Delete, UpdatePositioned, DeletePositioned } from '../ast/statement';
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
+import { CreateSchema, DomainDefinition, NumLit } from 'ast';
+import { ConstraintCheckTime, DefaultOption } from 'ast/schema-definition';
 
-const exhaustive = (n: never): void => {};
+const exhaustive = (n: never): void => { };
 
 class Renderer<Ext extends Extension = NoExtension> {
     params: Array<any>
     readonly _paramsMode: boolean
     _placeHolderStyle: '$' | '?'
-    
+
     constructor(opts: { paramsMode?: boolean, placeHolderStyle?: '$' | '?' } = {}) {
         this.params = [];
         this._paramsMode = opts.paramsMode ?? false;
         this._placeHolderStyle = opts.placeHolderStyle ?? '$';
     }
-    
+
     renderIdent(ident: Ident): string {
         return `"${ident.name}"`;
     }
@@ -29,7 +31,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     renderPlaceholder(n: number): string {
         return this._placeHolderStyle === '?' ? '?' : '$' + n;
     }
-    
+
     renderStatement(statement: Statement<any>): string {
         switch (statement._tag) {
             case 'Query': return this.renderQuery(statement);
@@ -38,10 +40,16 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'Delete': return this.renderDelete(statement);
             case 'UpdatePositioned': return this.renderUpdatePositioned(statement);
             case 'DeletePositioned': return this.renderDeletePositioned(statement);
+            case 'CreateSchema': return this.renderCreateSchema(statement);
+            case 'TableDefinition': return this.renderTableDefinition(statement);
+            case 'ViewDefinition': return this.renderViewDefinition(statement);
+            case 'GrantStatement': return this.renderGrantStatement(statement);
+            case 'DomainDefinition': return this.renderDomainDefinition(statement);
+            case 'AssertionDefinition': return this.renderAssertionDefinition(statement);
         }
         exhaustive(statement);
     }
-    
+
     renderExpr(expr: Expr): string {
         switch (expr._tag) {
             case 'Ident': return this.renderIdent(expr);
@@ -150,7 +158,7 @@ class Renderer<Ext extends Extension = NoExtension> {
 
         return `${ctes}${selection}${unions}${ordering}${limit}${offset}`;
     }
-    
+
     renderSelect(select: Select<any>): string {
         const selections = select.selections.map(s => {
             switch (s._tag) {
@@ -200,7 +208,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     renderCustomTable(dt: Ext['Table']): string {
         throw Error('Custom table encountered, please extend the renderer');
     }
-    
+
     renderLiteral(literal: Literal): string {
         if (this._paramsMode) {
             const val = literal._tag === 'NullLit' ? null : literal.val;
@@ -260,9 +268,9 @@ class Renderer<Ext extends Extension = NoExtension> {
                 default: return `${this.renderIdent(name)} = ${this.renderExpr(value)}`;
             }
         }).join(', ');
-        
+
         const where = update.where === null ? '' : ' WHERE ' + this.renderExpr(update.where);
-        
+
         return `UPDATE ${this.renderIdent(update.table)} SET ${sets}${where}`;
     }
 
@@ -273,19 +281,111 @@ class Renderer<Ext extends Extension = NoExtension> {
                 default: return `${this.renderIdent(name)} = ${this.renderExpr(value)}`;
             }
         }).join(', ');
-        
+
         return `UPDATE ${this.renderIdent(update.table)} SET ${sets} WHERE CURRENT OF ${this.renderIdent(update.cursor)}`;
     }
 
     renderDelete(del: Delete<any>): string {
         const where = del.where === null ? '' : ' WHERE ' + this.renderExpr(del.where);
-        
+
         return `DELETE FROM ${this.renderIdent(del.table)}${where}`;
     }
 
     renderDeletePositioned(del: DeletePositioned<any>): string {
-        
+
         return `DELETE FROM ${this.renderIdent(del.table)} WHERE CURRENT OF ${this.renderIdent(del.cursor)}`;
+    }
+    renderCreateSchema(schema: CreateSchema<any>): string {
+        const name = (() => {
+            let ret = '';
+            if (schema.catalog !== null) {
+                ret += this.renderIdent(schema.catalog);
+                ret += '.';
+            }
+            if (schema.name !== null) {
+                ret += this.renderIdent(schema.name);
+                ret += ' ';
+            }
+            return ret;
+        })();
+        const auth = schema.authorization !== null ? `AUTHORIZATION ${this.renderIdent(schema.authorization)} ` : '';
+        const charSet = schema.characterSet !== null ? (
+            `DEFAULT CHARACTER SET ${this.renderIdent(schema.characterSet)} `
+        ) : '';
+        const defs = schema.definitions.map(def => {
+            switch (def._tag) {
+                case 'DomainDefinition': return null;
+                case 'TableDefinition': return null;
+                case 'ViewDefinition': return null;
+                case 'GrantStatement': return null;
+                case 'AssertionDefinition': return null;
+            }
+        });
+
+        return `CREATE SCHEMA ${name}${auth}${charSet}[ <schema element>... ]`;
+    }
+    renderDomainDefinition(def: DomainDefinition<any>): string {
+        /*
+        <domain definition> ::=
+            CREATE DOMAIN <domain name> [ AS ] <data type>
+            [ <default clause> ]
+            [ <domain constraint>... ]
+            [ <collate clause> ]
+
+        <domain constraint> ::=
+            [ <constraint name definition> ]
+            <check constraint definition> [ <constraint attributes> ]
+        */
+        const defaultOption = def.default !== null ? ` ${this.renderDefaultOption(def.default)}` : '';
+        const constraint = def.constraintExpr !== null ? (
+            ` ${this.renderDomainConstraint(def.constraintName, def.constraintExpr, def.constraintAttributes)}`
+        ) : '';
+        return (
+            `CREATE DOMAIN ${this.renderIdent(def.name)} AS ${this.renderDataType(def.dataType)}`
+            + defaultOption
+            + constraint
+        );
+
+    }
+    renderDefaultOption(opt: DefaultOption): string {
+        const val = (() => {
+            switch (opt._tag) {
+                case 'Lit': return this.renderLiteral(opt.literal);
+                case 'CurrentDateDefault': return 'CURRENT_DATE';
+                case 'CurrentTime': {
+                    const precision = opt.precision !== null ? ` (${this.renderLiteral(opt.precision)})` : '';
+                    return `CURRENT_TIME${precision}`;
+                }
+                case 'CurrentTimeStamp': {
+                    const precision = opt.precision !== null ? ` (${this.renderLiteral(opt.precision)})` : '';
+                    return `CURRENT_TIMESTAMP${precision}`;
+                }
+                case 'UserDefault': return 'USER';
+                case 'CurrentUserDefault': return 'CURRENT_USER';
+                case 'SessionUserDefault': return 'SESSION_USER';
+                case 'SystemUserDefault': return 'SYSTEM_USER';
+                case 'NullDefault': return 'NULL';
+                default: return exhaustive(opt);
+            }
+        })()
+        return `DEFAULT ${val}`;
+    }
+    renderDomainConstraint(name: Ident | null, expr: Query, attrs: ConstraintCheckTime | null): string {
+        const namePart = name !== null ? `${this.renderIdent(name)} ` : '';
+        const def = this.renderQuery(expr);
+        const attributes = attrs !== null ? ` ${this.renderConstraintCheckTime(attrs)}` : '';
+        return namePart + def + attributes;
+    }
+    renderConstraintCheckTime(cct: ConstraintCheckTime): string {
+       if (cct.deferrable && cct.initiallyDeferred) {
+         return 'INITIALLY DEFERRED DEFERRABLE'
+       } else if (cct.deferrable) {
+        return 'INITIALLY IMMEDIATE DEFERRABLE'
+       } else if (cct.initiallyDeferred) {
+        return 'INITIALLY DEFERRED NOT DEFERRABLE'
+       } else {
+        return 'INITIALLY IMMEDIATE NOT DEFERRABLE'
+       }
     }
 }
 

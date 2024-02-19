@@ -67,3 +67,37 @@ export {
     ValuesConstructor,
     ValuesQuery,
 } from './statement';
+
+export {
+    SchemaDefinitionStatement,
+    CreateSchema,
+    TableDefinition,
+    ViewDefinition,
+    DomainDefinition,
+    AssertionDefinition,
+    Privilege,
+    SelectPrivilege,
+    DeletePrivilege,
+    InsertPrivilege,
+    UpdatePrivilege,
+    ReferencePrivilege,
+    UsagePrivilege,
+    ConstraintCheckTime,
+    ColumnDefinition,
+    TableConstraint,
+} from './schema-definition';
+
+export {
+    SchemaManipulationStatement,
+    DropSchema,
+    DropTable,
+    DropView,
+    RevokePrivilege,
+    DropDomain,
+    DropAssertion,
+    AlterDomain,
+    AlterTable,
+    AlterColumn,
+    SetDefault,
+    DropDefault
+} from './schema-manipulation';

@@ -18,13 +18,15 @@ import { Extension, Tagged, UnTag, tag } from "./util";
   | <drop translation statement> // Not implemented in major DBs
   | <drop assertion statement>
 */
-type SchemaManipulationStatement =
+type SchemaManipulationStatement<Ext extends Extension> =
   | DropSchema
   | DropTable
   | DropView
   | RevokePrivilege
   | DropDomain
   | DropAssertion
+  | AlterTable<Ext>
+  | AlterDomain
 
 /*
 <drop behavior> ::= CASCADE | RESTRICT
