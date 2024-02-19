@@ -12,3 +12,17 @@ The database connector might convert this into a numeric type which means that y
 
 
 Idents need to be boxed so they can be distinguised from strings in updates and inserts.
+
+Wonder if it might be better to modify the base builder prototype instead of parameterization e.g.
+```
+declare module 'zod' {
+    export interface ZodType {
+        makeOptional: (required: boolean)=> ZodType;
+    }
+}
+// Add syntaxic sugar to the Zod schema
+z.ZodType.prototype.makeOptional = function (required: boolean): ZodType {
+    return required ? this : this.optional();
+};
+```
+Also wonder if I might be able to *clone* the module then modify the clone. That would allow the types to actually be accurate.
