@@ -1,13 +1,6 @@
 import { Tagged, tag } from './util';
 
-type Literal =
-  | NumLit
-  | StringLit
-  | BoolLit
-  | NullLit
-  | DateLit
-  | CustomLit;
-
+type Literal = NumLit | StringLit | BoolLit | NullLit | DateLit | CustomLit;
 
 type NumLit = Tagged<'NumLit', { val: number | string }>;
 const NumLit = (val: number | string): Literal => tag('NumLit', { val });
@@ -30,12 +23,4 @@ const DateLit = (val: Date): Literal => tag('DateLit', { val });
 type CustomLit = Tagged<'CustomLit', { val: any }>;
 const CustomLit = (val: any): Literal => tag('CustomLit', { val });
 
-export {
-    Literal,
-    NumLit,
-    StringLit,
-    BoolLit,
-    NullLit,
-    DateLit,
-    CustomLit,
-};
+export { Literal, NumLit, StringLit, BoolLit, NullLit, DateLit, CustomLit };

@@ -22,7 +22,7 @@ type SchemaDefinitionStatement<Ext extends Extension> =
   | ViewDefinition<Ext>
   | GrantStatement
   | DomainDefinition<Ext>
-  | AssertionDefinition
+  | AssertionDefinition;
 
 /*
 <schema definition> ::=
@@ -46,15 +46,20 @@ type SchemaDefinitionStatement<Ext extends Extension> =
 <schema character set specification> ::=
   DEFAULT CHARACTER SET <character set specification>
 */
-interface CreateSchema<Ext extends Extension> extends Tagged<'CreateSchema', {
-  readonly name: Ident,
-  readonly catalog: Ident | null,
-  readonly authorization: Ident | null,
-  readonly characterSet: Ident | null, // TODO the spec seems to say this could be scoped by schema?
-  readonly definitions: Array<SchemaDefinition<Ext>>,
-  readonly extensions: Ext['CreateSchema'] | null,
-}> { };
-const CreateSchema = <Ext extends Extension>(args: UnTag<CreateSchema<Ext>>): CreateSchema<Ext> => tag('CreateSchema', args);
+interface CreateSchema<Ext extends Extension>
+  extends Tagged<
+    'CreateSchema',
+    {
+      readonly name: Ident;
+      readonly catalog: Ident | null;
+      readonly authorization: Ident | null;
+      readonly characterSet: Ident | null; // TODO the spec seems to say this could be scoped by schema?
+      readonly definitions: Array<SchemaDefinition<Ext>>;
+      readonly extensions: Ext['CreateSchema'] | null;
+    }
+  > {}
+const CreateSchema = <Ext extends Extension>(args: UnTag<CreateSchema<Ext>>): CreateSchema<Ext> =>
+  tag('CreateSchema', args);
 
 /*
 <domain definition> ::=
@@ -67,17 +72,22 @@ const CreateSchema = <Ext extends Extension>(args: UnTag<CreateSchema<Ext>>): Cr
     [ <constraint name definition> ]
     <check constraint definition> [ <constraint attributes> ]
 */
-interface DomainDefinition<Ext extends Extension> extends Tagged<'DomainDefinition', {
-  readonly name: Ident,
-  readonly dataType: DataType,
-  readonly default: DefaultOption | null
-  readonly constraintName: Ident | null, // TODO qualify
-  readonly constraintExpr: Query | null, // TODO need to support VALUE within constraint expressions
-  readonly constraintAttributes: ConstraintCheckTime | null,
-  readonly collation: Ident | null // TODO qualify
-  readonly extensions: Ext['DomainDefinition'] | null,
-}> { };
-const DomainDefinition = <Ext extends Extension>(args: UnTag<DomainDefinition<Ext>>): DomainDefinition<Ext> => tag('DomainDefinition', args);
+interface DomainDefinition<Ext extends Extension>
+  extends Tagged<
+    'DomainDefinition',
+    {
+      readonly name: Ident;
+      readonly dataType: DataType;
+      readonly default: DefaultOption | null;
+      readonly constraintName: Ident | null; // TODO qualify
+      readonly constraintExpr: Query | null; // TODO need to support VALUE within constraint expressions
+      readonly constraintAttributes: ConstraintCheckTime | null;
+      readonly collation: Ident | null; // TODO qualify
+      readonly extensions: Ext['DomainDefinition'] | null;
+    }
+  > {}
+const DomainDefinition = <Ext extends Extension>(args: UnTag<DomainDefinition<Ext>>): DomainDefinition<Ext> =>
+  tag('DomainDefinition', args);
 
 /*
 <table definition> ::=
@@ -92,15 +102,20 @@ const DomainDefinition = <Ext extends Extension>(args: UnTag<DomainDefinition<Ex
       <column definition>
     | <table constraint definition>
 */
-interface TableDefinition<Ext extends Extension> extends Tagged<'TableDefinition', {
-  readonly name: Ident,
-  readonly mode: 'Persistent' | 'GlobalTemp' | 'LocalTemp',
-  readonly columns: Array<ColumnDefinition<Ext>>,
-  readonly constraints: Array<TableConstraint>,
-  readonly onCommit: 'Delete' | 'Preserve' | null,
-  readonly extensions: Ext['TableDefinition'] | null,
-}> { };
-const TableDefinition = <Ext extends Extension>(args: UnTag<TableDefinition<Ext>>): TableDefinition<Ext> => tag('TableDefinition', args);
+interface TableDefinition<Ext extends Extension>
+  extends Tagged<
+    'TableDefinition',
+    {
+      readonly name: Ident;
+      readonly mode: 'Persistent' | 'GlobalTemp' | 'LocalTemp';
+      readonly columns: Array<ColumnDefinition<Ext>>;
+      readonly constraints: Array<TableConstraint>;
+      readonly onCommit: 'Delete' | 'Preserve' | null;
+      readonly extensions: Ext['TableDefinition'] | null;
+    }
+  > {}
+const TableDefinition = <Ext extends Extension>(args: UnTag<TableDefinition<Ext>>): TableDefinition<Ext> =>
+  tag('TableDefinition', args);
 
 /*
 <column definition> ::=
@@ -109,15 +124,20 @@ const TableDefinition = <Ext extends Extension>(args: UnTag<TableDefinition<Ext>
     [ <column constraint definition>... ]
     [ <collate clause> ]
 */
-interface ColumnDefinition<Ext extends Extension> extends Tagged<'ColumnDefinition', {
-  readonly name: Ident,
-  readonly type: DataType | Ident, // Data type or domain identifier
-  readonly default: DefaultOption,
-  readonly constraints: Array<ColumnConstraintDefinition>,
-  readonly collation: Ident | null // TODO qualify
-  readonly extensions: Ext['ColumnDefinition'] | null,
-}> { };
-const ColumnDefinition = <Ext extends Extension>(args: UnTag<ColumnDefinition<Ext>>): ColumnDefinition<Ext> => tag('ColumnDefinition', args);
+interface ColumnDefinition<Ext extends Extension>
+  extends Tagged<
+    'ColumnDefinition',
+    {
+      readonly name: Ident;
+      readonly type: DataType | Ident; // Data type or domain identifier
+      readonly default: DefaultOption;
+      readonly constraints: Array<ColumnConstraintDefinition>;
+      readonly collation: Ident | null; // TODO qualify
+      readonly extensions: Ext['ColumnDefinition'] | null;
+    }
+  > {}
+const ColumnDefinition = <Ext extends Extension>(args: UnTag<ColumnDefinition<Ext>>): ColumnDefinition<Ext> =>
+  tag('ColumnDefinition', args);
 
 /*
 <column constraint definition> ::=
@@ -125,12 +145,17 @@ const ColumnDefinition = <Ext extends Extension>(args: UnTag<ColumnDefinition<Ex
     <column constraint>
       [ <constraint attributes> ]
 */
-interface ColumnConstraintDefinition extends Tagged<'ColumnConstraintDefinition', {
-  readonly name: Ident | null,
-  readonly constraint: ColumnConstraint,
-  readonly attributes: ConstraintCheckTime | null,
-}> { };
-const ColumnConstraintDefinition = (args: UnTag<ColumnConstraintDefinition>): ColumnConstraintDefinition => tag('ColumnConstraintDefinition', args);
+interface ColumnConstraintDefinition
+  extends Tagged<
+    'ColumnConstraintDefinition',
+    {
+      readonly name: Ident | null;
+      readonly constraint: ColumnConstraint;
+      readonly attributes: ConstraintCheckTime | null;
+    }
+  > {}
+const ColumnConstraintDefinition = (args: UnTag<ColumnConstraintDefinition>): ColumnConstraintDefinition =>
+  tag('ColumnConstraintDefinition', args);
 
 /*
 <column constraint> ::=
@@ -139,13 +164,9 @@ const ColumnConstraintDefinition = (args: UnTag<ColumnConstraintDefinition>): Co
     | <references specification>
     | <check constraint definition>
 */
-type ColumnConstraint =
-  | ColumnNotNull
-  | UniqueConstraint
-  | ReferenceConstraint
-  | CheckConstraint
+type ColumnConstraint = ColumnNotNull | UniqueConstraint | ReferenceConstraint | CheckConstraint;
 
-interface ColumnNotNull extends Tagged<'ColumnNotNull', {}> { };
+interface ColumnNotNull extends Tagged<'ColumnNotNull', {}> {}
 const ColumnNotNull = tag('ColumnNotNull', {});
 
 /*
@@ -154,9 +175,9 @@ const ColumnNotNull = tag('ColumnNotNull', {});
     <left paren> <column name list> <right paren>
 */
 interface UniqueConstraint extends Tagged<'UniqueConstraint', {}> {
-  readonly primaryKey: boolean,
-  readonly columns: Array<Ident>, // Columns CANNOT be qualified here.
-};
+  readonly primaryKey: boolean;
+  readonly columns: Array<Ident>; // Columns CANNOT be qualified here.
+}
 const UniqueConstraint = (args: UnTag<UniqueConstraint>): UniqueConstraint => tag('UniqueConstraint', args);
 
 /*
@@ -181,12 +202,12 @@ const UniqueConstraint = (args: UnTag<UniqueConstraint>): UniqueConstraint => ta
 <delete rule> ::= ON DELETE <referential action>
 */
 interface ReferenceConstraint extends Tagged<'ReferenceConstraint', {}> {
-  readonly table: Ident, // TODO check if this needs to be qualified.
-  readonly matchType: 'Regular' | 'Full' | 'Partial',
-  readonly columns: Array<Ident> | null, // Columns CANNOT be qualified here.
-  readonly onUpdate: ReferentialAction | null,
-  readonly onDelete: ReferentialAction | null,
-};
+  readonly table: Ident; // TODO check if this needs to be qualified.
+  readonly matchType: 'Regular' | 'Full' | 'Partial';
+  readonly columns: Array<Ident> | null; // Columns CANNOT be qualified here.
+  readonly onUpdate: ReferentialAction | null;
+  readonly onDelete: ReferentialAction | null;
+}
 const ReferenceConstraint = (args: UnTag<ReferenceConstraint>): ReferenceConstraint => tag('ReferenceConstraint', args);
 
 /*
@@ -196,11 +217,7 @@ const ReferenceConstraint = (args: UnTag<ReferenceConstraint>): ReferenceConstra
   | SET DEFAULT
   | NO ACTION
 */
-type ReferentialAction =
-  | 'Cascade'
-  | 'SetNull'
-  | 'SetDefault'
-  | 'NoAction'
+type ReferentialAction = 'Cascade' | 'SetNull' | 'SetDefault' | 'NoAction';
 
 /*
 <default clause> ::=
@@ -238,34 +255,34 @@ type DefaultOption =
   | CurrentUserDefault
   | SessionUserDefault
   | SystemUserDefault
-  | NullDefault
+  | NullDefault;
 
 interface CurrentTime extends Tagged<'CurrentTime', {}> {
-  readonly precision: NumLit | null,
-};
+  readonly precision: NumLit | null;
+}
 const CurrentTime = (args: UnTag<CurrentTime>): CurrentTime => tag('CurrentTime', args);
 
 interface CurrentTimeStamp extends Tagged<'CurrentTimeStamp', {}> {
-  readonly precision: NumLit | null,
-};
+  readonly precision: NumLit | null;
+}
 const CurrentTimeStamp = (args: UnTag<CurrentTimeStamp>): CurrentTimeStamp => tag('CurrentTimeStamp', args);
 
-interface UserDefault extends Tagged<'UserDefault', {}> { };
+interface UserDefault extends Tagged<'UserDefault', {}> {}
 const UserDefault = tag('UserDefault', {});
 
-interface CurrentUserDefault extends Tagged<'CurrentUserDefault', {}> { };
+interface CurrentUserDefault extends Tagged<'CurrentUserDefault', {}> {}
 const CurrentUserDefault = tag('CurrentUserDefault', {});
 
-interface SessionUserDefault extends Tagged<'SessionUserDefault', {}> { };
+interface SessionUserDefault extends Tagged<'SessionUserDefault', {}> {}
 const SessionUserDefault = tag('SessionUserDefault', {});
 
-interface SystemUserDefault extends Tagged<'SystemUserDefault', {}> { };
+interface SystemUserDefault extends Tagged<'SystemUserDefault', {}> {}
 const SystemUserDefault = tag('SystemUserDefault', {});
 
-interface NullDefault extends Tagged<'NullDefault', {}> { };
+interface NullDefault extends Tagged<'NullDefault', {}> {}
 const NullDefault = tag('NullDefault', {});
 
-interface CurrentDateDefault extends Tagged<'CurrentDateDefault', {}> { };
+interface CurrentDateDefault extends Tagged<'CurrentDateDefault', {}> {}
 const CurrentDateDefault = tag('CurrentDateDefault', {});
 
 /*
@@ -279,10 +296,10 @@ const CurrentDateDefault = tag('CurrentDateDefault', {});
     | <check constraint definition>
 */
 interface TableConstraint extends Tagged<'TableConstraint', {}> {
-  readonly name: Ident | null,
-  readonly constraint: UniqueConstraint | ReferenceConstraint | CheckConstraint 
-  readonly checkTime: ConstraintCheckTime | null,
-};
+  readonly name: Ident | null;
+  readonly constraint: UniqueConstraint | ReferenceConstraint | CheckConstraint;
+  readonly checkTime: ConstraintCheckTime | null;
+}
 const TableConstraint = (args: UnTag<TableConstraint>): TableConstraint => tag('TableConstraint', args);
 
 /*
@@ -294,9 +311,9 @@ const TableConstraint = (args: UnTag<TableConstraint>): TableConstraint => tag('
     | INITIALLY IMMEDIATE
 */
 interface ConstraintCheckTime extends Tagged<'ConstraintCheckTime', {}> {
-  readonly initiallyDeferred: boolean,
-  readonly deferrable: boolean,
-};
+  readonly initiallyDeferred: boolean;
+  readonly deferrable: boolean;
+}
 const ConstraintCheckTime = (args: UnTag<ConstraintCheckTime>): ConstraintCheckTime => tag('ConstraintCheckTime', args);
 
 /*
@@ -304,8 +321,8 @@ const ConstraintCheckTime = (args: UnTag<ConstraintCheckTime>): ConstraintCheckT
   CHECK <left paren> <search condition> <right paren>
 */
 interface CheckConstraint extends Tagged<'CheckConstraint', {}> {
-  readonly search: Query,
-};
+  readonly search: Query;
+}
 const CheckConstraint = (args: UnTag<CheckConstraint>): CheckConstraint => tag('CheckConstraint', args);
 
 /*
@@ -324,7 +341,7 @@ type SchemaDefinition<Ext extends Extension> =
   | TableDefinition<Ext>
   | ViewDefinition<Ext>
   | GrantStatement
-  | AssertionDefinition
+  | AssertionDefinition;
 //  | CharacterSetDefinitions Unimplemented in major dialects
 //  | CollationDefinition Unimplemented in major dialects
 //  | TranslationDefinition Unimplemented in major dialects
@@ -336,12 +353,13 @@ type SchemaDefinition<Ext extends Extension> =
       [ WITH [ CASCADED | LOCAL ] CHECK OPTION ]
 */
 interface ViewDefinition<Ext extends Extension> extends Tagged<'ViewDefinition', {}> {
-  readonly name: Ident,
-  readonly columns: Array<Ident> | null,
-  readonly query: Query<Ext>, // TODO can also be a VALUES statement
-  readonly checkOption: 'Cascaded' | 'Local' | null,
-};
-const ViewDefinition = <Ext extends Extension>(args: UnTag<ViewDefinition<Ext>>): ViewDefinition<Ext> => tag('ViewDefinition', args);
+  readonly name: Ident;
+  readonly columns: Array<Ident> | null;
+  readonly query: Query<Ext>; // TODO can also be a VALUES statement
+  readonly checkOption: 'Cascaded' | 'Local' | null;
+}
+const ViewDefinition = <Ext extends Extension>(args: UnTag<ViewDefinition<Ext>>): ViewDefinition<Ext> =>
+  tag('ViewDefinition', args);
 
 /*
 <grant statement> ::=
@@ -365,13 +383,13 @@ const ViewDefinition = <Ext extends Extension>(args: UnTag<ViewDefinition<Ext>>)
     | <authorization identifier>
 */
 interface GrantStatement extends Tagged<'GrantStatement', {}> {
-  readonly privileges: Array<Privilege> | null,
-  readonly objectName: Ident, // TODO some of these can be qualified.
-  readonly objectType: 'Table' | 'Domain' | 'Collation' | 'CharacterSet' | 'Translation',
-  readonly grantees: Array<Ident> | null, // null means PUBLIC
-  readonly grantOption: boolean,
-  readonly checkOption: 'Cascaded' | 'Local' | null,
-};
+  readonly privileges: Array<Privilege> | null;
+  readonly objectName: Ident; // TODO some of these can be qualified.
+  readonly objectType: 'Table' | 'Domain' | 'Collation' | 'CharacterSet' | 'Translation';
+  readonly grantees: Array<Ident> | null; // null means PUBLIC
+  readonly grantOption: boolean;
+  readonly checkOption: 'Cascaded' | 'Local' | null;
+}
 const GrantStatement = (args: UnTag<GrantStatement>): GrantStatement => tag('GrantStatement', args);
 
 /*
@@ -389,30 +407,30 @@ type Privilege =
   | InsertPrivilege
   | UpdatePrivilege
   | ReferencePrivilege
-  | UsagePrivilege
+  | UsagePrivilege;
 
-interface SelectPrivilege extends Tagged<'SelectPrivilege', {}> { };
+interface SelectPrivilege extends Tagged<'SelectPrivilege', {}> {}
 const SelectPrivilege = tag('SelectPrivilege', {});
 
-interface DeletePrivilege extends Tagged<'DeletePrivilege', {}> { };
+interface DeletePrivilege extends Tagged<'DeletePrivilege', {}> {}
 const DeletePrivilege = tag('DeletePrivilege', {});
 
-interface UsagePrivilege extends Tagged<'UsagePrivilege', {}> { };
+interface UsagePrivilege extends Tagged<'UsagePrivilege', {}> {}
 const UsagePrivilege = tag('UsagePrivilege', {});
 
 interface InsertPrivilege extends Tagged<'InsertPrivilege', {}> {
-  readonly columns: Array<Ident> | null,
-};
+  readonly columns: Array<Ident> | null;
+}
 const InsertPrivilege = (args: UnTag<InsertPrivilege>): InsertPrivilege => tag('InsertPrivilege', args);
 
 interface UpdatePrivilege extends Tagged<'UpdatePrivilege', {}> {
-  readonly columns: Array<Ident> | null,
-};
+  readonly columns: Array<Ident> | null;
+}
 const UpdatePrivilege = (args: UnTag<UpdatePrivilege>): UpdatePrivilege => tag('UpdatePrivilege', args);
 
 interface ReferencePrivilege extends Tagged<'ReferencePrivilege', {}> {
-  readonly columns: Array<Ident> | null,
-};
+  readonly columns: Array<Ident> | null;
+}
 const ReferencePrivilege = (args: UnTag<ReferencePrivilege>): ReferencePrivilege => tag('ReferencePrivilege', args);
 
 /*
@@ -424,10 +442,10 @@ const ReferencePrivilege = (args: UnTag<ReferencePrivilege>): ReferencePrivilege
     CHECK <left paren> <search condition> <right paren>
 */
 interface AssertionDefinition extends Tagged<'AssertionDefinition', {}> {
-  readonly name: Ident, // TODO qualify
-  readonly search: Query,
-  readonly checkTime: ConstraintCheckTime | null,
-};
+  readonly name: Ident; // TODO qualify
+  readonly search: Query;
+  readonly checkTime: ConstraintCheckTime | null;
+}
 const AssertionDefinition = (args: UnTag<AssertionDefinition>): AssertionDefinition => tag('AssertionDefinition', args);
 
 /*
@@ -573,4 +591,4 @@ export {
   UniqueConstraint,
   ColumnConstraintDefinition,
   GrantStatement,
-}
+};

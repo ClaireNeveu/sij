@@ -4,29 +4,29 @@ import { Tagged, UnTag, tag } from './util';
  * Datatypes defined in SQL.
  * @typeParam Ext Any datatypes added by a SQL dialect, defaults to `never`.
  */
-type DataType = 
-    | Char
-    | VarChar
-    | Clob
-    | Binary
-    | VarBinary
-    | Blob
-    | Decimal
-    | Float
-    | Uuid
-    | SmallInt
-    | Int
-    | BigInt
-    | Real
-    | Double
-    | Boolean
-    | Date
-    | Time
-    | Timestamp
-    | Interval
-    | Text
-    | Bytea
-    | Custom;
+type DataType =
+  | Char
+  | VarChar
+  | Clob
+  | Binary
+  | VarBinary
+  | Blob
+  | Decimal
+  | Float
+  | Uuid
+  | SmallInt
+  | Int
+  | BigInt
+  | Real
+  | Double
+  | Boolean
+  | Date
+  | Time
+  | Timestamp
+  | Interval
+  | Text
+  | Bytea
+  | Custom;
 
 type Uuid = { readonly _tag: 'Uuid' };
 const Uuid: Uuid = { _tag: 'Uuid' };
@@ -85,15 +85,21 @@ const VarBinary = (size: number): VarBinary => tag('VarBinary', { size });
 type Blob = Tagged<'Blob', { readonly size: number }>;
 const Blob = (size: number): Blob => tag('Blob', { size });
 
-type Decimal = Tagged<'Decimal', {
-    readonly precision: number | null,
-    readonly scale: number | null
-}>;
+type Decimal = Tagged<
+  'Decimal',
+  {
+    readonly precision: number | null;
+    readonly scale: number | null;
+  }
+>;
 const Decimal = (args: UnTag<Decimal>): Decimal => tag('Decimal', args);
 
-type Float = Tagged<'Float', {
-    readonly precision: number | null
-}>;
+type Float = Tagged<
+  'Float',
+  {
+    readonly precision: number | null;
+  }
+>;
 const Float = (prec: number | null): Float => tag('Float', { precision: prec ?? null });
 
 /* Postgres only
@@ -106,33 +112,36 @@ const Array = (wrapped: DataType): Array => tag('Array', { wrapped });
 /**
  * Custom type like an enum
  */
-type Custom = Tagged<'Custom', {
-    readonly name: string
-}>;
+type Custom = Tagged<
+  'Custom',
+  {
+    readonly name: string;
+  }
+>;
 const Custom = (name: string): Custom => tag('Custom', { name });
 
 export {
-    DataType,
-    Char,
-    VarChar,
-    Uuid,
-    SmallInt,
-    Int,
-    BigInt,
-    Real,
-    Double,
-    Boolean,
-    Date,
-    Time,
-    Timestamp,
-    Interval,
-    Text,
-    Bytea,
-    Clob,
-    Binary,
-    VarBinary,
-    Blob,
-    Decimal,
-    Float,
-    Custom,
+  DataType,
+  Char,
+  VarChar,
+  Uuid,
+  SmallInt,
+  Int,
+  BigInt,
+  Real,
+  Double,
+  Boolean,
+  Date,
+  Time,
+  Timestamp,
+  Interval,
+  Text,
+  Bytea,
+  Clob,
+  Binary,
+  VarBinary,
+  Blob,
+  Decimal,
+  Float,
+  Custom,
 };

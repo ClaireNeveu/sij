@@ -1,115 +1,160 @@
 import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
 import { Ident, Expr } from './expr';
 
-interface Query<Ext extends Extension = NoExtension> extends Tagged<'Query', {
-    readonly commonTableExprs: Array<CommonTableExpr<Ext>>,
-    readonly selection: Select<Ext>,
-    readonly unions: Array<SetOp<Ext>>,
-    readonly ordering: Array<OrderingExpr<Ext>>,
-    readonly limit: Expr<Ext> | null,
-    readonly offset: Expr<Ext> | null,
-    readonly extensions: Ext['Query'] | null,
-}> {};
+interface Query<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'Query',
+    {
+      readonly commonTableExprs: Array<CommonTableExpr<Ext>>;
+      readonly selection: Select<Ext>;
+      readonly unions: Array<SetOp<Ext>>;
+      readonly ordering: Array<OrderingExpr<Ext>>;
+      readonly limit: Expr<Ext> | null;
+      readonly offset: Expr<Ext> | null;
+      readonly extensions: Ext['Query'] | null;
+    }
+  > {}
 const Query = <Ext extends Extension = NoExtension>(args: UnTag<Query<Ext>>): Query<Ext> => tag('Query', args);
 
 /**
  * A single Common Table Expression as part of a WITH statement.
  * `tableAlias [(col1, col2, ...)] AS (query)`
  */
-interface CommonTableExpr<Ext extends Extension = NoExtension> extends Tagged<'CommonTableExpr', {
-    readonly alias: TableAlias,
-    readonly query: Query<Ext>
-}> {};
+interface CommonTableExpr<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'CommonTableExpr',
+    {
+      readonly alias: TableAlias;
+      readonly query: Query<Ext>;
+    }
+  > {}
 const CommonTableExpr = <Ext extends Extension = NoExtension>(
-    args: UnTag<CommonTableExpr<Ext>>
+  args: UnTag<CommonTableExpr<Ext>>,
 ): CommonTableExpr<Ext> => tag('CommonTableExpr', args);
-
 
 /**
  * Alias name for a table and optionally its columns
- * e.g. aliasedName (colAlias1, colAlias2) AS 
+ * e.g. aliasedName (colAlias1, colAlias2) AS
  */
-interface TableAlias<Ext extends Extension = NoExtension> extends Tagged<'TableAlias', {
-    readonly name: Ident,
-    readonly columns: Array<Ident>
-}> {};
+interface TableAlias<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'TableAlias',
+    {
+      readonly name: Ident;
+      readonly columns: Array<Ident>;
+    }
+  > {}
 const TableAlias = (args: UnTag<TableAlias>): TableAlias => tag('TableAlias', args);
 
-interface OrderingExpr<Ext extends Extension = NoExtension> extends Tagged<'OrderingExpr', {
-    readonly expr: Expr<Ext>,
-    readonly order: 'ASC' | 'DESC' | null,
-    readonly nullHandling: 'NULLS FIRST' | 'NULLS LAST' | null
-}> {};
-const OrderingExpr = <Ext extends Extension = NoExtension>(
-    args: UnTag<OrderingExpr<Ext>>
-): OrderingExpr<Ext> => tag('OrderingExpr', args);
+interface OrderingExpr<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'OrderingExpr',
+    {
+      readonly expr: Expr<Ext>;
+      readonly order: 'ASC' | 'DESC' | null;
+      readonly nullHandling: 'NULLS FIRST' | 'NULLS LAST' | null;
+    }
+  > {}
+const OrderingExpr = <Ext extends Extension = NoExtension>(args: UnTag<OrderingExpr<Ext>>): OrderingExpr<Ext> =>
+  tag('OrderingExpr', args);
 
-interface SetOp<Ext extends Extension = NoExtension> extends Tagged<'SetOp', {
-    readonly func: 'UNION' | 'EXCEPT' | 'INTERSECT',
-    readonly all: boolean,
-    readonly select: Select<Ext>,
-}> {};
+interface SetOp<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'SetOp',
+    {
+      readonly func: 'UNION' | 'EXCEPT' | 'INTERSECT';
+      readonly all: boolean;
+      readonly select: Select<Ext>;
+    }
+  > {}
 const SetOp = <Ext extends Extension = NoExtension>(args: UnTag<SetOp<Ext>>): SetOp<Ext> => tag('SetOp', args);
 
 // TODO: do table names need to be qualified?
-interface Select<Ext extends Extension = NoExtension> extends Tagged<'Select', {
-    readonly selections: Array<Selection<Ext>>,
-    readonly from: JoinedTable<Ext> | null,
-    readonly where: Expr<Ext> | null,
-    readonly groupBy: Array<Expr<Ext>>,
-    readonly having: Expr<Ext> | null,
-    readonly extensions: Ext['Select'] | null,
-}> {};
+interface Select<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'Select',
+    {
+      readonly selections: Array<Selection<Ext>>;
+      readonly from: JoinedTable<Ext> | null;
+      readonly where: Expr<Ext> | null;
+      readonly groupBy: Array<Expr<Ext>>;
+      readonly having: Expr<Ext> | null;
+      readonly extensions: Ext['Select'] | null;
+    }
+  > {}
 const Select = <Ext extends Extension = NoExtension>(args: UnTag<Select<Ext>>): Select<Ext> => tag('Select', args);
 
-type Selection<Ext extends Extension> =
-    | AnonymousSelection<Ext>
-    | AliasedSelection<Ext>;
+type Selection<Ext extends Extension> = AnonymousSelection<Ext> | AliasedSelection<Ext>;
 
-interface AnonymousSelection<Ext extends Extension = NoExtension> extends Tagged<'AnonymousSelection', {
-    readonly selection: Expr<Ext>,
-}> {};
-const AnonymousSelection = <Ext extends Extension = NoExtension>(selection: Expr<Ext>): AnonymousSelection<Ext> => tag('AnonymousSelection', { selection });
+interface AnonymousSelection<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'AnonymousSelection',
+    {
+      readonly selection: Expr<Ext>;
+    }
+  > {}
+const AnonymousSelection = <Ext extends Extension = NoExtension>(selection: Expr<Ext>): AnonymousSelection<Ext> =>
+  tag('AnonymousSelection', { selection });
 
 /**
  * `foo AS bar`
  */
-interface AliasedSelection<Ext extends Extension = NoExtension> extends Tagged<'AliasedSelection', {
-    readonly selection: Expr<Ext>,
-    readonly alias: Ident,
-}> {};
-const AliasedSelection = <Ext extends Extension = NoExtension>(args: UnTag<AliasedSelection<Ext>>): AliasedSelection<Ext> => tag('AliasedSelection', args);
+interface AliasedSelection<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'AliasedSelection',
+    {
+      readonly selection: Expr<Ext>;
+      readonly alias: Ident;
+    }
+  > {}
+const AliasedSelection = <Ext extends Extension = NoExtension>(
+  args: UnTag<AliasedSelection<Ext>>,
+): AliasedSelection<Ext> => tag('AliasedSelection', args);
 
 // TODO aliased tables
-interface JoinedTable<Ext extends Extension = NoExtension> extends Tagged<'JoinedTable', {
-    readonly table: Table<Ext>,
-    readonly joins: Array<Join>,
-}> {};
-const JoinedTable = <Ext extends Extension = NoExtension>(args: UnTag<JoinedTable<Ext>>): JoinedTable<Ext> => tag('JoinedTable', args);
+interface JoinedTable<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'JoinedTable',
+    {
+      readonly table: Table<Ext>;
+      readonly joins: Array<Join>;
+    }
+  > {}
+const JoinedTable = <Ext extends Extension = NoExtension>(args: UnTag<JoinedTable<Ext>>): JoinedTable<Ext> =>
+  tag('JoinedTable', args);
 
-interface Join<Ext extends Extension = NoExtension> extends Tagged<'Join', {
-    readonly table: Table<Ext>,
-    readonly kind: JoinKind,
-    readonly on: Expr<Ext>,
-}> {};
+interface Join<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'Join',
+    {
+      readonly table: Table<Ext>;
+      readonly kind: JoinKind;
+      readonly on: Expr<Ext>;
+    }
+  > {}
 const Join = <Ext extends Extension = NoExtension>(args: UnTag<Join<Ext>>): Join<Ext> => tag('Join', args);
 
-type Table<Ext extends Extension> =
-    | BasicTable
-    | DerivedTable
-    | FunctionTable
-    | TableExtension<Ext>;
+type Table<Ext extends Extension> = BasicTable | DerivedTable | FunctionTable | TableExtension<Ext>;
 
-interface BasicTable extends Tagged<'BasicTable', {
-    readonly name: Ident,
-}> {};
+interface BasicTable
+  extends Tagged<
+    'BasicTable',
+    {
+      readonly name: Ident;
+    }
+  > {}
 const BasicTable = (name: Ident): BasicTable => tag('BasicTable', { name });
 
-interface DerivedTable<Ext extends Extension = NoExtension> extends Tagged<'DerivedTable', {
-    readonly subQuery: Query<Ext>,
-    readonly alias: Ident,
-}> {};
-const DerivedTable = <Ext extends Extension = NoExtension>(args: UnTag<DerivedTable<Ext>>): DerivedTable<Ext> => tag('DerivedTable', args);
+interface DerivedTable<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'DerivedTable',
+    {
+      readonly subQuery: Query<Ext>;
+      readonly alias: Ident;
+    }
+  > {}
+const DerivedTable = <Ext extends Extension = NoExtension>(args: UnTag<DerivedTable<Ext>>): DerivedTable<Ext> =>
+  tag('DerivedTable', args);
 
 /**
  * Represents a function that returns a table. This was only introduced in SQL 2003
@@ -118,40 +163,46 @@ const DerivedTable = <Ext extends Extension = NoExtension>(args: UnTag<DerivedTa
  * in the dialects. At least PostgreSQL, MySQL, and MSSQL have table-valued
  * functions even if none of them have the *same* table-valued functions.
  */
-interface FunctionTable<Ext extends Extension = NoExtension> extends Tagged<'FunctionTable', {
-    readonly func: Expr<Ext>,
-    readonly alias: Ident,
-}> {};
-const FunctionTable = <Ext extends Extension = NoExtension>(args: UnTag<FunctionTable<Ext>>): FunctionTable<Ext> => tag('FunctionTable', args);
+interface FunctionTable<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'FunctionTable',
+    {
+      readonly func: Expr<Ext>;
+      readonly alias: Ident;
+    }
+  > {}
+const FunctionTable = <Ext extends Extension = NoExtension>(args: UnTag<FunctionTable<Ext>>): FunctionTable<Ext> =>
+  tag('FunctionTable', args);
 
-interface TableExtension<Ext extends Extension = NoExtension> extends Tagged<'TableExtension', {
-    readonly val: Ext['Table'],
-}> {};
-const TableExtension = <Ext extends Extension = NoExtension>(args: UnTag<TableExtension<Ext>>): TableExtension<Ext> => tag('TableExtension', args);
+interface TableExtension<Ext extends Extension = NoExtension>
+  extends Tagged<
+    'TableExtension',
+    {
+      readonly val: Ext['Table'];
+    }
+  > {}
+const TableExtension = <Ext extends Extension = NoExtension>(args: UnTag<TableExtension<Ext>>): TableExtension<Ext> =>
+  tag('TableExtension', args);
 
-type JoinKind =
-    | 'INNER'
-    | 'LEFT OUTER'
-    | 'RIGHT OUTER'
-    | 'FULL OUTER';
+type JoinKind = 'INNER' | 'LEFT OUTER' | 'RIGHT OUTER' | 'FULL OUTER';
 
 export {
-    Query,
-    CommonTableExpr,
-    TableAlias,
-    OrderingExpr,
-    SetOp,
-    Select,
-    Selection,
-    AnonymousSelection,
-    AliasedSelection,
-    JoinedTable,
-    Join,
-    JoinKind,
-    Table,
-    BasicTable,
-    DerivedTable,
-    TableExtension,
+  Query,
+  CommonTableExpr,
+  TableAlias,
+  OrderingExpr,
+  SetOp,
+  Select,
+  Selection,
+  AnonymousSelection,
+  AliasedSelection,
+  JoinedTable,
+  Join,
+  JoinKind,
+  Table,
+  BasicTable,
+  DerivedTable,
+  TableExtension,
 };
 
 /* Extensions that will be needed

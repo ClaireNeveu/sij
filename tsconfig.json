@@ -14,7 +14,7 @@
     "noUnusedLocals": false,
     "module": "CommonJS",
     "declaration": true,
-      "noErrorTruncation": true
+    "noErrorTruncation": true
   },
   "include": ["./src/**/*"]
 }
