@@ -85,7 +85,15 @@ export {
     ConstraintCheckTime,
     ColumnDefinition,
     TableConstraint,
-} from './schema-definition';
+    DefaultOption,
+    ColumnConstraint,
+    ReferenceConstraint,
+    ReferentialAction,
+    CheckConstraint,
+    UniqueConstraint,
+    ColumnConstraintDefinition,
+    GrantStatement,
+  } from './schema-definition';
 
 export {
     SchemaManipulationStatement,

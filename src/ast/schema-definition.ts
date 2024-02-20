@@ -108,22 +108,29 @@ const TableDefinition = <Ext extends Extension>(args: UnTag<TableDefinition<Ext>
     [ <default clause> ]
     [ <column constraint definition>... ]
     [ <collate clause> ]
-
-<column constraint definition> ::=
-    [ <constraint name definition> ]
-    <column constraint>
-      [ <constraint attributes> ]
 */
 interface ColumnDefinition<Ext extends Extension> extends Tagged<'ColumnDefinition', {
   readonly name: Ident,
   readonly type: DataType | Ident, // Data type or domain identifier
   readonly default: DefaultOption,
-  readonly constraintName: Ident | null,
-  readonly constraint: ColumnConstraint | null,
-  readonly constraintAttributes: ConstraintCheckTime | null,
+  readonly constraints: Array<ColumnConstraintDefinition>,
+  readonly collation: Ident | null // TODO qualify
   readonly extensions: Ext['ColumnDefinition'] | null,
 }> { };
 const ColumnDefinition = <Ext extends Extension>(args: UnTag<ColumnDefinition<Ext>>): ColumnDefinition<Ext> => tag('ColumnDefinition', args);
+
+/*
+<column constraint definition> ::=
+    [ <constraint name definition> ]
+    <column constraint>
+      [ <constraint attributes> ]
+*/
+interface ColumnConstraintDefinition extends Tagged<'ColumnConstraintDefinition', {
+  readonly name: Ident | null,
+  readonly constraint: ColumnConstraint,
+  readonly attributes: ConstraintCheckTime | null,
+}> { };
+const ColumnConstraintDefinition = (args: UnTag<ColumnConstraintDefinition>): ColumnConstraintDefinition => tag('ColumnConstraintDefinition', args);
 
 /*
 <column constraint> ::=
@@ -175,7 +182,7 @@ const UniqueConstraint = (args: UnTag<UniqueConstraint>): UniqueConstraint => ta
 */
 interface ReferenceConstraint extends Tagged<'ReferenceConstraint', {}> {
   readonly table: Ident, // TODO check if this needs to be qualified.
-  readonly matchType: 'Regular' | 'Full' | 'Partial' | null,
+  readonly matchType: 'Regular' | 'Full' | 'Partial',
   readonly columns: Array<Ident> | null, // Columns CANNOT be qualified here.
   readonly onUpdate: ReferentialAction | null,
   readonly onDelete: ReferentialAction | null,
@@ -273,7 +280,6 @@ const CurrentDateDefault = tag('CurrentDateDefault', {});
 */
 interface TableConstraint extends Tagged<'TableConstraint', {}> {
   readonly name: Ident | null,
-  readonly deferrable: boolean,
   readonly constraint: UniqueConstraint | ReferenceConstraint | CheckConstraint 
   readonly checkTime: ConstraintCheckTime | null,
 };
@@ -293,8 +299,12 @@ interface ConstraintCheckTime extends Tagged<'ConstraintCheckTime', {}> {
 };
 const ConstraintCheckTime = (args: UnTag<ConstraintCheckTime>): ConstraintCheckTime => tag('ConstraintCheckTime', args);
 
+/*
+<check constraint definition> ::=
+  CHECK <left paren> <search condition> <right paren>
+*/
 interface CheckConstraint extends Tagged<'CheckConstraint', {}> {
-  readonly search: Expr,
+  readonly search: Query,
 };
 const CheckConstraint = (args: UnTag<CheckConstraint>): CheckConstraint => tag('CheckConstraint', args);
 
@@ -326,9 +336,9 @@ type SchemaDefinition<Ext extends Extension> =
       [ WITH [ CASCADED | LOCAL ] CHECK OPTION ]
 */
 interface ViewDefinition<Ext extends Extension> extends Tagged<'ViewDefinition', {}> {
-  readonly tableName: Ident,
+  readonly name: Ident,
   readonly columns: Array<Ident> | null,
-  readonly queryExpression: Query<Ext>, // TODO can also be a VALUES statement
+  readonly query: Query<Ext>, // TODO can also be a VALUES statement
   readonly checkOption: 'Cascaded' | 'Local' | null,
 };
 const ViewDefinition = <Ext extends Extension>(args: UnTag<ViewDefinition<Ext>>): ViewDefinition<Ext> => tag('ViewDefinition', args);
@@ -358,7 +368,7 @@ interface GrantStatement extends Tagged<'GrantStatement', {}> {
   readonly privileges: Array<Privilege> | null,
   readonly objectName: Ident, // TODO some of these can be qualified.
   readonly objectType: 'Table' | 'Domain' | 'Collation' | 'CharacterSet' | 'Translation',
-  readonly grantee: Array<Ident> | null, // null means PUBLIC
+  readonly grantees: Array<Ident> | null, // null means PUBLIC
   readonly grantOption: boolean,
   readonly checkOption: 'Cascaded' | 'Local' | null,
 };
@@ -556,4 +566,11 @@ export {
   ColumnDefinition,
   TableConstraint,
   DefaultOption,
+  ColumnConstraint,
+  ReferenceConstraint,
+  ReferentialAction,
+  CheckConstraint,
+  UniqueConstraint,
+  ColumnConstraintDefinition,
+  GrantStatement,
 }

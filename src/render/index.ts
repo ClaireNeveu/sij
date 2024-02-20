@@ -9,9 +9,25 @@ import type { Insert, Statement, Update, Delete, UpdatePositioned, DeletePositio
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
 import { CreateSchema, DomainDefinition, NumLit } from 'ast';
-import { ConstraintCheckTime, DefaultOption } from 'ast/schema-definition';
+import {
+    AssertionDefinition,
+    CheckConstraint,
+    ColumnConstraint,
+    ColumnConstraintDefinition,
+    ColumnDefinition,
+    ConstraintCheckTime,
+    DefaultOption,
+    GrantStatement,
+    Privilege,
+    ReferenceConstraint,
+    ReferentialAction,
+    TableConstraint,
+    TableDefinition,
+    UniqueConstraint,
+    ViewDefinition
+} from 'ast';
 
-const exhaustive = (n: never): void => { };
+const exhaustive = (n: never): never => n;
 
 class Renderer<Ext extends Extension = NoExtension> {
     params: Array<any>
@@ -46,8 +62,8 @@ class Renderer<Ext extends Extension = NoExtension> {
             case 'GrantStatement': return this.renderGrantStatement(statement);
             case 'DomainDefinition': return this.renderDomainDefinition(statement);
             case 'AssertionDefinition': return this.renderAssertionDefinition(statement);
+            default: return exhaustive(statement);
         }
-        exhaustive(statement);
     }
 
     renderExpr(expr: Expr): string {
@@ -312,38 +328,32 @@ class Renderer<Ext extends Extension = NoExtension> {
         const charSet = schema.characterSet !== null ? (
             `DEFAULT CHARACTER SET ${this.renderIdent(schema.characterSet)} `
         ) : '';
-        const defs = schema.definitions.map(def => {
+        let defs = schema.definitions.map(def => {
             switch (def._tag) {
-                case 'DomainDefinition': return null;
+                case 'DomainDefinition': return this.renderDomainDefinition;
                 case 'TableDefinition': return null;
                 case 'ViewDefinition': return null;
                 case 'GrantStatement': return null;
                 case 'AssertionDefinition': return null;
             }
-        });
+        }).join(' ');
+        if (defs !== '') {
+            defs = ` ${defs}`;
+        }
 
-        return `CREATE SCHEMA ${name}${auth}${charSet}[ <schema element>... ]`;
+        return `CREATE SCHEMA ${name}${auth}${charSet}${defs}`;
     }
     renderDomainDefinition(def: DomainDefinition<any>): string {
-        /*
-        <domain definition> ::=
-            CREATE DOMAIN <domain name> [ AS ] <data type>
-            [ <default clause> ]
-            [ <domain constraint>... ]
-            [ <collate clause> ]
-
-        <domain constraint> ::=
-            [ <constraint name definition> ]
-            <check constraint definition> [ <constraint attributes> ]
-        */
         const defaultOption = def.default !== null ? ` ${this.renderDefaultOption(def.default)}` : '';
         const constraint = def.constraintExpr !== null ? (
             ` ${this.renderDomainConstraint(def.constraintName, def.constraintExpr, def.constraintAttributes)}`
         ) : '';
+        const collation = def.collation !== null ? ` COLLATE ${this.renderIdent(def.collation)}` : '';
         return (
             `CREATE DOMAIN ${this.renderIdent(def.name)} AS ${this.renderDataType(def.dataType)}`
             + defaultOption
             + constraint
+            + collation
         );
 
     }
@@ -377,15 +387,163 @@ class Renderer<Ext extends Extension = NoExtension> {
         return namePart + def + attributes;
     }
     renderConstraintCheckTime(cct: ConstraintCheckTime): string {
-       if (cct.deferrable && cct.initiallyDeferred) {
-         return 'INITIALLY DEFERRED DEFERRABLE'
-       } else if (cct.deferrable) {
-        return 'INITIALLY IMMEDIATE DEFERRABLE'
-       } else if (cct.initiallyDeferred) {
-        return 'INITIALLY DEFERRED NOT DEFERRABLE'
-       } else {
-        return 'INITIALLY IMMEDIATE NOT DEFERRABLE'
-       }
+        if (cct.deferrable && cct.initiallyDeferred) {
+            return 'INITIALLY DEFERRED DEFERRABLE'
+        } else if (cct.deferrable) {
+            return 'INITIALLY IMMEDIATE DEFERRABLE'
+        } else if (cct.initiallyDeferred) {
+            return 'INITIALLY DEFERRED NOT DEFERRABLE'
+        } else {
+            return 'INITIALLY IMMEDIATE NOT DEFERRABLE'
+        }
+    }
+    renderTableDefinition(def: TableDefinition<any>): string {
+        const locality = (
+            def.mode === 'GlobalTemp' ? ' GLOBAL TEMPORARY'
+                : def.mode === 'LocalTemp' ? ' Local TEMPORARY'
+                    : ''
+        )
+        const columns = def.columns.map(col => this.renderColumnDefinition(col));
+        const constraints = def.constraints.map(con => this.renderTableConstraint(con));
+        let els = '(' + columns.concat(constraints).join(', ') + ')';
+        let onCommit = '';
+        if (def.onCommit === 'Delete') {
+            onCommit = ' ON COMMIT DELETE ROWS';
+        } else if (def.onCommit === 'Preserve') {
+            onCommit = ' ON COMMIT PRESERVE ROWS';
+        }
+        return `CREATE${locality} TABLE ${this.renderIdent(def.name)} ${els}${onCommit}`
+    }
+    renderColumnDefinition(def: ColumnDefinition<any>): string {
+        const typ = def.type._tag === 'Ident' ? this.renderIdent(def.type) : this.renderDataType(def.type);
+        const defaultOption = def.default !== null ? ` ${this.renderDefaultOption(def.default)}` : '';
+        let constraints = def.constraints.map(c =>
+            this.renderColumnConstraint(c)
+        ).join(' ');
+        if (constraints !== '') {
+            constraints = ' ' + constraints;
+        }
+        const collation = def.collation !== null ? ` COLLATE ${this.renderIdent(def.collation)}` : '';
+        return `${this.renderIdent(def.name)} ${typ}${defaultOption}${constraints}${collation}`
+    }
+    renderColumnConstraint(def: ColumnConstraintDefinition): string {
+        const cstr = (() => {
+            switch (def.constraint._tag) {
+                case 'ColumnNotNull': return ' NOT NULL'
+                case 'UniqueConstraint': return this.renderUniqueConstraint(def.constraint);
+                case 'ReferenceConstraint': return this.renderReferenceConstraint(def.constraint);
+                case 'CheckConstraint': return this.renderCheckConstraint(def.constraint);
+            }
+        })();
+        const namePart = def.name !== null ? `${this.renderIdent(def.name)} ` : '';
+        const attributes = def.attributes !== null ? ` ${this.renderConstraintCheckTime(def.attributes)}` : '';
+        return namePart + cstr + attributes;
+    }
+    renderUniqueConstraint(constraint: UniqueConstraint): string {
+        const typ = constraint.primaryKey ? 'PRIMARY KEY' : ' UNIQUE';
+        const columns = constraint.columns.map(this.renderIdent).join(', ');
+        return ` ${typ} (${columns})`
+    }
+    renderReferenceConstraint(def: ReferenceConstraint): string {
+        const columns = def.columns === null ? '' : ` (${def.columns.map(this.renderIdent).join(', ')})`;
+        const match = (() => {
+            switch (def.matchType) {
+                case 'Regular': return '';
+                case 'Full': return ' FULL';
+                case 'Partial': return ' PARTIAL';
+                default: return exhaustive(def.matchType);
+            }
+        })();
+        const renderAction = ((action: ReferentialAction) => {
+            switch (action) {
+                case 'Cascade': return 'CASCADE';
+                case 'SetNull': return 'SET NULL';
+                case 'SetDefault': return 'SET DEFAULT';
+                case 'NoAction': return 'NO ACTION';
+                default: return exhaustive(action);
+            }
+        });
+        const onUpdate = def.onUpdate !== null ? ' ON UPDATE' + renderAction(def.onUpdate) : '';
+        const onDelete = def.onDelete !== null ? ' ON DELETE' + renderAction(def.onDelete) : '';
+        return `REFERENCES ${this.renderIdent(def.table)}${columns}${match}${onUpdate}${onDelete}`;
+    }
+    renderCheckConstraint(def: CheckConstraint): string {
+        return `CHECK ${this.renderQuery(def.search)}`
+    }
+    renderTableConstraint(def: TableConstraint): string {
+        /*
+        <table constraint definition> ::=
+            [ <constraint name definition> ]
+            <table constraint> [ <constraint attributes> ]
+
+        <table constraint> ::=
+            <unique constraint definition>
+            | <referential constraint definition>
+            | <check constraint definition>
+        */
+        const namePart = def.name !== null ? `${this.renderIdent(def.name)} ` : '';
+        const constraint = (() => {
+            switch (def.constraint._tag) {
+                case 'UniqueConstraint': return this.renderUniqueConstraint(def.constraint);
+                case 'ReferenceConstraint': return this.renderReferenceConstraint(def.constraint);
+                case 'CheckConstraint': return this.renderCheckConstraint(def.constraint);
+                default: return exhaustive(def.constraint);
+            }
+        })();
+        const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
+        return namePart + constraint + attributes;
+    }
+    renderViewDefinition(def: ViewDefinition<any>): string {
+        const columns = def.columns !== null ? ` ${def.columns.map(this.renderIdent)}` : '';
+        const query = this.renderQuery(def.query);
+        let checkOption = '';
+        if (def.checkOption === 'Cascaded') {
+            checkOption = ' WITH CASCADED CHECK OPTION';
+        } else if (def.checkOption === 'Local') {
+            checkOption = ' WITH LOCAL CHECK OPTION';
+        }
+        return `CREATE VIEW ${this.renderIdent(def.name)}${columns} AS ${query}${checkOption}`
+    }
+    renderGrantStatement(def: GrantStatement): string {
+        const objectType = (() => {
+            switch (def.objectType) {
+                case 'Table': return 'TABLE '
+                case 'Domain': return 'DOMAIN '
+                case 'Collation': return 'COLLATION '
+                case 'CharacterSet': return 'CHARACTER SET '
+                case 'Translation': return 'TRANSLATION '
+                default: return exhaustive(def.objectType);
+            }
+        })();
+        const objectName = objectType + this.renderIdent(def.objectName);
+        const privileges = def.privileges == null ? 'ALL PRIVILEGES' : def.privileges.map(this.renderPrivilege).join(', ');
+        const grantees = def.grantees === null ? 'PUBLIC' : def.grantees.map(this.renderIdent).join(', ');
+        const option = def.grantOption ? ' WITH GRANT OPTION' : '';
+        return `GRANT ${privileges} ON ${objectName} TO ${grantees}${option}`
+    }
+    renderPrivilege(def: Privilege): string {
+        switch (def._tag) {
+            case 'SelectPrivilege': return 'SELECT';
+            case 'DeletePrivilege': return 'DELETE';
+            case 'InsertPrivilege': {
+                const columns = def.columns !== null ? ' (' + def.columns.map(this.renderIdent).join(', ') + ')' : '';
+                return `INSERT${columns}`;
+            }
+            case 'UpdatePrivilege': {
+                const columns = def.columns !== null ? ' (' + def.columns.map(this.renderIdent).join(', ') + ')' : '';
+                return `UPDATE${columns}`;
+            }
+            case 'ReferencePrivilege': {
+                const columns = def.columns !== null ? ' (' + def.columns.map(this.renderIdent).join(', ') + ')' : '';
+                return `REFERENCES${columns}`;
+            }
+            case 'UsagePrivilege': return 'USAGE';
+            default: return exhaustive(def);
+        }
+    }
+    renderAssertionDefinition(def: AssertionDefinition): string {
+        const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
+        return `CREATE ASSERTION ${this.renderIdent(def.name)} CHECK (${this.renderQuery(def.search)})${attributes}`
     }
 }
 
