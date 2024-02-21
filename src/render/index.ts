@@ -4,7 +4,7 @@ import type { Query, Select, Table } from '../ast/query';
 import type { Insert, Statement, Update, Delete, UpdatePositioned, DeletePositioned } from '../ast/statement';
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
-import { CreateSchema, DomainDefinition, NumLit } from 'ast';
+import { CreateSchema, DomainDefinition, DropSchema, NumLit } from 'ast';
 import {
   AssertionDefinition,
   CheckConstraint,
@@ -22,6 +22,24 @@ import {
   UniqueConstraint,
   ViewDefinition,
 } from 'ast';
+import {
+  AddDomainConstraint,
+  AddTableConstraint,
+  AlterColumn,
+  AlterDomain,
+  AlterTable,
+  AlterTableAction,
+  DomainAction,
+  DropAssertion,
+  DropBehavior,
+  DropColumn,
+  DropDefault,
+  DropDomain,
+  DropTable,
+  DropTableConstraint,
+  DropView,
+  RevokePrivilege,
+} from 'ast/schema-manipulation';
 
 const exhaustive = (n: never): never => n;
 
@@ -70,6 +88,22 @@ class Renderer<Ext extends Extension = NoExtension> {
         return this.renderDomainDefinition(statement);
       case 'AssertionDefinition':
         return this.renderAssertionDefinition(statement);
+      case 'DropSchema':
+        return this.renderDropSchema(statement);
+      case 'DropTable':
+        return this.renderDropTable(statement);
+      case 'DropView':
+        return this.renderDropView(statement);
+      case 'RevokePrivilege':
+        return this.renderRevokePrivilege(statement);
+      case 'DropDomain':
+        return this.renderDropDomain(statement);
+      case 'DropAssertion':
+        return this.renderDropAssertion(statement);
+      case 'AlterTable':
+        return this.renderAlterTable(statement);
+      case 'AlterDomain':
+        return this.renderAlterDomain(statement);
       default:
         return exhaustive(statement);
     }
@@ -390,15 +424,15 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
   renderDomainDefinition(def: DomainDefinition<any>): string {
     const defaultOption = def.default !== null ? ` ${this.renderDefaultOption(def.default)}` : '';
-    const constraint =
-      def.constraintExpr !== null
-        ? ` ${this.renderDomainConstraint(def.constraintName, def.constraintExpr, def.constraintAttributes)}`
-        : '';
+    let constraints = def.constraints.map(this.renderAssertionDefinition).join(' ');
+    if (constraints !== '') {
+      constraints = ' ' + constraints;
+    }
     const collation = def.collation !== null ? ` COLLATE ${this.renderIdent(def.collation)}` : '';
     return (
       `CREATE DOMAIN ${this.renderIdent(def.name)} AS ${this.renderDataType(def.dataType)}` +
       defaultOption +
-      constraint +
+      constraints +
       collation
     );
   }
@@ -432,12 +466,6 @@ class Renderer<Ext extends Extension = NoExtension> {
       }
     })();
     return `DEFAULT ${val}`;
-  }
-  renderDomainConstraint(name: Ident | null, expr: Query, attrs: ConstraintCheckTime | null): string {
-    const namePart = name !== null ? `${this.renderIdent(name)} ` : '';
-    const def = this.renderQuery(expr);
-    const attributes = attrs !== null ? ` ${this.renderConstraintCheckTime(attrs)}` : '';
-    return namePart + def + attributes;
   }
   renderConstraintCheckTime(cct: ConstraintCheckTime): string {
     if (cct.deferrable && cct.initiallyDeferred) {
@@ -619,6 +647,115 @@ class Renderer<Ext extends Extension = NoExtension> {
   renderAssertionDefinition(def: AssertionDefinition): string {
     const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
     return `CREATE ASSERTION ${this.renderIdent(def.name)} CHECK (${this.renderQuery(def.search)})${attributes}`;
+  }
+  renderDropSchema(def: DropSchema): string {
+    return `DROP SCHEMA ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
+  }
+  renderDropBehavior(def: DropBehavior): string {
+    if (def === 'Cascade') {
+      return 'CASCADE';
+    } else if (def === 'Restrict') {
+      return 'RESTRICT';
+    } else {
+      return exhaustive(def);
+    }
+  }
+  renderDropTable(def: DropTable): string {
+    return `DROP TABLE ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
+  }
+  renderDropView(def: DropView): string {
+    return `DROP VIEW ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
+  }
+  renderRevokePrivilege(def: RevokePrivilege): string {
+    const grantOption = def.grantOptionFor ? ' GRANT OPTION FOR' : '';
+    const privileges = def.privileges == null ? 'ALL PRIVILEGES' : def.privileges.map(this.renderPrivilege).join(', ');
+    const grantees = def.grantees.map(this.renderIdent).join(', ');
+    const dropBehavior = this.renderDropBehavior(def.behavior);
+    return `REVOKE ${grantOption} ${privileges} ON ${this.renderIdent(def.object)} FROM ${grantees} ${dropBehavior}`;
+  }
+  renderDropDomain(def: DropDomain): string {
+    return `DROP DOMAIN ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
+  }
+  renderDropAssertion(def: DropAssertion): string {
+    return `DROP ASSERTION ${this.renderIdent(def.name)}`;
+  }
+  renderAlterTable(def: AlterTable<any>): string {
+    /*
+    <alter table statement> ::=
+        ALTER TABLE <table name> <alter table action>
+    <alter table action> ::=
+          <add column definition>
+        | <alter column definition>
+        | <drop column definition>
+        | <add table constraint definition>
+        | <drop table constraint definition>
+  */
+    return `ALTER TABLE ${this.renderIdent(def.name)}`;
+  }
+  renderAlterTableAction(def: AlterTableAction<any>): string {
+    switch (def._tag) {
+      case 'ColumnDefinition':
+        return this.renderColumnDefinition(def);
+      case 'AlterColumn':
+        return this.renderAlterColumn(def);
+      case 'DropColumn':
+        return this.renderDropColumn(def);
+      case 'AddTableConstraint':
+        return this.renderAddTableConstraint(def);
+      case 'DropTableConstraint':
+        return this.renderDropTableConstraint(def);
+      default:
+        return exhaustive(def);
+    }
+  }
+  renderAlterColumn(def: AlterColumn): string {
+    const action = (() => {
+      switch (def.action._tag) {
+        case 'DropDefault':
+          return 'DROP DEFAULT';
+        case 'SetDefault':
+          return `SET ${this.renderDefaultOption(def.action.default)}`;
+        default:
+          return exhaustive(def.action);
+      }
+    })();
+    return `ALTER COLUMN ${this.renderIdent(def.name)} ${action}`;
+  }
+  renderDropColumn(def: DropColumn): string {
+    return `DROP COLUMN ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
+  }
+  renderAddTableConstraint(def: AddTableConstraint): string {
+    return `ADD ${this.renderTableConstraint(def.constraint)}`;
+  }
+  renderDropTableConstraint(def: DropTableConstraint): string {
+    /*
+    <drop table constraint definition> ::=
+      DROP CONSTRAINT <constraint name> <drop behavior>
+    */
+    return `
+    DROP CONSTRAINT ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
+  }
+  renderAlterDomain(def: AlterDomain): string {
+    /*
+        <alter domain statement> ::=
+        ALTER DOMAIN <domain name> <alter domain action>
+    */
+    return `ALTER DOMAIN ${this.renderIdent(def.name)} ${this.renderDomainAction(def.action)}`;
+  }
+  renderDomainAction(def: DomainAction): string {
+    switch (def._tag) {
+      case 'AddDomainConstraint':
+        return this.renderAddDomainConstraint(def);
+      case 'DropDefault':
+        return 'DROP DEFAULT';
+      case 'DropDomainConstraint':
+        return `DROP CONSTRAINT ${this.renderIdent(def.name)}`;
+      case 'SetDefault':
+        return `SET ${this.renderDefaultOption(def.default)}`;
+    }
+  }
+  renderAddDomainConstraint(def: AddDomainConstraint): string {
+    return `ADD ${this.renderAssertionDefinition(def.constraint)}`;
   }
 }
 

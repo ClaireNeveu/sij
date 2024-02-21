@@ -79,9 +79,7 @@ interface DomainDefinition<Ext extends Extension>
       readonly name: Ident;
       readonly dataType: DataType;
       readonly default: DefaultOption | null;
-      readonly constraintName: Ident | null; // TODO qualify
-      readonly constraintExpr: Query | null; // TODO need to support VALUE within constraint expressions
-      readonly constraintAttributes: ConstraintCheckTime | null;
+      readonly constraints: Array<AssertionDefinition>;
       readonly collation: Ident | null; // TODO qualify
       readonly extensions: Ext['DomainDefinition'] | null;
     }

@@ -11,8 +11,8 @@ type Statement<Ext extends Extension> =
   | UpdatePositioned<Ext>
   | Delete<Ext>
   | DeletePositioned<Ext>
-  | SchemaDefinitionStatement<Ext>;
-//    | SchemaManipulationStatement<Ext>;
+  | SchemaDefinitionStatement<Ext>
+  | SchemaManipulationStatement<Ext>;
 
 interface Insert<Ext extends Extension>
   extends Tagged<

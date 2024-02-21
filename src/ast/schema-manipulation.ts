@@ -1,7 +1,13 @@
 import { Ident } from './expr';
 import { Query } from './query';
-import { ColumnDefinition, ConstraintCheckTime, Privilege, TableConstraint } from './schema-definition';
-import { DefaultValue } from './statement';
+import {
+  AssertionDefinition,
+  ColumnDefinition,
+  ConstraintCheckTime,
+  DefaultOption,
+  Privilege,
+  TableConstraint,
+} from './schema-definition';
 import { Extension, Tagged, UnTag, tag } from './util';
 
 /*
@@ -31,7 +37,7 @@ type SchemaManipulationStatement<Ext extends Extension> =
 /*
 <drop behavior> ::= CASCADE | RESTRICT
 */
-type DropBehavior = 'CASCADE' | 'RESTRICT';
+type DropBehavior = 'Cascade' | 'Restrict';
 
 /*
 <drop schema statement> ::=
@@ -122,7 +128,6 @@ interface AddTableConstraint
   extends Tagged<
     'AddTableConstraint',
     {
-      readonly name: Ident;
       readonly constraint: TableConstraint;
     }
   > {}
@@ -180,7 +185,7 @@ interface RevokePrivilege
   extends Tagged<
     'RevokePrivilege',
     {
-      readonly privileges: Array<Privilege>;
+      readonly privileges: Array<Privilege> | null;
       readonly object: Ident;
       readonly grantees: Array<Ident>; // non-empty
       readonly grantOptionFor: boolean;
@@ -220,7 +225,7 @@ interface SetDefault
   extends Tagged<
     'SetDefault',
     {
-      readonly default: DefaultValue;
+      readonly default: DefaultOption;
     }
   > {}
 const SetDefault = (args: UnTag<SetDefault>): SetDefault => tag('SetDefault', args);
@@ -239,9 +244,7 @@ interface AddDomainConstraint
   extends Tagged<
     'AddDomainConstraint',
     {
-      readonly constraintName: Ident | null; // TODO qualify
-      readonly constraintExpr: Query | null; // TODO need to support VALUE within constraint expressions
-      readonly constraintAttributes: ConstraintCheckTime | null;
+      readonly constraint: AssertionDefinition;
     }
   > {}
 const AddDomainConstraint = (args: UnTag<AddDomainConstraint>): AddDomainConstraint => tag('AddDomainConstraint', args);
@@ -283,7 +286,6 @@ interface DropAssertion
     'DropAssertion',
     {
       readonly name: Ident;
-      readonly behavior: DropBehavior;
     }
   > {}
 const DropAssertion = (args: UnTag<DropAssertion>): DropAssertion => tag('DropAssertion', args);
@@ -298,7 +300,14 @@ export {
   DropAssertion,
   AlterDomain,
   AlterTable,
+  AlterTableAction,
   AlterColumn,
   SetDefault,
   DropDefault,
+  DropBehavior,
+  DropColumn,
+  AddTableConstraint,
+  DropTableConstraint,
+  DomainAction,
+  AddDomainConstraint,
 };
