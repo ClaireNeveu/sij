@@ -59,7 +59,7 @@ export {
 
 export {
   SchemaDefinitionStatement,
-  CreateSchema,
+  SchemaDefinition,
   TableDefinition,
   ViewDefinition,
   DomainDefinition,

@@ -14,7 +14,7 @@ type Extension = {
   UpdatePositioned: any;
   Delete: any;
   DeletePositioned: any;
-  CreateSchema: any;
+  SchemaDefinition: any;
   DomainDefinition: any;
   TableDefinition: any;
   ColumnDefinition: any;
@@ -30,7 +30,7 @@ type NoExtension = {
   UpdatePositioned: unknown;
   Delete: unknown;
   DeletePositioned: unknown;
-  CreateSchema: unknown;
+  SchemaDefinition: unknown;
   DomainDefinition: unknown;
   TableDefinition: unknown;
   ColumnDefinition: unknown;

@@ -17,7 +17,7 @@ import { NumLit } from './literal';
   | <assertion definition>
 */
 type SchemaDefinitionStatement<Ext extends Extension> =
-  | CreateSchema<Ext>
+  | SchemaDefinition<Ext>
   | TableDefinition<Ext>
   | ViewDefinition<Ext>
   | GrantStatement
@@ -46,20 +46,20 @@ type SchemaDefinitionStatement<Ext extends Extension> =
 <schema character set specification> ::=
   DEFAULT CHARACTER SET <character set specification>
 */
-interface CreateSchema<Ext extends Extension>
+interface SchemaDefinition<Ext extends Extension>
   extends Tagged<
-    'CreateSchema',
+    'SchemaDefinition',
     {
       readonly name: Ident;
       readonly catalog: Ident | null;
       readonly authorization: Ident | null;
       readonly characterSet: Ident | null; // TODO the spec seems to say this could be scoped by schema?
-      readonly definitions: Array<SchemaDefinition<Ext>>;
-      readonly extensions: Ext['CreateSchema'] | null;
+      readonly definitions: Array<SchemaDefinitionElement<Ext>>;
+      readonly extensions: Ext['SchemaDefinition'] | null;
     }
   > {}
-const CreateSchema = <Ext extends Extension>(args: UnTag<CreateSchema<Ext>>): CreateSchema<Ext> =>
-  tag('CreateSchema', args);
+const SchemaDefinition = <Ext extends Extension>(args: UnTag<SchemaDefinition<Ext>>): SchemaDefinition<Ext> =>
+  tag('SchemaDefinition', args);
 
 /*
 <domain definition> ::=
@@ -334,7 +334,7 @@ const CheckConstraint = (args: UnTag<CheckConstraint>): CheckConstraint => tag('
   | <collation definition>
   | <translation definition>
 */
-type SchemaDefinition<Ext extends Extension> =
+type SchemaDefinitionElement<Ext extends Extension> =
   | DomainDefinition<Ext>
   | TableDefinition<Ext>
   | ViewDefinition<Ext>
@@ -566,7 +566,7 @@ const TranslationDefinition = (args: UnTag<TranslationDefinition>): TranslationD
 
 export {
   SchemaDefinitionStatement,
-  CreateSchema,
+  SchemaDefinition,
   TableDefinition,
   ViewDefinition,
   DomainDefinition,

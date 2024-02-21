@@ -4,7 +4,7 @@ import type { Query, Select, Table } from '../ast/query';
 import type { Insert, Statement, Update, Delete, UpdatePositioned, DeletePositioned } from '../ast/statement';
 import type { Literal } from '../ast/literal';
 import type { Extension, NoExtension } from '../ast/util';
-import { CreateSchema, DomainDefinition, DropSchema, NumLit } from 'ast';
+import { SchemaDefinition, DomainDefinition, DropSchema, NumLit } from 'ast';
 import {
   AssertionDefinition,
   CheckConstraint,
@@ -76,8 +76,8 @@ class Renderer<Ext extends Extension = NoExtension> {
         return this.renderUpdatePositioned(statement);
       case 'DeletePositioned':
         return this.renderDeletePositioned(statement);
-      case 'CreateSchema':
-        return this.renderCreateSchema(statement);
+      case 'SchemaDefinition':
+        return this.renderSchemaDefinition(statement);
       case 'TableDefinition':
         return this.renderTableDefinition(statement);
       case 'ViewDefinition':
@@ -384,7 +384,7 @@ class Renderer<Ext extends Extension = NoExtension> {
   renderDeletePositioned(del: DeletePositioned<any>): string {
     return `DELETE FROM ${this.renderIdent(del.table)} WHERE CURRENT OF ${this.renderIdent(del.cursor)}`;
   }
-  renderCreateSchema(schema: CreateSchema<any>): string {
+  renderSchemaDefinition(schema: SchemaDefinition<any>): string {
     const name = (() => {
       let ret = '';
       if (schema.catalog !== null) {
