@@ -386,7 +386,6 @@ interface GrantStatement extends Tagged<'GrantStatement', {}> {
   readonly objectType: 'Table' | 'Domain' | 'Collation' | 'CharacterSet' | 'Translation';
   readonly grantees: Array<Ident> | null; // null means PUBLIC
   readonly grantOption: boolean;
-  readonly checkOption: 'Cascaded' | 'Local' | null;
 }
 const GrantStatement = (args: UnTag<GrantStatement>): GrantStatement => tag('GrantStatement', args);
 
@@ -408,13 +407,13 @@ type Privilege =
   | UsagePrivilege;
 
 interface SelectPrivilege extends Tagged<'SelectPrivilege', {}> {}
-const SelectPrivilege = tag('SelectPrivilege', {});
+const SelectPrivilege: SelectPrivilege = tag('SelectPrivilege', {});
 
 interface DeletePrivilege extends Tagged<'DeletePrivilege', {}> {}
-const DeletePrivilege = tag('DeletePrivilege', {});
+const DeletePrivilege: DeletePrivilege = tag('DeletePrivilege', {});
 
 interface UsagePrivilege extends Tagged<'UsagePrivilege', {}> {}
-const UsagePrivilege = tag('UsagePrivilege', {});
+const UsagePrivilege: UsagePrivilege = tag('UsagePrivilege', {});
 
 interface InsertPrivilege extends Tagged<'InsertPrivilege', {}> {
   readonly columns: Array<Ident> | null;

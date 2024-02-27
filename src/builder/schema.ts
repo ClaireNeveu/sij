@@ -15,9 +15,27 @@ import {
 import { Extension } from 'ast/util';
 import { Functions } from './functions';
 import { DataType } from 'ast/data-type';
-import { ColumnNotNull, NullDefault, UniqueConstraint } from 'ast/schema-definition';
+import {
+  AssertionDefinition,
+  ColumnNotNull,
+  DeletePrivilege,
+  DomainDefinition,
+  GrantStatement,
+  InsertPrivilege,
+  NullDefault,
+  Privilege,
+  ReferencePrivilege,
+  SelectPrivilege,
+  UniqueConstraint,
+  UpdatePrivilege,
+  UsagePrivilege,
+  ViewDefinition,
+} from 'ast/schema-definition';
+import { QueryBuilder } from './query';
 
 type SchemaStatement<Ext extends Extension> = SchemaDefinitionStatement<Ext> | SchemaManipulationStatement<Ext>;
+
+const exhaustive = (n: never): never => n;
 
 /*
 sql.schema.table(...).domain(...).view();
@@ -97,6 +115,30 @@ type ColumnArgs<T extends DataType | string> = {
 type ColumnsToTable<Cs extends { [k: string]: ColumnArgs<any> }> = {
   [K in keyof Cs]: Cs[K] extends ColumnArgs<infer T> ? (T extends DataType ? DataTypeToJs<T> : never) : never;
 };
+type ViewArgs<Database, Table, Return, Ext extends BuilderExtension> = {
+  columns?: Array<string>;
+  query: QueryBuilder<Database, Table, Return, Ext>; // TODO can also be a VALUES statement
+  check?: 'Cascaded' | 'Local';
+};
+type GrantArgs =
+  | {
+      privileges?: Array<PrivilegeArg>;
+      on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
+      grantees?: Array<string>;
+      withGrantOption: boolean;
+    }
+  | {
+      privileges?: Array<PrivilegeArg>;
+      on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
+      public: true;
+      withGrantOption: boolean;
+    };
+type DomainArgs = {
+  type: DataType;
+  default?: DefaultOption | null;
+  constraints?: Array<AssertionDefinition>;
+  collation?: string;
+};
 
 type ConstraintArg =
   | ColumnConstraintDefinition
@@ -106,6 +148,21 @@ type ConstraintArg =
   | 'unique'
   | 'PRIMARY KEY'
   | 'primary key';
+
+type PrivilegeArg =
+  | Privilege
+  | 'SELECT'
+  | 'select'
+  | 'DELETE'
+  | 'delete'
+  | 'INSERT'
+  | 'insert'
+  | 'UPDATE'
+  | 'update'
+  | 'REFERENCES'
+  | 'references'
+  | 'USAGE'
+  | 'usage';
 
 /**
  * Builds a SELECT statement.
@@ -214,6 +271,90 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     return new SchemaBuilder<Database & { [P in N]: ColumnsToTable<T['columns']> }, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database & { [P in N]: ColumnsToTable<T['columns']> }, any, Ext>,
+    );
+  }
+  createView<
+    N extends string,
+    QReturn,
+    Table extends keyof Database,
+    T extends ViewArgs<Database, Table, QReturn, Ext>,
+  >(name: N, opts: T): SchemaBuilder<Database & { [P in N]: QReturn }, Return, Ext> {
+    // TODO narrow view table by selected columns
+    const def = ViewDefinition({
+      name: Ident(name),
+      columns: opts.columns !== undefined ? opts.columns.map(Ident) : null,
+      query: opts.query._statement,
+      checkOption: opts.check !== undefined ? opts.check : null,
+    });
+    return new SchemaBuilder<Database & { [P in N]: QReturn }, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database & { [P in N]: QReturn }, any, Ext>,
+    );
+  }
+  grant(opts: GrantArgs): SchemaBuilder<Database, Return, Ext> {
+    const makePrivilege = (p: PrivilegeArg) => {
+      if (typeof p !== 'string') {
+        return p;
+      }
+      switch (p) {
+        case 'delete':
+        case 'DELETE':
+          return DeletePrivilege;
+        case 'insert':
+        case 'INSERT':
+          return InsertPrivilege({ columns: [] });
+        case 'select':
+        case 'SELECT':
+          return SelectPrivilege;
+        case 'references':
+        case 'REFERENCES':
+          return ReferencePrivilege({ columns: [] });
+        case 'update':
+        case 'UPDATE':
+          return UpdatePrivilege({ columns: [] });
+        case 'usage':
+        case 'USAGE':
+          return UsagePrivilege;
+        default:
+          return exhaustive(p);
+      }
+    };
+    const [objectTypeRaw, objectName] = opts.on.split(' ', 2);
+    const objectType: 'Table' | 'Domain' | 'Collation' = (() => {
+      switch (objectTypeRaw) {
+        case 'TABLE':
+          return 'Table';
+        case 'DOMAIN':
+          return 'Domain';
+        case 'COLLATION':
+          return 'Collation';
+      }
+    })()!;
+    const grantees = 'public' in opts ? null : opts.grantees!.map(Ident);
+    const def = GrantStatement({
+      privileges: opts.privileges?.map(makePrivilege) ?? null,
+      objectName: Ident(objectName),
+      objectType: objectType,
+      grantees,
+      grantOption: opts.withGrantOption === undefined ? false : opts.withGrantOption,
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+  }
+  createDomain(name: string, opts: DomainArgs): SchemaBuilder<Database, Return, Ext> {
+    const def = DomainDefinition({
+      name: Ident(name),
+      dataType: opts.type,
+      default: opts.default !== undefined ? opts.default : null,
+      constraints: opts.constraints !== undefined ? opts.constraints : [],
+      collation: opts.collation !== undefined ? Ident(opts.collation) : null,
+      extensions: null,
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
     );
   }
 
