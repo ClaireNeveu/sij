@@ -4,6 +4,34 @@ import { Expr, Ident, CompoundIdentifier, Lit, Wildcard } from '../ast/expr';
 import { Literal, NumLit, StringLit, BoolLit, DateLit, CustomLit, NullLit } from '../ast/literal';
 import { Statement } from '../ast/statement';
 import { Extension, NoExtension } from '../ast/util';
+import {
+  DataType,
+  Char,
+  VarChar,
+  Uuid,
+  SmallInt,
+  Int,
+  SqlBigInt,
+  Real,
+  Double,
+  Boolean,
+  SqlDate,
+  Time,
+  Timestamp,
+  Interval,
+  Text,
+  Bytea,
+  Clob,
+  Binary,
+  VarBinary,
+  Blob,
+  Decimal,
+  Float,
+  Custom,
+} from 'ast/data-type';
+
+export type Debug<T> = { [K in keyof T]: T[K] };
+export type MergeInsertions<T> = T extends object ? { [K in keyof T]: MergeInsertions<T[K]> } : T;
 
 export type BuilderExtension = Extension & {
   builder: {
@@ -20,7 +48,7 @@ export type BuilderExtension = Extension & {
 export type NoBuilderExtension = NoExtension & {
   builder: {
     types: {
-      numeric: number | bigint;
+      numeric: number | SqlBigInt;
       boolean: boolean;
       string: string;
       date: Date;
@@ -115,3 +143,29 @@ export type TableOf<Table, T> = {
       ? T
       : never;
 };
+
+// TODO figure out what clients convert these unknowns to.
+// prettier-ignore
+export type DataTypeToJs<D extends DataType> =
+  Char extends D ? string :
+  VarChar extends D ? string :
+  Clob extends D ? string :
+  Binary extends D ? unknown :
+  VarBinary extends D ? unknown :
+  Blob extends D ? unknown :
+  Decimal extends D ? number :
+  Float extends D ? number :
+  Uuid extends D ? string :
+  SmallInt extends D ? number :
+  Int extends D ? number :
+  SqlBigInt extends D ? bigint :
+  Real extends D ? number :
+  Double extends D ? number :
+  Boolean extends D ? boolean :
+  SqlDate extends D ? Date :
+  Time extends D ? unknown :
+  Timestamp extends D ? unknown :
+  Interval extends D ? number :
+  Text extends D ? string :
+  Bytea extends D ? unknown :
+  Custom extends D ? unknown : never;

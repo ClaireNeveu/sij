@@ -3,7 +3,6 @@ import { lens } from 'lens.ts';
 import type { Any } from 'ts-toolbelt';
 
 import { Expr, Ident, CompoundIdentifier, Lit, Wildcard } from '../ast/expr';
-import { DataType } from '../ast/data-type';
 import {
   AliasedSelection,
   AnonymousSelection,

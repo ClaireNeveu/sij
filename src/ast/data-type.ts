@@ -16,11 +16,11 @@ type DataType =
   | Uuid
   | SmallInt
   | Int
-  | BigInt
+  | SqlBigInt
   | Real
   | Double
   | Boolean
-  | Date
+  | SqlDate
   | Time
   | Timestamp
   | Interval
@@ -37,8 +37,8 @@ const SmallInt: SmallInt = { _tag: 'SmallInt' };
 type Int = { readonly _tag: 'Int' };
 const Int: Int = { _tag: 'Int' };
 
-type BigInt = { readonly _tag: 'BigInt' };
-const BigInt: BigInt = { _tag: 'BigInt' };
+type SqlBigInt = { readonly _tag: 'SqlBigInt' };
+const SqlBigInt: SqlBigInt = { _tag: 'SqlBigInt' };
 
 type Real = { readonly _tag: 'Real' };
 const Real: Real = { _tag: 'Real' };
@@ -49,8 +49,8 @@ const Double: Double = { _tag: 'Double' };
 type Boolean = { readonly _tag: 'Boolean' };
 const Boolean: Boolean = { _tag: 'Boolean' };
 
-type Date = { readonly _tag: 'Date' };
-const Date: Date = { _tag: 'Date' };
+type SqlDate = { readonly _tag: 'SqlDate' };
+const SqlDate: SqlDate = { _tag: 'SqlDate' };
 
 type Time = { readonly _tag: 'Time' };
 const Time: Time = { _tag: 'Time' };
@@ -127,11 +127,11 @@ export {
   Uuid,
   SmallInt,
   Int,
-  BigInt,
+  SqlBigInt,
   Real,
   Double,
   Boolean,
-  Date,
+  SqlDate,
   Time,
   Timestamp,
   Interval,

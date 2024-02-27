@@ -18,6 +18,7 @@ import { QueryBuilder as QB } from './query';
 import { InsertBuilder as IB } from './insert';
 import { UpdateBuilder as UB } from './update';
 import { DeleteBuilder as DB } from './delete';
+import { SchemaBuilder as SB } from './schema';
 
 class Builder<Schema, Ext extends BuilderExtension> {
   dialect: string = 'SQL-92';
@@ -28,6 +29,7 @@ class Builder<Schema, Ext extends BuilderExtension> {
     readonly InsertBuilder: typeof IB = IB,
     readonly UpdateBuilder: typeof UB = UB,
     readonly DeleteBuilder: typeof DB = DB,
+    readonly SchemaBuilder: typeof SB = SB,
   ) {}
 
   from<TableName extends keyof Schema & string>(
@@ -53,7 +55,7 @@ class Builder<Schema, Ext extends BuilderExtension> {
     });
     return new this.QueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext>(
       query,
-      this.fn as any,
+      this.fn,
     );
   }
 
@@ -68,7 +70,7 @@ class Builder<Schema, Ext extends BuilderExtension> {
     });
     return new this.InsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(
       insert,
-      this.fn as any,
+      this.fn,
     );
   }
 
@@ -81,7 +83,7 @@ class Builder<Schema, Ext extends BuilderExtension> {
     });
     return new this.UpdateBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(
       update,
-      this.fn as any,
+      this.fn,
     );
   }
 
@@ -93,8 +95,12 @@ class Builder<Schema, Ext extends BuilderExtension> {
     });
     return new this.DeleteBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext>(
       del,
-      this.fn as any,
+      this.fn,
     );
+  }
+
+  get schema() {
+    return new this.SchemaBuilder<Schema, number, Ext>([], this.fn);
   }
 
   /**

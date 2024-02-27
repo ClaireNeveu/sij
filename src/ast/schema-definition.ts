@@ -128,7 +128,7 @@ interface ColumnDefinition<Ext extends Extension>
     {
       readonly name: Ident;
       readonly type: DataType | Ident; // Data type or domain identifier
-      readonly default: DefaultOption;
+      readonly default: DefaultOption | null;
       readonly constraints: Array<ColumnConstraintDefinition>;
       readonly collation: Ident | null; // TODO qualify
       readonly extensions: Ext['ColumnDefinition'] | null;
@@ -165,7 +165,7 @@ const ColumnConstraintDefinition = (args: UnTag<ColumnConstraintDefinition>): Co
 type ColumnConstraint = ColumnNotNull | UniqueConstraint | ReferenceConstraint | CheckConstraint;
 
 interface ColumnNotNull extends Tagged<'ColumnNotNull', {}> {}
-const ColumnNotNull = tag('ColumnNotNull', {});
+const ColumnNotNull: ColumnNotNull = tag('ColumnNotNull', {});
 
 /*
 <unique constraint definition> ::=
@@ -266,19 +266,19 @@ interface CurrentTimeStamp extends Tagged<'CurrentTimeStamp', {}> {
 const CurrentTimeStamp = (args: UnTag<CurrentTimeStamp>): CurrentTimeStamp => tag('CurrentTimeStamp', args);
 
 interface UserDefault extends Tagged<'UserDefault', {}> {}
-const UserDefault = tag('UserDefault', {});
+const UserDefault: UserDefault = tag('UserDefault', {});
 
 interface CurrentUserDefault extends Tagged<'CurrentUserDefault', {}> {}
-const CurrentUserDefault = tag('CurrentUserDefault', {});
+const CurrentUserDefault: CurrentUserDefault = tag('CurrentUserDefault', {});
 
 interface SessionUserDefault extends Tagged<'SessionUserDefault', {}> {}
-const SessionUserDefault = tag('SessionUserDefault', {});
+const SessionUserDefault: SessionUserDefault = tag('SessionUserDefault', {});
 
 interface SystemUserDefault extends Tagged<'SystemUserDefault', {}> {}
-const SystemUserDefault = tag('SystemUserDefault', {});
+const SystemUserDefault: SystemUserDefault = tag('SystemUserDefault', {});
 
 interface NullDefault extends Tagged<'NullDefault', {}> {}
-const NullDefault = tag('NullDefault', {});
+const NullDefault: NullDefault = tag('NullDefault', {});
 
 interface CurrentDateDefault extends Tagged<'CurrentDateDefault', {}> {}
 const CurrentDateDefault = tag('CurrentDateDefault', {});
@@ -589,4 +589,13 @@ export {
   UniqueConstraint,
   ColumnConstraintDefinition,
   GrantStatement,
+  CurrentDateDefault,
+  CurrentTime,
+  CurrentTimeStamp,
+  UserDefault,
+  CurrentUserDefault,
+  SessionUserDefault,
+  SystemUserDefault,
+  NullDefault,
+  ColumnNotNull,
 };
