@@ -1,4 +1,30 @@
 export {
+  DataType,
+  Char,
+  VarChar,
+  Uuid,
+  SmallInt,
+  Int,
+  SqlBigInt,
+  Real,
+  Double,
+  Boolean,
+  SqlDate,
+  Time,
+  Timestamp,
+  Interval,
+  Text,
+  Bytea,
+  Clob,
+  Binary,
+  VarBinary,
+  Blob,
+  Decimal,
+  Float,
+  Custom,
+} from './data-type';
+
+export {
   Between,
   BinaryApp,
   Case,
@@ -82,6 +108,8 @@ export {
   UniqueConstraint,
   ColumnConstraintDefinition,
   GrantStatement,
+  ColumnNotNull,
+  NullDefault,
 } from './schema-definition';
 
 export {
@@ -98,3 +126,5 @@ export {
   SetDefault,
   DropDefault,
 } from './schema-manipulation';
+
+export { Extension } from './util';

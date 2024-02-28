@@ -667,11 +667,11 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `DROP VIEW ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
   renderRevokePrivilege(def: RevokePrivilege): string {
-    const grantOption = def.grantOptionFor ? ' GRANT OPTION FOR' : '';
+    const grantOption = def.grantOption ? ' GRANT OPTION FOR' : '';
     const privileges = def.privileges == null ? 'ALL PRIVILEGES' : def.privileges.map(this.renderPrivilege).join(', ');
-    const grantees = def.grantees.map(this.renderIdent).join(', ');
+    const grantees = def.grantees?.map(this.renderIdent).join(', ') ?? null;
     const dropBehavior = this.renderDropBehavior(def.behavior);
-    return `REVOKE ${grantOption} ${privileges} ON ${this.renderIdent(def.object)} FROM ${grantees} ${dropBehavior}`;
+    return `REVOKE ${grantOption} ${privileges} ON ${this.renderIdent(def.objectName)} FROM ${grantees} ${dropBehavior}`;
   }
   renderDropDomain(def: DropDomain): string {
     return `DROP DOMAIN ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;

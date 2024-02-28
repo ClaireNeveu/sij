@@ -1,23 +1,25 @@
 import CallableInstance from 'callable-instance';
 import { BuilderExtension, DataTypeToJs, TypeTag, TypedAst, makeLit, typeTag } from './util';
 import {
+  AlterTable,
   ColumnConstraintDefinition,
   ColumnDefinition,
   DefaultOption,
+  DropAssertion,
+  DropDomain,
+  DropTable,
+  DropView,
   Expr,
   Ident,
+  RevokePrivilege,
   SchemaDefinition,
   SchemaDefinitionStatement,
   SchemaManipulationStatement,
   TableConstraint,
   TableDefinition,
-} from 'ast';
-import { Extension } from 'ast/util';
-import { Functions } from './functions';
-import { DataType } from 'ast/data-type';
-import {
   AssertionDefinition,
   ColumnNotNull,
+  ConstraintCheckTime,
   DeletePrivilege,
   DomainDefinition,
   GrantStatement,
@@ -30,7 +32,10 @@ import {
   UpdatePrivilege,
   UsagePrivilege,
   ViewDefinition,
-} from 'ast/schema-definition';
+  DataType,
+  Extension,
+} from '../ast';
+import { Functions } from './functions';
 import { QueryBuilder } from './query';
 
 type SchemaStatement<Ext extends Extension> = SchemaDefinitionStatement<Ext> | SchemaManipulationStatement<Ext>;
@@ -124,14 +129,14 @@ type GrantArgs =
   | {
       privileges?: Array<PrivilegeArg>;
       on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
-      grantees?: Array<string>;
-      withGrantOption: boolean;
+      to?: Array<string>;
+      withGrantOption?: boolean;
     }
   | {
       privileges?: Array<PrivilegeArg>;
       on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
       public: true;
-      withGrantOption: boolean;
+      withGrantOption?: boolean;
     };
 type DomainArgs = {
   type: DataType;
@@ -139,6 +144,27 @@ type DomainArgs = {
   constraints?: Array<AssertionDefinition>;
   collation?: string;
 };
+type AssertionArgs<Database, Table, Return, Ext extends BuilderExtension> = {
+  search: QueryBuilder<Database, Table, Return, Ext>;
+  initiallyDeferred: boolean;
+  deferrable?: boolean;
+};
+type RevokeArgs =
+  | {
+      privileges?: Array<PrivilegeArg>;
+      on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
+      from?: Array<string>;
+      withGrantOption?: boolean;
+      behavior: DropBehaviorArg;
+    }
+  | {
+      privileges?: Array<PrivilegeArg>;
+      on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
+      public: true;
+      withGrantOption?: boolean;
+      behavior: DropBehaviorArg;
+    };
+type DropBehaviorArg = 'cascade' | 'CASCADE' | 'restrict' | 'RESTRICT';
 
 type ConstraintArg =
   | ColumnConstraintDefinition
@@ -291,37 +317,37 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database & { [P in N]: QReturn }, any, Ext>,
     );
   }
+  #makePrivilege(p: PrivilegeArg) {
+    if (typeof p !== 'string') {
+      return p;
+    }
+    switch (p) {
+      case 'delete':
+      case 'DELETE':
+        return DeletePrivilege;
+      case 'insert':
+      case 'INSERT':
+        return InsertPrivilege({ columns: [] });
+      case 'select':
+      case 'SELECT':
+        return SelectPrivilege;
+      case 'references':
+      case 'REFERENCES':
+        return ReferencePrivilege({ columns: [] });
+      case 'update':
+      case 'UPDATE':
+        return UpdatePrivilege({ columns: [] });
+      case 'usage':
+      case 'USAGE':
+        return UsagePrivilege;
+      default:
+        return exhaustive(p);
+    }
+  }
   grant(opts: GrantArgs): SchemaBuilder<Database, Return, Ext> {
-    const makePrivilege = (p: PrivilegeArg) => {
-      if (typeof p !== 'string') {
-        return p;
-      }
-      switch (p) {
-        case 'delete':
-        case 'DELETE':
-          return DeletePrivilege;
-        case 'insert':
-        case 'INSERT':
-          return InsertPrivilege({ columns: [] });
-        case 'select':
-        case 'SELECT':
-          return SelectPrivilege;
-        case 'references':
-        case 'REFERENCES':
-          return ReferencePrivilege({ columns: [] });
-        case 'update':
-        case 'UPDATE':
-          return UpdatePrivilege({ columns: [] });
-        case 'usage':
-        case 'USAGE':
-          return UsagePrivilege;
-        default:
-          return exhaustive(p);
-      }
-    };
     const [objectTypeRaw, objectName] = opts.on.split(' ', 2);
     const objectType: 'Table' | 'Domain' | 'Collation' = (() => {
-      switch (objectTypeRaw) {
+      switch (objectTypeRaw as 'TABLE' | 'DOMAIN' | 'COLLATION') {
         case 'TABLE':
           return 'Table';
         case 'DOMAIN':
@@ -330,9 +356,9 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
           return 'Collation';
       }
     })()!;
-    const grantees = 'public' in opts ? null : opts.grantees!.map(Ident);
+    const grantees = 'public' in opts ? null : opts.to!.map(Ident);
     const def = GrantStatement({
-      privileges: opts.privileges?.map(makePrivilege) ?? null,
+      privileges: opts.privileges?.map(this.#makePrivilege) ?? null,
       objectName: Ident(objectName),
       objectType: objectType,
       grantees,
@@ -356,6 +382,150 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
+  }
+  createAssertion<Table extends keyof Database>(
+    name: string,
+    opts: AssertionArgs<Database, Table, Return, Ext>,
+  ): SchemaBuilder<Database, Return, Ext> {
+    const checkTime = ConstraintCheckTime({
+      deferrable: opts.deferrable ?? true,
+      initiallyDeferred: opts.initiallyDeferred ?? false,
+    });
+    const def = AssertionDefinition({
+      name: Ident(name),
+      search: opts.search._statement,
+      checkTime,
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+  }
+  /*
+  dropSchema(name: string, opts: DomainArgs): SchemaBuilder<Database, Return, Ext> {
+    const def = DomainDefinition({
+      name: Ident(name),
+      dataType: opts.type,
+      default: opts.default !== undefined ? opts.default : null,
+      constraints: opts.constraints !== undefined ? opts.constraints : [],
+      collation: opts.collation !== undefined ? Ident(opts.collation) : null,
+      extensions: null,
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+    */
+  #makeBehavior(behavior: DropBehaviorArg) {
+    switch (behavior) {
+      case 'cascade':
+      case 'CASCADE':
+        return 'Cascade';
+      case 'restrict':
+      case 'RESTRICT':
+        return 'Restrict';
+      default:
+        return exhaustive(behavior);
+    }
+  }
+  dropTable<N extends string>(name: N, behavior: DropBehaviorArg): SchemaBuilder<Omit<Database, N>, Return, Ext> {
+    const def = DropTable({
+      name: Ident(name),
+      behavior: this.#makeBehavior(behavior),
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+  }
+  dropView<N extends string>(name: N, behavior: DropBehaviorArg): SchemaBuilder<Omit<Database, N>, Return, Ext> {
+    const def = DropView({
+      name: Ident(name),
+      behavior: this.#makeBehavior(behavior),
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+  }
+  revoke(opts: RevokeArgs): SchemaBuilder<Database, Return, Ext> {
+    const [objectTypeRaw, objectName] = opts.on.split(' ', 2);
+    const objectType: 'Table' | 'Domain' | 'Collation' = (() => {
+      switch (objectTypeRaw as 'TABLE' | 'DOMAIN' | 'COLLATION') {
+        case 'TABLE':
+          return 'Table';
+        case 'DOMAIN':
+          return 'Domain';
+        case 'COLLATION':
+          return 'Collation';
+      }
+    })()!;
+    const grantees = 'public' in opts ? null : opts.from!.map(Ident);
+    const def = RevokePrivilege({
+      privileges: opts.privileges?.map(this.#makePrivilege) ?? null,
+      objectName: Ident(objectName),
+      objectType: objectType,
+      grantees,
+      grantOption: opts.withGrantOption === undefined ? false : opts.withGrantOption,
+      behavior: this.#makeBehavior(opts.behavior),
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+  }
+  dropDomain(name: string, behavior: DropBehaviorArg): SchemaBuilder<Database, Return, Ext> {
+    const def = DropDomain({
+      name: Ident(name),
+      behavior: this.#makeBehavior(behavior),
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+  }
+  dropAssertion(name: string): SchemaBuilder<Database, Return, Ext> {
+    const def = DropAssertion({
+      name: Ident(name),
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+  }
+  /*
+   * sql.schema.alterTable("my_table").dropColumn("foo", "CASCADE");
+   * sql.schema.alterTabledropColumn("my_table", "foo", "CASCADE");
+   * sql.schema.alterTabledropColumn("my_table", {
+   *    column: "foo",
+   *    behavior: "CASCADE",
+   * );
+   * sql.schema.alterTable("my_table", {
+   *    dropColumn: {
+   *       column: "foo",
+   *       behavior: "CASCADE"
+   *    }
+   * });
+  alterTable<N extends string>(
+    name: N,
+  ): SchemaBuilder<Database, Return, Ext> {
+    const def = AlterTable({
+      name: Ident(name),
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [...this._statements, def],
+      this.fn as Functions<Database, any, Ext>,
+    );
+  }
+   */
+
+  /**
+   * Removes all type information from the builder allowing you to construct whatever you want.
+   * Generally the schema language doesn't assume the passed schema is complete so this shouldn't
+   * be necessary but it's provided as a safeguard.
+   */
+  unTyped(): SchemaBuilder<any, any, Ext> {
+    return this;
   }
 
   schemaTag(): TypeTag<Database> {

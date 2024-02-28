@@ -186,9 +186,10 @@ interface RevokePrivilege
     'RevokePrivilege',
     {
       readonly privileges: Array<Privilege> | null;
-      readonly object: Ident;
-      readonly grantees: Array<Ident>; // non-empty
-      readonly grantOptionFor: boolean;
+      readonly objectName: Ident;
+      readonly objectType: 'Table' | 'Domain' | 'Collation' | 'CharacterSet' | 'Translation';
+      readonly grantees: Array<Ident> | null; // null means public
+      readonly grantOption: boolean;
       readonly behavior: DropBehavior;
     }
   > {}
