@@ -1,5 +1,5 @@
 import CallableInstance from 'callable-instance';
-import { BuilderExtension, DataTypeToJs, TypeTag, TypedAst, makeLit, typeTag } from './util';
+import { BuilderExtension, DataTypeToJs, SijError, TypeTag, TypedAst, makeLit, typeTag } from './util';
 import {
   AlterTable,
   ColumnConstraintDefinition,
@@ -34,9 +34,13 @@ import {
   ViewDefinition,
   DataType,
   Extension,
+  DropDefault,
+  SetDefault,
+  AlterColumn,
 } from '../ast';
 import { Functions } from './functions';
 import { QueryBuilder } from './query';
+import { AddTableConstraint, AlterTableAction, DropColumn, DropTableConstraint } from 'ast/schema-manipulation';
 
 type SchemaStatement<Ext extends Extension> = SchemaDefinitionStatement<Ext> | SchemaManipulationStatement<Ext>;
 
@@ -164,6 +168,10 @@ type RevokeArgs =
       withGrantOption?: boolean;
       behavior: DropBehaviorArg;
     };
+
+type AlterColumnArgs = {
+  default: DefaultOption | null | 'DROP' | 'drop';
+}
 type DropBehaviorArg = 'cascade' | 'CASCADE' | 'restrict' | 'RESTRICT';
 
 type ConstraintArg =
@@ -197,6 +205,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
   constructor(
     readonly _statements: Array<SchemaStatement<Ext>>,
     readonly fn: Functions<Database, never, Ext>,
+    readonly _AlterTableBuilder: typeof AlterTableBuilder = AlterTableBuilder,
   ) {
     super('apply');
   }
@@ -234,6 +243,51 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       );
   }
   */
+  _makeColumn<T extends DataType>(name: string, col: ColumnArgs<T>): ColumnDefinition<Ext> {
+    const typ = typeof col.type === 'string' ? Ident(col.type) : col.type;
+    const def = col.default === null ? NullDefault : col.default === undefined ? null : col.default;
+    const makeConstraint = (con: ConstraintArg) => {
+      if (typeof con !== 'string') {
+        return con;
+      }
+      switch (con) {
+        case 'not null':
+        case 'NOT NULL':
+          return ColumnConstraintDefinition({ name: null, constraint: ColumnNotNull, attributes: null });
+        case 'unique':
+        case 'UNIQUE':
+          return ColumnConstraintDefinition({
+            name: null,
+            constraint: UniqueConstraint({ primaryKey: false, columns: [] }),
+            attributes: null,
+          });
+        case 'primary key':
+        case 'PRIMARY KEY':
+          return ColumnConstraintDefinition({
+            name: null,
+            constraint: UniqueConstraint({ primaryKey: true, columns: [] }),
+            attributes: null,
+          });
+      }
+    };
+    const constraints = (() => {
+      if (col.constraints === undefined) {
+        return [];
+      }
+      if (Array.isArray(col.constraints)) {
+        return col.constraints.map(makeConstraint);
+      }
+      return [makeConstraint(col.constraints)];
+    })();
+    const collation = col.collation === undefined ? null : Ident(col.collation);
+    return ColumnDefinition({
+      name: Ident(name),
+      type: typ,
+      default: def,
+      constraints,
+      collation,
+      extensions: null,
+    });}
   createTable<N extends string, T extends TableArgs>(
     name: N,
     opts: T,
@@ -241,50 +295,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     const mode = opts.local ? 'LocalTemp' : opts.temporary ? 'GlobalTemp' : 'Persistent';
     const columns: Array<ColumnDefinition<Ext>> = Object.keys(opts.columns).map(colName => {
       const col = opts.columns[colName];
-      const typ = typeof col.type === 'string' ? Ident(col.type) : col.type;
-      const def = col.default === null ? NullDefault : col.default === undefined ? null : col.default;
-      const makeConstraint = (con: ConstraintArg) => {
-        if (typeof con !== 'string') {
-          return con;
-        }
-        switch (con) {
-          case 'not null':
-          case 'NOT NULL':
-            return ColumnConstraintDefinition({ name: null, constraint: ColumnNotNull, attributes: null });
-          case 'unique':
-          case 'UNIQUE':
-            return ColumnConstraintDefinition({
-              name: null,
-              constraint: UniqueConstraint({ primaryKey: false, columns: [] }),
-              attributes: null,
-            });
-          case 'primary key':
-          case 'PRIMARY KEY':
-            return ColumnConstraintDefinition({
-              name: null,
-              constraint: UniqueConstraint({ primaryKey: true, columns: [] }),
-              attributes: null,
-            });
-        }
-      };
-      const constraints = (() => {
-        if (col.constraints === undefined) {
-          return [];
-        }
-        if (Array.isArray(col.constraints)) {
-          return col.constraints.map(makeConstraint);
-        }
-        return [makeConstraint(col.constraints)];
-      })();
-      const collation = col.collation === undefined ? null : Ident(col.collation);
-      return ColumnDefinition({
-        name: Ident(colName),
-        type: typ,
-        default: def,
-        constraints,
-        collation,
-        extensions: null,
-      });
+      return this._makeColumn(colName, col);
     });
     const def = TableDefinition<Ext>({
       name: Ident(name),
@@ -317,7 +328,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database & { [P in N]: QReturn }, any, Ext>,
     );
   }
-  #makePrivilege(p: PrivilegeArg) {
+  protected _makePrivilege(p: PrivilegeArg) {
     if (typeof p !== 'string') {
       return p;
     }
@@ -358,7 +369,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     })()!;
     const grantees = 'public' in opts ? null : opts.to!.map(Ident);
     const def = GrantStatement({
-      privileges: opts.privileges?.map(this.#makePrivilege) ?? null,
+      privileges: opts.privileges?.map(this._makePrivilege) ?? null,
       objectName: Ident(objectName),
       objectType: objectType,
       grantees,
@@ -416,7 +427,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database, any, Ext>,
     );
     */
-  #makeBehavior(behavior: DropBehaviorArg) {
+  _makeBehavior(behavior: DropBehaviorArg) {
     switch (behavior) {
       case 'cascade':
       case 'CASCADE':
@@ -431,7 +442,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
   dropTable<N extends string>(name: N, behavior: DropBehaviorArg): SchemaBuilder<Omit<Database, N>, Return, Ext> {
     const def = DropTable({
       name: Ident(name),
-      behavior: this.#makeBehavior(behavior),
+      behavior: this._makeBehavior(behavior),
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -441,7 +452,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
   dropView<N extends string>(name: N, behavior: DropBehaviorArg): SchemaBuilder<Omit<Database, N>, Return, Ext> {
     const def = DropView({
       name: Ident(name),
-      behavior: this.#makeBehavior(behavior),
+      behavior: this._makeBehavior(behavior),
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -462,12 +473,12 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     })()!;
     const grantees = 'public' in opts ? null : opts.from!.map(Ident);
     const def = RevokePrivilege({
-      privileges: opts.privileges?.map(this.#makePrivilege) ?? null,
+      privileges: opts.privileges?.map(this._makePrivilege) ?? null,
       objectName: Ident(objectName),
       objectType: objectType,
       grantees,
       grantOption: opts.withGrantOption === undefined ? false : opts.withGrantOption,
-      behavior: this.#makeBehavior(opts.behavior),
+      behavior: this._makeBehavior(opts.behavior),
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -477,7 +488,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
   dropDomain(name: string, behavior: DropBehaviorArg): SchemaBuilder<Database, Return, Ext> {
     const def = DropDomain({
       name: Ident(name),
-      behavior: this.#makeBehavior(behavior),
+      behavior: this._makeBehavior(behavior),
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -494,30 +505,38 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     );
   }
   /*
-   * sql.schema.alterTable("my_table").dropColumn("foo", "CASCADE");
-   * sql.schema.alterTabledropColumn("my_table", "foo", "CASCADE");
-   * sql.schema.alterTabledropColumn("my_table", {
-   *    column: "foo",
-   *    behavior: "CASCADE",
-   * );
-   * sql.schema.alterTable("my_table", {
-   *    dropColumn: {
-   *       column: "foo",
-   *       behavior: "CASCADE"
-   *    }
-   * });
-  alterTable<N extends string>(
+   * AlterTableBuilder<`|`> for single dialects
+   * AlterTableBuilder<`|${string}`> for single dialects
+   */
+  alterTable<ND, N extends (keyof Database) & (keyof ND) & string>(
     name: N,
-  ): SchemaBuilder<Database, Return, Ext> {
+    action: (builder: AlterTableBuilder<N, Database, Return, Ext>) => AlterTableBuilder<N, Database, Return, Ext>,
+  ): SchemaBuilder<ND, Return, Ext> {
+    const builder = action(new this._AlterTableBuilder(name, [], this, this.fn));
+    if (builder._actions.length < 1) {
+      throw new SijError(`Invalid ALTER TABLE operation on table "${name}" had no actions.`)
+    }
+    if (builder._actions.length > 1) {
+      throw new SijError(`Invalid ALTER TABLE operation on table "${name}" had multiple actions. This is not supported by your dialect.`)
+    }
     const def = AlterTable({
+      name: Ident(name),
+      action: builder._actions[0],
+    })
+    return new SchemaBuilder<ND, Return, Ext>(
+      [...this._statements, def],
+      this.fn as unknown as Functions<ND, any, Ext>,
+    );
+  }/*
+  alterDomain(name: string): SchemaBuilder<Database, Return, Ext> {
+    const def = DropAssertion({
       name: Ident(name),
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
-  }
-   */
+  }*/
 
   /**
    * Removes all type information from the builder allowing you to construct whatever you want.
@@ -536,6 +555,82 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
 // Merges with above class to provide calling as a function
 interface SchemaBuilder<Database, Return, Ext extends BuilderExtension> {
   <T>(fn: (arg: SchemaBuilder<Database, Return, Ext>) => T): T;
+}
+
+class AlterTableBuilder<N extends (keyof Database) & string, Database, Return, Ext extends BuilderExtension> {
+  constructor(
+    readonly _table: N,
+    readonly _actions: Array<AlterTableAction<Ext>>,
+    readonly _builder: SchemaBuilder<Database, Return, Ext>,
+    readonly fn: Functions<Database, never, Ext>,
+  ) {}
+
+  addColumn<Col extends (keyof Database[N]) & string, T extends DataType>(
+    name: Col, 
+    args: ColumnArgs<T>
+  ): AlterTableBuilder<N, Database & { [P in N]: { [C in Col]: DataTypeToJs<T> }}, Return, Ext> {
+    const def = this._builder._makeColumn(name, args);
+    return new AlterTableBuilder<N, Database & { [P in N]: { [C in Col]: DataTypeToJs<T> }}, Return, Ext>(
+      this._table,
+      [def],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
+  alterColumn<Col extends (keyof Database[N]) & string>(
+    name: Col, 
+    args: AlterColumnArgs
+  ): AlterTableBuilder<N, Database, Return, Ext> {
+    const defDef = (() => {
+      if (typeof args.default === 'string') {
+        return DropDefault;
+      } else if (args.default === null) {
+        return SetDefault({default: NullDefault});
+      } else {
+        return SetDefault({ default: args.default });
+      }
+    })();
+    const def = AlterColumn({ name: Ident(name), action: defDef })
+    return new AlterTableBuilder<N, Database, Return, Ext>(
+      this._table,
+      [def],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
+  dropColumn<Col extends (keyof Database[N]) & string>(
+    name: Col, 
+    behavior: DropBehaviorArg
+  ): AlterTableBuilder<N, Omit<Database, N> & { [P in N]: Omit<Database[N], Col> }, Return, Ext> {
+    const def = DropColumn({
+      name: Ident(name),
+      behavior: this._builder._makeBehavior(behavior),
+    })
+    return new AlterTableBuilder<N, Omit<Database, N> & { [P in N]: Omit<Database[N], Col> }, Return, Ext>(
+      this._table,
+      [def],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
+  addConstraint(constraint: TableConstraint): AlterTableBuilder<N, Database, Return, Ext> {
+    const def = AddTableConstraint({ constraint });
+    return new AlterTableBuilder<N, Database, Return, Ext>(
+      this._table,
+      [def],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
+  dropConstraint(name: string, behavior: DropBehaviorArg): AlterTableBuilder<N, Database, Return, Ext> {
+    const def = DropTableConstraint({ name: Ident(name), behavior: this._builder._makeBehavior(behavior) })
+    return new AlterTableBuilder<N, Database, Return, Ext>(
+      this._table,
+      [def],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
 }
 
 export { SchemaBuilder };

@@ -1,4 +1,4 @@
-import type { Any, Object } from 'ts-toolbelt';
+import type { Any, Object as Obj } from 'ts-toolbelt';
 
 import { Expr, Ident, CompoundIdentifier, Lit, Wildcard } from '../ast/expr';
 import { Literal, NumLit, StringLit, BoolLit, DateLit, CustomLit, NullLit } from '../ast/literal';
@@ -57,7 +57,7 @@ export type NoBuilderExtension = NoExtension & {
   };
 };
 
-export type Extend<O extends object> = Object.Merge<O, NoBuilderExtension, 'deep'>;
+export type Extend<O extends object> = Obj.Merge<O, NoBuilderExtension, 'deep'>;
 
 export interface StatementBuilder<Ext extends BuilderExtension> {
   _statement: Statement<Ext>;
@@ -169,3 +169,10 @@ export type DataTypeToJs<D extends DataType> =
   Text extends D ? string :
   Bytea extends D ? unknown :
   Custom extends D ? unknown : never;
+
+export class SijError extends Error {
+  constructor(msg: string) {
+      super(msg);
+      Object.setPrototypeOf(this, SijError.prototype);
+  }
+}

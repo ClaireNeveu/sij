@@ -29,3 +29,5 @@ z.ZodType.prototype.makeOptional = function (required: boolean): ZodType {
 ```
 
 Also wonder if I might be able to _clone_ the module then modify the clone. That would allow the types to actually be accurate.
+
+Another option might be to just override _every_ method calling and having them call `super` while telling Typescript what the correct type is.
