@@ -19,8 +19,9 @@ import { InsertBuilder as IB } from './insert';
 import { UpdateBuilder as UB } from './update';
 import { DeleteBuilder as DB } from './delete';
 import { SchemaBuilder as SB } from './schema';
+import { TransactionBuilder } from './transaction';
 
-class Builder<Schema, Ext extends BuilderExtension> {
+class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<Schema, Ext> {
   dialect: string = 'SQL-92';
 
   constructor(
@@ -30,7 +31,9 @@ class Builder<Schema, Ext extends BuilderExtension> {
     readonly UpdateBuilder: typeof UB = UB,
     readonly DeleteBuilder: typeof DB = DB,
     readonly SchemaBuilder: typeof SB = SB,
-  ) {}
+  ) {
+    super();
+  }
 
   from<TableName extends keyof Schema & string>(
     table?: TableName,

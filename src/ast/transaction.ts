@@ -135,6 +135,7 @@ const Rollback = (args: UnTag<Rollback>): Rollback => tag('Rollback', args);
 export {
   TransactionStatement,
   SetTransaction,
+  TransactionMode,
   IsolationLevel,
   AccessMode,
   DiagnosticSize,

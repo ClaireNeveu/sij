@@ -423,6 +423,10 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
   returnTag(): TypeTag<Return> {
     return typeTag<Return>();
   }
+
+  finish(): Query<Ext> {
+    return this._statement;
+  }
 }
 // Merges with above class to provide calling as a function
 interface QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> {

@@ -140,6 +140,7 @@ export {
 export {
   TransactionStatement,
   SetTransaction,
+  TransactionMode,
   IsolationLevel,
   AccessMode,
   DiagnosticSize,
