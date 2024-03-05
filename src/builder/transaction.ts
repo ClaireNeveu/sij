@@ -1,17 +1,29 @@
-import { AccessMode, Commit, DiagnosticSize, Ident, IsolationLevel, Lit, Literal, Rollback, SetConstraintMode, SetTransaction, TransactionMode } from 'ast';
+import {
+  AccessMode,
+  Commit,
+  DiagnosticSize,
+  Ident,
+  IsolationLevel,
+  Lit,
+  Literal,
+  Rollback,
+  SetConstraintMode,
+  SetTransaction,
+  TransactionMode,
+} from '../ast';
 import { BuilderExtension } from './util';
 
 const exhaustive = (n: never): never => n;
 
 type TransactionModeArg = TransactionMode | 'read only' | 'READ ONLY' | 'read write' | 'READ WRITE';
 
-type IsolationLevelArg = 
-  | 'read uncommitted' 
-  | 'READ UNCOMMITTED' 
-  | 'read committed' 
-  | 'READ COMMITTED' 
-  | 'repeatable read' 
-  | 'REPEATABLE READ' 
+type IsolationLevelArg =
+  | 'read uncommitted'
+  | 'READ UNCOMMITTED'
+  | 'read committed'
+  | 'READ COMMITTED'
+  | 'repeatable read'
+  | 'REPEATABLE READ'
   | 'serializable'
   | 'SERIALIZABLE';
 
@@ -40,14 +52,23 @@ class TransactionBuilder<Schema, Ext extends BuilderExtension> {
     let level_: IsolationLevel['level'];
     switch (level) {
       case 'read uncommitted':
-      case 'READ UNCOMMITTED': level_ = 'ReadUncommitted'; break
+      case 'READ UNCOMMITTED':
+        level_ = 'ReadUncommitted';
+        break;
       case 'read committed':
-      case 'READ COMMITTED': level_ = 'ReadCommitted'; break
+      case 'READ COMMITTED':
+        level_ = 'ReadCommitted';
+        break;
       case 'repeatable read':
-      case 'REPEATABLE READ': level_ = 'RepeatableRead'; break
+      case 'REPEATABLE READ':
+        level_ = 'RepeatableRead';
+        break;
       case 'serializable':
-      case 'SERIALIZABLE': level_ = 'Serializable'; break
-      default: level_ = exhaustive(level);
+      case 'SERIALIZABLE':
+        level_ = 'Serializable';
+        break;
+      default:
+        level_ = exhaustive(level);
     }
     return IsolationLevel({
       level: level_,
@@ -57,13 +78,16 @@ class TransactionBuilder<Schema, Ext extends BuilderExtension> {
     const size_ = typeof size === 'string' ? Ident(size) : size;
     return DiagnosticSize({ size: size_ });
   }
-  setConstraints(constraints: Array<string> | 'ALL' | 'all', deferred: 'deferred' | 'DEFERRED' | 'immediate' | 'IMMEDIATE'): SetConstraintMode {
+  setConstraints(
+    constraints: Array<string> | 'ALL' | 'all',
+    deferred: 'deferred' | 'DEFERRED' | 'immediate' | 'IMMEDIATE',
+  ): SetConstraintMode {
     const constraints_ = typeof constraints === 'string' ? null : constraints.map(Ident);
     const def = deferred === 'deferred' || deferred === 'DEFERRED';
     return SetConstraintMode({
       constraints: constraints_,
       deferred: def,
-    })
+    });
   }
   commit(): Commit {
     return Commit({});

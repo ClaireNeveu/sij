@@ -149,4 +149,6 @@ export {
   Rollback,
 } from './transaction';
 
+export { ConnectionStatement, ConnectStatement, SetConnectionStatement, DisconnectStatement } from './connection';
+
 export { Extension, NoExtension } from './util';
