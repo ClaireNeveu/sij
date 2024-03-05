@@ -20,6 +20,9 @@ import { UpdateBuilder as UB } from './update';
 import { DeleteBuilder as DB } from './delete';
 import { SchemaBuilder as SB } from './schema';
 import { TransactionBuilder } from './transaction';
+import { ConnectStatement, DisconnectStatement, SetConnectionStatement } from '../ast';
+
+const exhaustive = (n: never): never => n;
 
 class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<Schema, Ext> {
   dialect: string = 'SQL-92';
@@ -106,6 +109,66 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
     return new this.SchemaBuilder<Schema, number, Ext>([], this.fn);
   }
 
+  connectTo(server: string, opts: { as?: string; user?: string } = {}): ConnectStatement {
+    return ConnectStatement({
+      server: Ident(server),
+      alias: opts?.as === undefined ? null : Ident(opts.as),
+      user: opts?.user === undefined ? null : Ident(opts.user),
+    });
+  }
+  connectToDefault(): ConnectStatement {
+    return ConnectStatement({
+      server: null,
+      alias: null,
+      user: null,
+    });
+  }
+  setConnection(connection: string | Lit | TypedAst<Schema, any, Lit>): SetConnectionStatement {
+    let connection_: SetConnectionStatement['connection'];
+    if (typeof connection === 'string') {
+      connection_ = Ident(connection);
+    } else if ('ast' in connection) {
+      connection_ = connection.ast;
+    } else if ('_tag' in connection) {
+      connection_ = connection;
+    } else {
+      connection_ = exhaustive(connection);
+    }
+    return SetConnectionStatement({
+      connection: connection_,
+    });
+  }
+  setConnectionDefault(): SetConnectionStatement {
+    return SetConnectionStatement({
+      connection: null,
+    });
+  }
+  disconnect(connection: string | Lit | TypedAst<Schema, any, Lit>): DisconnectStatement {
+    let connection_: SetConnectionStatement['connection'];
+    if (typeof connection === 'string') {
+      connection_ = Ident(connection);
+    } else if ('ast' in connection) {
+      connection_ = connection.ast;
+    } else if ('_tag' in connection) {
+      connection_ = connection;
+    } else {
+      connection_ = exhaustive(connection);
+    }
+    return DisconnectStatement({
+      connection: connection_,
+    });
+  }
+  disconnectCurrent(): DisconnectStatement {
+    return DisconnectStatement({
+      connection: 'Current',
+    });
+  }
+  disconnectAll(): DisconnectStatement {
+    return DisconnectStatement({
+      connection: 'All',
+    });
+  }
+
   /**
    * Aliases an expression for use in a select.
    */
@@ -136,10 +199,10 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
       | Ext['builder']['types']['boolean']
       | Ext['builder']['types']['date']
       | null,
-  >(l: Return): TypedAst<Schema, Return, Expr<Ext>> {
+  >(l: Return): TypedAst<Schema, Return, Lit> {
     return {
       ast: makeLit(l as any),
-    } as TypedAst<Schema, Return, Expr<Ext>>;
+    } as TypedAst<Schema, Return, Lit>;
   }
 }
 
