@@ -1,27 +1,3 @@
-import type { Expr, Ident } from '../ast/expr';
-import type { DataType } from '../ast/data-type';
-import type { Query, Select, Table } from '../ast/query';
-import type { Insert, Statement, Update, Delete, UpdatePositioned, DeletePositioned } from '../ast/statement';
-import type { Literal } from '../ast/literal';
-import type { Extension, NoExtension } from '../ast/util';
-import { SchemaDefinition, DomainDefinition, DropSchema, NumLit } from 'ast';
-import {
-  AssertionDefinition,
-  CheckConstraint,
-  ColumnConstraint,
-  ColumnConstraintDefinition,
-  ColumnDefinition,
-  ConstraintCheckTime,
-  DefaultOption,
-  GrantStatement,
-  Privilege,
-  ReferenceConstraint,
-  ReferentialAction,
-  TableConstraint,
-  TableDefinition,
-  UniqueConstraint,
-  ViewDefinition,
-} from 'ast';
 import {
   AddDomainConstraint,
   AddTableConstraint,
@@ -29,17 +5,55 @@ import {
   AlterDomain,
   AlterTable,
   AlterTableAction,
+  AssertionDefinition,
+  CheckConstraint,
+  ColumnConstraint,
+  ColumnConstraintDefinition,
+  ColumnDefinition,
+  Commit,
+  ConstraintCheckTime,
+  DataType,
+  DefaultOption,
+  Delete,
+  DeletePositioned,
   DomainAction,
+  DomainDefinition,
   DropAssertion,
   DropBehavior,
   DropColumn,
   DropDefault,
   DropDomain,
+  DropSchema,
   DropTable,
   DropTableConstraint,
   DropView,
+  Expr,
+  Extension,
+  GrantStatement,
+  Ident,
+  Insert,
+  Literal,
+  NoExtension,
+  NumLit,
+  Privilege,
+  Query,
+  ReferenceConstraint,
+  ReferentialAction,
   RevokePrivilege,
-} from 'ast/schema-manipulation';
+  Rollback,
+  SchemaDefinition,
+  Select,
+  SetConstraintMode,
+  SetTransaction,
+  Statement,
+  Table,
+  TableConstraint,
+  TableDefinition,
+  UniqueConstraint,
+  Update,
+  UpdatePositioned,
+  ViewDefinition,
+} from '../ast';
 
 const exhaustive = (n: never): never => n;
 
@@ -104,6 +118,14 @@ class Renderer<Ext extends Extension = NoExtension> {
         return this.renderAlterTable(statement);
       case 'AlterDomain':
         return this.renderAlterDomain(statement);
+      case 'SetTransaction':
+        return this.renderSetTransaction(statement);
+      case 'SetConstraintMode':
+        return this.renderSetConstraintMode(statement);
+      case 'Commit':
+        return this.renderCommit(statement);
+      case 'Rollback':
+        return this.renderRollback(statement);
       default:
         return exhaustive(statement);
     }
@@ -756,6 +778,65 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
   renderAddDomainConstraint(def: AddDomainConstraint): string {
     return `ADD ${this.renderAssertionDefinition(def.constraint)}`;
+  }
+  renderSetTransaction(def: SetTransaction): string {
+    const modes = def.modes
+      .map(mode => {
+        switch (mode._tag) {
+          case 'IsolationLevel': {
+            let level: string;
+            switch (mode.level) {
+              case 'ReadUncommitted':
+                level = 'READ UNCOMMITTED';
+                break;
+              case 'ReadCommitted':
+                level = 'READ COMMITTED';
+                break;
+              case 'RepeatableRead':
+                level = 'REPEATABLE READ';
+                break;
+              case 'Serializable':
+                level = 'SERIALIZABLE';
+                break;
+              default:
+                level = exhaustive(mode.level);
+            }
+            return `ISOLATION LEVEL ${level}`;
+          }
+          case 'AccessMode': {
+            switch (mode.mode) {
+              case 'ReadOnly':
+                return 'READ ONLY';
+              case 'ReadWrite':
+                return 'READ WRITE';
+              default:
+                return exhaustive(mode.mode);
+            }
+          }
+          case 'DiagnosticSize': {
+            const size =
+              mode.size._tag === 'Ident' ? ':' + this.renderIdent(mode.size) : this.renderLiteral(mode.size.literal);
+            return `DIAGNOSTICS SIZE ${size}`;
+          }
+          default:
+            return exhaustive(mode);
+        }
+      })
+      .join(', ');
+    return `SET TRANSACTION ${modes}`;
+  }
+  renderSetConstraintMode(def: SetConstraintMode): string {
+    const constraints = def.constraints === null ? 'ALL' : def.constraints.map(this.renderIdent).join(', ');
+    const deferred = def.deferred ? 'DEFERRED' : 'IMMEDIATE';
+    return `SET CONSTRAINTS ${constraints} ${deferred}`;
+  }
+
+  renderCommit(def: Commit): string {
+    return 'COMMIT';
+  }
+
+  renderRollback(def: Rollback): string {
+    return 'ROLLBACK';
   }
 }
 

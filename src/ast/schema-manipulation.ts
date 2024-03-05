@@ -310,5 +310,5 @@ export {
   DropTableConstraint,
   DomainAction,
   AddDomainConstraint,
-  DropDomainConstraint
+  DropDomainConstraint,
 };

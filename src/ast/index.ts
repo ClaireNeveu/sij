@@ -81,6 +81,8 @@ export {
   Update,
   ValuesConstructor,
   ValuesQuery,
+  UpdatePositioned,
+  DeletePositioned,
 } from './statement';
 
 export {
@@ -132,7 +134,18 @@ export {
   DropTableConstraint,
   DomainAction,
   AddDomainConstraint,
-  DropDomainConstraint
+  DropDomainConstraint,
 } from './schema-manipulation';
 
-export { Extension } from './util';
+export {
+  TransactionStatement,
+  SetTransaction,
+  IsolationLevel,
+  AccessMode,
+  DiagnosticSize,
+  SetConstraintMode,
+  Commit,
+  Rollback,
+} from './transaction';
+
+export { Extension, NoExtension } from './util';

@@ -172,7 +172,7 @@ export type DataTypeToJs<D extends DataType> =
 
 export class SijError extends Error {
   constructor(msg: string) {
-      super(msg);
-      Object.setPrototypeOf(this, SijError.prototype);
+    super(msg);
+    Object.setPrototypeOf(this, SijError.prototype);
   }
 }
