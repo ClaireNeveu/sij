@@ -72,7 +72,7 @@ const SchemaDefinition = <Ext extends Extension>(args: UnTag<SchemaDefinition<Ex
     [ <constraint name definition> ]
     <check constraint definition> [ <constraint attributes> ]
 */
-interface DomainDefinition<Ext extends Extension>
+interface DomainDefinition<Ext extends Extension> // MySQL doesn't support domains
   extends Tagged<
     'DomainDefinition',
     {

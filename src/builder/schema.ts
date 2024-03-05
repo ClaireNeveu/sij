@@ -40,7 +40,7 @@ import {
 } from '../ast';
 import { Functions } from './functions';
 import { QueryBuilder } from './query';
-import { AddTableConstraint, AlterTableAction, DropColumn, DropTableConstraint } from 'ast/schema-manipulation';
+import { AddDomainConstraint, AddTableConstraint, AlterDomain, AlterTableAction, DomainAction, DropColumn, DropDomainConstraint, DropTableConstraint } from 'ast/schema-manipulation';
 
 type SchemaStatement<Ext extends Extension> = SchemaDefinitionStatement<Ext> | SchemaManipulationStatement<Ext>;
 
@@ -206,6 +206,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     readonly _statements: Array<SchemaStatement<Ext>>,
     readonly fn: Functions<Database, never, Ext>,
     readonly _AlterTableBuilder: typeof AlterTableBuilder = AlterTableBuilder,
+    readonly _AlterDomainBuilder: typeof AlterDomainBuilder = AlterDomainBuilder,
   ) {
     super('apply');
   }
@@ -527,16 +528,27 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       [...this._statements, def],
       this.fn as unknown as Functions<ND, any, Ext>,
     );
-  }/*
-  alterDomain(name: string): SchemaBuilder<Database, Return, Ext> {
-    const def = DropAssertion({
+  }
+  alterDomain(
+    name: string,
+    action: (builder: AlterDomainBuilder<Database, Return, Ext>) => AlterDomainBuilder<Database, Return, Ext>,
+  ): SchemaBuilder<Database, Return, Ext> {
+    const builder = action(new this._AlterDomainBuilder([], this, this.fn));
+    if (builder._actions.length < 1) {
+      throw new SijError(`Invalid ALTER DOMAIN operation on domain "${name}" had no actions.`)
+    }
+    if (builder._actions.length > 1) {
+      throw new SijError(`Invalid ALTER DOMAIN operation on domain "${name}" had multiple actions. This is not supported by your dialect.`)
+    }
+    const def = AlterDomain({
       name: Ident(name),
-    });
+      action: builder._actions[0],
+    })
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
-      this.fn as Functions<Database, any, Ext>,
+      this.fn,
     );
-  }*/
+  }
 
   /**
    * Removes all type information from the builder allowing you to construct whatever you want.
@@ -572,7 +584,7 @@ class AlterTableBuilder<N extends (keyof Database) & string, Database, Return, E
     const def = this._builder._makeColumn(name, args);
     return new AlterTableBuilder<N, Database & { [P in N]: { [C in Col]: DataTypeToJs<T> }}, Return, Ext>(
       this._table,
-      [def],
+      [...this._actions, def],
       this._builder as any, 
       this.fn as any,
     );
@@ -593,7 +605,7 @@ class AlterTableBuilder<N extends (keyof Database) & string, Database, Return, E
     const def = AlterColumn({ name: Ident(name), action: defDef })
     return new AlterTableBuilder<N, Database, Return, Ext>(
       this._table,
-      [def],
+      [...this._actions, def],
       this._builder as any, 
       this.fn as any,
     );
@@ -608,7 +620,7 @@ class AlterTableBuilder<N extends (keyof Database) & string, Database, Return, E
     })
     return new AlterTableBuilder<N, Omit<Database, N> & { [P in N]: Omit<Database[N], Col> }, Return, Ext>(
       this._table,
-      [def],
+      [...this._actions, def],
       this._builder as any, 
       this.fn as any,
     );
@@ -617,7 +629,7 @@ class AlterTableBuilder<N extends (keyof Database) & string, Database, Return, E
     const def = AddTableConstraint({ constraint });
     return new AlterTableBuilder<N, Database, Return, Ext>(
       this._table,
-      [def],
+      [...this._actions, def],
       this._builder as any, 
       this.fn as any,
     );
@@ -626,7 +638,47 @@ class AlterTableBuilder<N extends (keyof Database) & string, Database, Return, E
     const def = DropTableConstraint({ name: Ident(name), behavior: this._builder._makeBehavior(behavior) })
     return new AlterTableBuilder<N, Database, Return, Ext>(
       this._table,
-      [def],
+      [...this._actions, def],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
+}
+
+class AlterDomainBuilder<Database, Return, Ext extends BuilderExtension> {
+  constructor(
+    readonly _actions: Array<DomainAction>,
+    readonly _builder: SchemaBuilder<Database, Return, Ext>,
+    readonly fn: Functions<Database, never, Ext>,
+  ) {}
+
+  setDefault(def: DefaultOption): AlterDomainBuilder<Database, Return, Ext> {
+    return new AlterDomainBuilder<Database, Return, Ext>(
+      [...this._actions, SetDefault({ default: def })],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
+
+  dropDefault(): AlterDomainBuilder<Database, Return, Ext> {
+    return new AlterDomainBuilder<Database, Return, Ext>(
+      [...this._actions, DropDefault],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
+
+  addConstraint(constraint: AssertionDefinition): AlterDomainBuilder<Database, Return, Ext> {
+    return new AlterDomainBuilder<Database, Return, Ext>(
+      [...this._actions, AddDomainConstraint({ constraint })],
+      this._builder as any, 
+      this.fn as any,
+    );
+  }
+
+  dropConstraint(name: string): AlterDomainBuilder<Database, Return, Ext> {
+    return new AlterDomainBuilder<Database, Return, Ext>(
+      [...this._actions, DropDomainConstraint({ name: Ident(name) })],
       this._builder as any, 
       this.fn as any,
     );

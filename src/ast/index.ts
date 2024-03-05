@@ -122,9 +122,17 @@ export {
   DropAssertion,
   AlterDomain,
   AlterTable,
+  AlterTableAction,
   AlterColumn,
   SetDefault,
   DropDefault,
+  DropBehavior,
+  DropColumn,
+  AddTableConstraint,
+  DropTableConstraint,
+  DomainAction,
+  AddDomainConstraint,
+  DropDomainConstraint
 } from './schema-manipulation';
 
 export { Extension } from './util';

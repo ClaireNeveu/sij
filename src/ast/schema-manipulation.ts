@@ -205,7 +205,6 @@ interface AlterDomain
     {
       readonly name: Ident;
       readonly action: DomainAction;
-      readonly behavior: DropBehavior;
     }
   > {}
 const AlterDomain = (args: UnTag<AlterDomain>): AlterDomain => tag('AlterDomain', args);
@@ -311,4 +310,5 @@ export {
   DropTableConstraint,
   DomainAction,
   AddDomainConstraint,
+  DropDomainConstraint
 };
