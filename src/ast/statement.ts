@@ -4,7 +4,6 @@ import type { Ident, Expr } from './expr';
 import { SchemaDefinitionStatement } from './schema-definition';
 import { SchemaManipulationStatement } from './schema-manipulation';
 import { TransactionStatement } from './transaction';
-import { ConnectionStatement } from './connection';
 
 type Statement<Ext extends Extension> =
   | Query<Ext>
@@ -15,8 +14,7 @@ type Statement<Ext extends Extension> =
   | DeletePositioned<Ext>
   | SchemaDefinitionStatement<Ext>
   | SchemaManipulationStatement<Ext>
-  | TransactionStatement
-  | ConnectionStatement;
+  | TransactionStatement;
 
 interface Insert<Ext extends Extension>
   extends Tagged<

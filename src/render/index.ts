@@ -11,13 +11,11 @@ import {
   ColumnConstraintDefinition,
   ColumnDefinition,
   Commit,
-  ConnectStatement,
   ConstraintCheckTime,
   DataType,
   DefaultOption,
   Delete,
   DeletePositioned,
-  DisconnectStatement,
   DomainAction,
   DomainDefinition,
   DropAssertion,
@@ -45,7 +43,6 @@ import {
   Rollback,
   SchemaDefinition,
   Select,
-  SetConnectionStatement,
   SetConstraintMode,
   SetTransaction,
   Statement,
@@ -129,12 +126,6 @@ class Renderer<Ext extends Extension = NoExtension> {
         return this.renderCommit(statement);
       case 'Rollback':
         return this.renderRollback(statement);
-      case 'ConnectStatement':
-        return this.renderConnectStatement(statement);
-      case 'SetConnectionStatement':
-        return this.renderSetConnectionStatement(statement);
-      case 'DisconnectStatement':
-        return this.renderDisconnectStatement(statement);
       default:
         return exhaustive(statement);
     }
@@ -844,36 +835,6 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
   renderRollback(def: Rollback): string {
     return 'ROLLBACK';
-  }
-  renderConnectStatement(def: ConnectStatement): string {
-    const server = def.server === null ? 'DEFAULT' : this.renderIdent(def.server);
-    const alias = def.alias === null ? '' : ` AS ${this.renderIdent(def.alias)}`;
-    const user = def.user === null ? '' : ` USER ${this.renderIdent(def.user)}`;
-    return `CONNECT TO ${server}${alias}${user}`;
-  }
-  renderSetConnectionStatement(def: SetConnectionStatement): string {
-    const connection = (() => {
-      if (def.connection === null) {
-        return 'DEFAULT';
-      } else if (def.connection._tag === 'Ident') {
-        return ':' + this.renderIdent(def.connection);
-      }
-      return this.renderLiteral(def.connection.literal);
-    })();
-    return `SET CONNECTION ${connection}`;
-  }
-  renderDisconnectStatement(def: DisconnectStatement): string {
-    const connection = (() => {
-      if (def.connection === 'All') {
-        return 'ALL';
-      } else if (def.connection === 'Current') {
-        return 'CURRENT';
-      } else if (def.connection._tag === 'Ident') {
-        return ':' + this.renderIdent(def.connection);
-      }
-      return this.renderLiteral(def.connection.literal);
-    })();
-    return `DISCONNECT ${connection}`;
   }
 }
 
