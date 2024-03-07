@@ -200,14 +200,50 @@ class Renderer<Ext extends Extension = NoExtension> {
       case 'ExprExtension':
         return this.renderCustomExpr(expr.val);
     }
-    exhaustive(expr);
+    return exhaustive(expr);
   }
   renderCustomExpr(dt: Ext['Expr']): string {
     throw Error('Custom expression encountered, please extend the renderer');
   }
 
   renderDataType(dt: DataType): string {
-    throw Error('Unimplemented');
+    switch(dt._tag) {
+      case 'Char': {
+        const size = dt.size === null ? '' : `(${dt.size})`
+        return 'CHAR' + size
+      }
+      case 'VarChar': {
+        const size = dt.size === null ? '' : `(${dt.size})`
+        return 'VARCHAR' + size
+      }
+      case 'Clob': return `CLOB(${dt.size})`
+      case 'Binary': return `BINARY(${dt.size})`
+      case 'VarBinary': return `VARBINARY(${dt.size})`
+      case 'Blob': return `BLOB(${dt.size})`
+      case 'Decimal': {
+        const scale = dt.scale === null ? '' : `, ${dt.scale}`;
+        const precision = dt.precision === null ? '' : `(${dt.precision}${scale})`;
+        return 'DECIMAL' + precision
+      }
+      case 'Float': {
+        const size = dt.precision === null ? '' : `(${dt.precision})`
+        return 'FLOAT' + size
+      }
+      case 'Custom': return dt.name
+      case 'Uuid': return 'UUID'
+      case 'SmallInt': return 'SMALLINT'
+      case 'Int': return 'INT'
+      case 'SqlBigInt': return 'BIGINT'
+      case 'Real': return 'REAL'
+      case 'Double': return 'DOUBLE'
+      case 'Boolean': return 'BOOLEAN'
+      case 'SqlDate': return 'DATE'
+      case 'Time': return 'TIME'
+      case 'Timestamp': return 'TIMESTAMP'
+      case 'Interval': return 'INTERVAL'
+      case 'Text': return 'TEXT'
+      case 'Bytea': return 'BYTEA'
+    }
   }
   renderQuery(query: Query): string {
     const ctes = (() => {
@@ -543,8 +579,11 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
   renderUniqueConstraint(constraint: UniqueConstraint): string {
     const typ = constraint.primaryKey ? 'PRIMARY KEY' : ' UNIQUE';
-    const columns = constraint.columns.map(this.renderIdent).join(', ');
-    return ` ${typ} (${columns})`;
+    let columns = constraint.columns.map(this.renderIdent).join(', ');
+    if (columns !== '') {
+      columns = ` (${columns})`
+    }
+    return `${typ}${columns}`;
   }
   renderReferenceConstraint(def: ReferenceConstraint): string {
     const columns = def.columns === null ? '' : ` (${def.columns.map(this.renderIdent).join(', ')})`;

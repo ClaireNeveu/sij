@@ -19,6 +19,7 @@ import { InsertBuilder as IB } from './insert';
 import { UpdateBuilder as UB } from './update';
 import { DeleteBuilder as DB } from './delete';
 import { SchemaBuilder as SB } from './schema';
+import { TypeBuilder as TB } from './type';
 import { TransactionBuilder } from './transaction';
 
 const exhaustive = (n: never): never => n;
@@ -33,6 +34,7 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
     readonly UpdateBuilder: typeof UB = UB,
     readonly DeleteBuilder: typeof DB = DB,
     readonly SchemaBuilder: typeof SB = SB,
+    readonly TypeBuilder: typeof TB = TB,
   ) {
     super();
   }
@@ -106,6 +108,10 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
 
   get schema() {
     return new this.SchemaBuilder<Schema, number, Ext>([], this.fn);
+  }
+
+  get type() {
+    return new this.TypeBuilder();
   }
 
   /**

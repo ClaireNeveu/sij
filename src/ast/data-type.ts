@@ -109,6 +109,7 @@ type Array = Tagged<'Array', {
 const Array = (wrapped: DataType): Array => tag('Array', { wrapped });
 */
 
+// TODO maybe this should be parameterized by the name.
 /**
  * Custom type like an enum
  */

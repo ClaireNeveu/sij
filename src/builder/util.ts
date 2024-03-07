@@ -61,6 +61,9 @@ export type Extend<O extends object> = Obj.Merge<O, NoBuilderExtension, 'deep'>;
 
 export interface StatementBuilder<Ext extends BuilderExtension> {
   _statement: Statement<Ext>;
+
+}export interface MultiStatementBuilder<Ext extends BuilderExtension> {
+  _statements: Array<Statement<Ext>>;
 }
 
 export type TypeTag<T> = { __tag: T };
