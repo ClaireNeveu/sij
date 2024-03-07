@@ -28,7 +28,7 @@ import {
   Decimal,
   Float,
   Custom,
-} from 'ast/data-type';
+} from '../ast/data-type';
 
 export type Debug<T> = { [K in keyof T]: T[K] };
 export type MergeInsertions<T> = T extends object ? { [K in keyof T]: MergeInsertions<T[K]> } : T;
