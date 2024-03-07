@@ -20,6 +20,7 @@ import { UpdateBuilder as UB } from './update';
 import { DeleteBuilder as DB } from './delete';
 import { SchemaBuilder as SB } from './schema';
 import { TypeBuilder as TB } from './type';
+import { ConstraintBuilder as CB } from './constraint';
 import { TransactionBuilder } from './transaction';
 
 const exhaustive = (n: never): never => n;
@@ -35,6 +36,7 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
     readonly DeleteBuilder: typeof DB = DB,
     readonly SchemaBuilder: typeof SB = SB,
     readonly TypeBuilder: typeof TB = TB,
+    readonly ConstraintBuilder: typeof CB = CB,
   ) {
     super();
   }
@@ -112,6 +114,10 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
 
   get type() {
     return new this.TypeBuilder();
+  }
+
+  get constraint() {
+    return new this.ConstraintBuilder();
   }
 
   /**

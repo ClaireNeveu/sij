@@ -53,72 +53,13 @@ type SchemaStatement<Ext extends Extension> = SchemaDefinitionStatement<Ext> | S
 
 const exhaustive = (n: never): never => n;
 
-/*
-sql.schema.table(...).domain(...).view();
-
-ts-toolbelt pipe might be useful here
-schema :: ([A, B]) => A & B
-schema :: <A1, A2, F1 extends A1 => A2, F2 extends 
-schema([
-    sql.createTable('myTable', {
-        columns: [
-            {
-                name: 'foo',
-                type: sql.type.int,
-                default: sql.fn.currentUser
-                constraints: 'PRIMARY KEY'
-            },
-            {
-                name: 'bar',
-                type: sql.type.int,
-                default: sql.lit(4)
-                constraints: 'NOT NULL'
-            },
-            {
-                name: 'baz',
-                type: sql.type.int,
-                default: sql.fn.currentUser
-                constraints: sql.constraint.notNull
-            },
-            {
-                name: 'baz2',
-                type: sql.type.int,
-                default: sql.fn.currentUser
-                constraints: sql.constraint.check(sql.from(...)
-                collation: "latin1"
-            },
-            {
-                name: 'baz2',
-                type: sql.type.int,
-                default: sql.fn.currentUser
-                constraints: sql.constraint.references('otherTable', {
-                    ...
-                })
-            }
-        ]
-    })
-])
-
-name: Ident;
-      readonly type: DataType | Ident; // Data type or domain identifier
-      readonly default: DefaultOption;
-      readonly constraints: Array<ColumnConstraintDefinition>;
-      readonly collation: Ident | null; // TODO qualify
-
-Utility type for converting tuple types to object types
-*/
-
-type SchemaArgs<Ext extends Extension> = {
-  catalog?: string;
-  authorization?: string;
-  characterSet?: string;
-};
-type TableArgs = {
+type ColumnSet = {
+  [C in string]: ColumnArgs<any>;
+}
+type TableArgs<CS extends ColumnSet> = {
   local?: boolean;
   temporary?: boolean;
-  columns: {
-    [C in string]: ColumnArgs<any>;
-  };
+  columns: CS;
   constraints?: Array<TableConstraint>;
   onCommit?: 'Delete' | 'Preserve';
 };
@@ -297,10 +238,10 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       extensions: null,
     });
   }
-  createTable<N extends string, T extends TableArgs>(
+  createTable<N extends string, CS extends ColumnSet>(
     name: N,
-    opts: T,
-  ): SchemaBuilder<Database & { [P in N]: ColumnsToTable<T['columns']> }, Return, Ext> {
+    opts: TableArgs<CS>,
+  ): SchemaBuilder<Database & { [P in N]: ColumnsToTable<CS> }, Return, Ext> {
     const mode = opts.local ? 'LocalTemp' : opts.temporary ? 'GlobalTemp' : 'Persistent';
     const columns: Array<ColumnDefinition<Ext>> = Object.keys(opts.columns).map(colName => {
       const col = opts.columns[colName];
@@ -314,9 +255,9 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       onCommit: opts.onCommit ?? null,
       extensions: null,
     });
-    return new SchemaBuilder<Database & { [P in N]: ColumnsToTable<T['columns']> }, Return, Ext>(
+    return new SchemaBuilder<Database & { [P in N]: ColumnsToTable<CS> }, Return, Ext>(
       [...this._statements, def],
-      this.fn as Functions<Database & { [P in N]: ColumnsToTable<T['columns']> }, any, Ext>,
+      this.fn as Functions<Database & { [P in N]: ColumnsToTable<CS> }, any, Ext>,
     );
   }
   createView<

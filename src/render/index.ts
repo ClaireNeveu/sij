@@ -207,42 +207,60 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
 
   renderDataType(dt: DataType): string {
-    switch(dt._tag) {
+    switch (dt._tag) {
       case 'Char': {
-        const size = dt.size === null ? '' : `(${dt.size})`
-        return 'CHAR' + size
+        const size = dt.size === null ? '' : `(${dt.size})`;
+        return 'CHAR' + size;
       }
       case 'VarChar': {
-        const size = dt.size === null ? '' : `(${dt.size})`
-        return 'VARCHAR' + size
+        const size = dt.size === null ? '' : `(${dt.size})`;
+        return 'VARCHAR' + size;
       }
-      case 'Clob': return `CLOB(${dt.size})`
-      case 'Binary': return `BINARY(${dt.size})`
-      case 'VarBinary': return `VARBINARY(${dt.size})`
-      case 'Blob': return `BLOB(${dt.size})`
+      case 'Clob':
+        return `CLOB(${dt.size})`;
+      case 'Binary':
+        return `BINARY(${dt.size})`;
+      case 'VarBinary':
+        return `VARBINARY(${dt.size})`;
+      case 'Blob':
+        return `BLOB(${dt.size})`;
       case 'Decimal': {
         const scale = dt.scale === null ? '' : `, ${dt.scale}`;
         const precision = dt.precision === null ? '' : `(${dt.precision}${scale})`;
-        return 'DECIMAL' + precision
+        return 'DECIMAL' + precision;
       }
       case 'Float': {
-        const size = dt.precision === null ? '' : `(${dt.precision})`
-        return 'FLOAT' + size
+        const size = dt.precision === null ? '' : `(${dt.precision})`;
+        return 'FLOAT' + size;
       }
-      case 'Custom': return dt.name
-      case 'Uuid': return 'UUID'
-      case 'SmallInt': return 'SMALLINT'
-      case 'Int': return 'INT'
-      case 'SqlBigInt': return 'BIGINT'
-      case 'Real': return 'REAL'
-      case 'Double': return 'DOUBLE'
-      case 'Boolean': return 'BOOLEAN'
-      case 'SqlDate': return 'DATE'
-      case 'Time': return 'TIME'
-      case 'Timestamp': return 'TIMESTAMP'
-      case 'Interval': return 'INTERVAL'
-      case 'Text': return 'TEXT'
-      case 'Bytea': return 'BYTEA'
+      case 'Custom':
+        return dt.name;
+      case 'Uuid':
+        return 'UUID';
+      case 'SmallInt':
+        return 'SMALLINT';
+      case 'Int':
+        return 'INT';
+      case 'SqlBigInt':
+        return 'BIGINT';
+      case 'Real':
+        return 'REAL';
+      case 'Double':
+        return 'DOUBLE';
+      case 'Boolean':
+        return 'BOOLEAN';
+      case 'SqlDate':
+        return 'DATE';
+      case 'Time':
+        return 'TIME';
+      case 'Timestamp':
+        return 'TIMESTAMP';
+      case 'Interval':
+        return 'INTERVAL';
+      case 'Text':
+        return 'TEXT';
+      case 'Bytea':
+        return 'BYTEA';
     }
   }
   renderQuery(query: Query): string {
@@ -538,10 +556,10 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
   renderTableDefinition(def: TableDefinition<any>): string {
     const locality =
-      def.mode === 'GlobalTemp' ? ' GLOBAL TEMPORARY' : def.mode === 'LocalTemp' ? ' Local TEMPORARY' : '';
+      def.mode === 'GlobalTemp' ? ' GLOBAL TEMPORARY' : def.mode === 'LocalTemp' ? ' LOCAL TEMPORARY' : '';
     const columns = def.columns.map(col => this.renderColumnDefinition(col));
     const constraints = def.constraints.map(con => this.renderTableConstraint(con));
-    let els = '(' + columns.concat(constraints).join(', ') + ')';
+    const els = '(' + columns.concat(constraints).join(', ') + ')';
     let onCommit = '';
     if (def.onCommit === 'Delete') {
       onCommit = ' ON COMMIT DELETE ROWS';
@@ -564,7 +582,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     const cstr = (() => {
       switch (def.constraint._tag) {
         case 'ColumnNotNull':
-          return ' NOT NULL';
+          return 'NOT NULL';
         case 'UniqueConstraint':
           return this.renderUniqueConstraint(def.constraint);
         case 'ReferenceConstraint':
@@ -581,7 +599,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     const typ = constraint.primaryKey ? 'PRIMARY KEY' : ' UNIQUE';
     let columns = constraint.columns.map(this.renderIdent).join(', ');
     if (columns !== '') {
-      columns = ` (${columns})`
+      columns = ` (${columns})`;
     }
     return `${typ}${columns}`;
   }

@@ -10,7 +10,10 @@ const isSql: Macro<[StatementBuilder<any>, string]> = test.macro((t, builder, ou
 );
 
 const isSqls: Macro<[MultiStatementBuilder<any>, Array<string>]> = test.macro((t, builder, out) =>
-  t.deepEqual(builder._statements.map(s=> r.renderStatement(s)), out),
+  t.deepEqual(
+    builder._statements.map(s => r.renderStatement(s)),
+    out,
+  ),
 );
 
 const isParamsSql: Macro<[StatementBuilder<any>, string, Array<any>]> = test.macro((t, builder, str, par) => {

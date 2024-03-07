@@ -1,4 +1,27 @@
-import { Binary, Blob, Boolean, Bytea, Char, Clob, Custom, Decimal, Double, Float, Int, Interval, Real, SmallInt, SqlBigInt, SqlDate, Text, Time, Timestamp, Uuid, VarBinary, VarChar } from "../ast";
+import {
+  Binary,
+  Blob,
+  Boolean,
+  Bytea,
+  Char,
+  Clob,
+  Custom,
+  Decimal,
+  Double,
+  Float,
+  Int,
+  Interval,
+  Real,
+  SmallInt,
+  SqlBigInt,
+  SqlDate,
+  Text,
+  Time,
+  Timestamp,
+  Uuid,
+  VarBinary,
+  VarChar,
+} from '../ast';
 
 class TypeBuilder {
   char(size?: number): Char {
@@ -19,10 +42,10 @@ class TypeBuilder {
   blob(size: number): Blob {
     return Blob(size);
   }
-  decimal(): Decimal
-  decimal(args: { precision: number }): Decimal
-  decimal(args: { precision: number, scale: number }): Decimal
-  decimal(args: { precision?: number, scale?: number } = {}): Decimal {
+  decimal(): Decimal;
+  decimal(args: { precision: number }): Decimal;
+  decimal(args: { precision: number; scale: number }): Decimal;
+  decimal(args: { precision?: number; scale?: number } = {}): Decimal {
     return Decimal({
       precision: args.precision ?? null,
       scale: args.scale ?? null,
