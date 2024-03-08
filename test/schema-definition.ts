@@ -213,3 +213,57 @@ test(
   }),
   ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT NOT NULL)'],
 );
+
+test(
+  'createTable unique column',
+  isSqls,
+  b.schema.createTable('employees', {
+    columns: {
+      id: {
+        type: b.type.bigInt,
+        constraints: 'primary key',
+      },
+      name: {
+        type: b.type.text,
+        constraints: 'UNIQUE',
+      },
+    },
+  }),
+  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT UNIQUE)'],
+);
+
+test(
+  'createTable unique column 2',
+  isSqls,
+  b.schema.createTable('employees', {
+    columns: {
+      id: {
+        type: b.type.bigInt,
+        constraints: 'primary key',
+      },
+      name: {
+        type: b.type.text,
+        constraints: b.constraint.unique(),
+      },
+    },
+  }),
+  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT UNIQUE)'],
+);
+
+test(
+  'createTable unique column 3',
+  isSqls,
+  b.schema.createTable('employees', {
+    columns: {
+      id: {
+        type: b.type.bigInt,
+        constraints: 'primary key',
+      },
+      name: {
+        type: b.type.text,
+        constraints: b.constraint.unique({ primaryKey: true}),
+      },
+    },
+  }),
+  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT PRIMARY KEY)'],
+);

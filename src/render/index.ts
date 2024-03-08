@@ -596,7 +596,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     return namePart + cstr + attributes;
   }
   renderUniqueConstraint(constraint: UniqueConstraint): string {
-    const typ = constraint.primaryKey ? 'PRIMARY KEY' : ' UNIQUE';
+    const typ = constraint.primaryKey ? 'PRIMARY KEY' : 'UNIQUE';
     let columns = constraint.columns.map(this.renderIdent).join(', ');
     if (columns !== '') {
       columns = ` (${columns})`;
