@@ -121,6 +121,8 @@ const TableDefinition = <Ext extends Extension>(args: UnTag<TableDefinition<Ext>
     [ <default clause> ]
     [ <column constraint definition>... ]
     [ <collate clause> ]
+
+<collate clause> ::= COLLATE <collation name>
 */
 interface ColumnDefinition<Ext extends Extension>
   extends Tagged<
@@ -142,6 +144,8 @@ const ColumnDefinition = <Ext extends Extension>(args: UnTag<ColumnDefinition<Ex
     [ <constraint name definition> ]
     <column constraint>
       [ <constraint attributes> ]
+
+<constraint name definition> ::= CONSTRAINT <constraint name>
 */
 interface ColumnConstraintDefinition
   extends Tagged<
@@ -352,7 +356,7 @@ type SchemaDefinitionElement<Ext extends Extension> =
 */
 interface ViewDefinition<Ext extends Extension> extends Tagged<'ViewDefinition', {}> {
   readonly name: Ident;
-  readonly columns: Array<Ident> | null;
+  readonly columns: Array<Ident>;
   readonly query: Query<Ext>; // TODO can also be a VALUES statement
   readonly checkOption: 'Cascaded' | 'Local' | null;
 }

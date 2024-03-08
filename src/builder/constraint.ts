@@ -24,13 +24,13 @@ type ReferentialActionArg =
   | 'NO ACTION';
 
 class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
-  notNull(opts: { name?: string; deferred?: boolean; initiallyDeferred?: boolean } = {}): ColumnConstraintDefinition {
+  notNull(opts: { name?: string; deferrable?: boolean; initiallyDeferred?: boolean } = {}): ColumnConstraintDefinition {
     let attributes;
-    if (opts.deferred === undefined && opts.initiallyDeferred === undefined) {
+    if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       attributes = null;
     } else {
       attributes = ConstraintCheckTime({
-        deferrable: opts.deferred ?? false,
+        deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
       });
     }
@@ -43,18 +43,18 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
   unique(
     opts: {
       name?: string;
-      deferred?: boolean;
+      deferrable?: boolean;
       initiallyDeferred?: boolean;
       columns?: Array<string>;
       primaryKey?: boolean;
     } = {},
   ): ColumnConstraintDefinition {
     let attributes;
-    if (opts.deferred === undefined && opts.initiallyDeferred === undefined) {
+    if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       attributes = null;
     } else {
       attributes = ConstraintCheckTime({
-        deferrable: opts.deferred ?? false,
+        deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
       });
     }
@@ -74,15 +74,15 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
     onUpdate?: ReferentialActionArg;
     onDelete?: ReferentialActionArg;
     name?: string;
-    deferred?: boolean;
+    deferrable?: boolean;
     initiallyDeferred?: boolean;
   }): ColumnConstraintDefinition {
     let attributes;
-    if (opts.deferred === undefined && opts.initiallyDeferred === undefined) {
+    if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       attributes = null;
     } else {
       attributes = ConstraintCheckTime({
-        deferrable: opts.deferred ?? false,
+        deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
       });
     }
@@ -131,16 +131,16 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
     query: QueryBuilder<Schema, Table, boolean, Ext>,
     opts: {
       name?: string;
-      deferred?: boolean;
+      deferrable?: boolean;
       initiallyDeferred?: boolean;
     } = {},
   ): ColumnConstraintDefinition {
     let attributes;
-    if (opts.deferred === undefined && opts.initiallyDeferred === undefined) {
+    if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       attributes = null;
     } else {
       attributes = ConstraintCheckTime({
-        deferrable: opts.deferred ?? false,
+        deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
       });
     }

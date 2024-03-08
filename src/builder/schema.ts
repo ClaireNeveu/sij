@@ -55,7 +55,7 @@ const exhaustive = (n: never): never => n;
 
 type ColumnSet = {
   [C in string]: ColumnArgs<any>;
-}
+};
 type TableArgs<CS extends ColumnSet> = {
   local?: boolean;
   temporary?: boolean;
@@ -72,11 +72,17 @@ type ColumnArgs<T extends DataType | string> = {
 type ColumnsToTable<Cs extends { [k: string]: ColumnArgs<any> }> = {
   [K in keyof Cs]: Cs[K] extends ColumnArgs<infer T> ? (T extends DataType ? DataTypeToJs<T> : never) : never;
 };
-type ViewArgs<Database, Table, Return, Ext extends BuilderExtension> = {
-  columns?: Array<string>;
-  query: QueryBuilder<Database, Table, Return, Ext>; // TODO can also be a VALUES statement
-  check?: 'Cascaded' | 'Local';
-};
+type ViewArgs<Database, Table, Return, Ext extends BuilderExtension> =
+  | {
+      columns?: Array<string>;
+      query: QueryBuilder<Database, Table, Return, Ext>; // TODO can also be a VALUES statement
+      withCascadedCheckOption?: boolean;
+    }
+  | {
+      columns?: Array<string>;
+      query: QueryBuilder<Database, Table, Return, Ext>; // TODO can also be a VALUES statement
+      withLocalCheckOption?: boolean;
+    };
 type GrantArgs =
   | {
       privileges?: Array<PrivilegeArg>;
@@ -260,18 +266,22 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database & { [P in N]: ColumnsToTable<CS> }, any, Ext>,
     );
   }
-  createView<
-    N extends string,
-    QReturn,
-    Table extends keyof Database,
-    T extends ViewArgs<Database, Table, QReturn, Ext>,
-  >(name: N, opts: T): SchemaBuilder<Database & { [P in N]: QReturn }, Return, Ext> {
+  createView<N extends string, QReturn, Table, T extends ViewArgs<Database, Table, QReturn, Ext>>(
+    name: N,
+    opts: T,
+  ): SchemaBuilder<Database & { [P in N]: QReturn }, Return, Ext> {
     // TODO narrow view table by selected columns
+    const checkOption =
+      'withCascadedCheckOption' in opts && opts.withCascadedCheckOption
+        ? 'Cascaded'
+        : 'withLocalCheckOption' in opts && opts.withLocalCheckOption
+          ? 'Local'
+          : null;
     const def = ViewDefinition({
       name: Ident(name),
-      columns: opts.columns !== undefined ? opts.columns.map(Ident) : null,
+      columns: opts.columns !== undefined ? opts.columns.map(Ident) : [],
       query: opts.query._statement,
-      checkOption: opts.check !== undefined ? opts.check : null,
+      checkOption,
     });
     return new SchemaBuilder<Database & { [P in N]: QReturn }, Return, Ext>(
       [...this._statements, def],

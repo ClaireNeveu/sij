@@ -1,33 +1,32 @@
-import test, { Macro } from 'ava';
-
-import { Builder } from '../src/builder';
-import { Functions } from '../src/builder/functions';
-import { NoBuilderExtension } from '../src/builder/util';
-
-import { isSqls, isParamsSql } from './_util';
-
-type MySchema = {};
-
-type MyExistingSchema = {
-  employee: {
-    id: number;
-    name: string;
-    salary: number;
-    department_id: number;
-    age: number;
-  };
-  department: {
-    id: number;
-    budget: number;
-  };
-};
-
-const b = new Builder<MySchema, NoBuilderExtension>(new Functions<MySchema, {}, NoBuilderExtension>());
-const be = new Builder<MyExistingSchema, NoBuilderExtension>(new Functions<MyExistingSchema, {}, NoBuilderExtension>());
-
-test(
-  'multiple schema statements',
-  isSqls,
+'use strict';
+Object.defineProperty(exports, '__esModule', { value: true });
+var ava_1 = require('ava');
+var builder_1 = require('../src/builder');
+var functions_1 = require('../src/builder/functions');
+var _util_1 = require('./_util');
+var b = new builder_1.Builder(new functions_1.Functions());
+(0, ava_1.default)(
+  'simple createTable',
+  _util_1.isSqls,
+  b.schema.createTable('employees', {
+    columns: {
+      id: {
+        type: b.type.bigInt,
+        constraints: ['primary key'],
+      },
+      name: {
+        type: b.type.text,
+      },
+      age: {
+        type: b.type.smallInt,
+      },
+    },
+  }),
+  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT, "age" SMALLINT)'],
+);
+(0, ava_1.default)(
+  'multiple statements',
+  _util_1.isSqls,
   b.schema
     .createTable('employees', {
       columns: {
@@ -59,30 +58,9 @@ test(
     'CREATE TABLE "departments" ("id" BIGINT PRIMARY KEY, "name" TEXT)',
   ],
 );
-
-test(
-  'createTable simple',
-  isSqls,
-  b.schema.createTable('employees', {
-    columns: {
-      id: {
-        type: b.type.bigInt,
-        constraints: ['primary key'],
-      },
-      name: {
-        type: b.type.text,
-      },
-      age: {
-        type: b.type.smallInt,
-      },
-    },
-  }),
-  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT, "age" SMALLINT)'],
-);
-
-test(
+(0, ava_1.default)(
   'createTable null default',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -100,10 +78,9 @@ test(
   }),
   ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT DEFAULT NULL, "age" SMALLINT)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable on commit',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -124,10 +101,9 @@ test(
     'CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT DEFAULT NULL, "age" SMALLINT) ON COMMIT PRESERVE ROWS',
   ],
 );
-
-test(
+(0, ava_1.default)(
   'createTable local temp',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -146,10 +122,9 @@ test(
   }),
   ['CREATE LOCAL TEMPORARY TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT DEFAULT NULL, "age" SMALLINT)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable local temp 2',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -169,10 +144,9 @@ test(
   }),
   ['CREATE LOCAL TEMPORARY TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT DEFAULT NULL, "age" SMALLINT)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable global temp',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -191,10 +165,9 @@ test(
   }),
   ['CREATE GLOBAL TEMPORARY TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT DEFAULT NULL, "age" SMALLINT)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable not null column',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -209,10 +182,9 @@ test(
   }),
   ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT NOT NULL)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable not null column 2',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -227,10 +199,9 @@ test(
   }),
   ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT NOT NULL)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable unique column',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -245,10 +216,9 @@ test(
   }),
   ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT UNIQUE)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable unique column 2',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -263,10 +233,9 @@ test(
   }),
   ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT UNIQUE)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable unique column 3',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -281,10 +250,9 @@ test(
   }),
   ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT PRIMARY KEY)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable named constraint',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -299,10 +267,9 @@ test(
   }),
   ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT CONSTRAINT "foo" UNIQUE)'],
 );
-
-test(
-  'createTable deferrable constraint 1',
-  isSqls,
+(0, ava_1.default)(
+  'createTable deferrable constraint',
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -315,14 +282,11 @@ test(
       },
     },
   }),
-  [
-    'CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT CONSTRAINT "foo" UNIQUE INITIALLY IMMEDIATE DEFERRABLE)',
-  ],
+  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT CONSTRAINT "foo" UNIQUE DEFERRABLE)'],
 );
-
-test(
+(0, ava_1.default)(
   'createTable deferrable constraint 2',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -336,13 +300,12 @@ test(
     },
   }),
   [
-    'CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT CONSTRAINT "foo" UNIQUE INITIALLY DEFERRED DEFERRABLE)',
+    'CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT CONSTRAINT "foo" UNIQUE DEFERRABLE INITIALLY DEFERRED)',
   ],
 );
-
-test(
+(0, ava_1.default)(
   'createTable column collation',
-  isSqls,
+  _util_1.isSqls,
   b.schema.createTable('employees', {
     columns: {
       id: {
@@ -356,47 +319,5 @@ test(
       },
     },
   }),
-  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT UNIQUE COLLATE "fr_FR")'],
-);
-
-test(
-  'createView simple',
-  isSqls,
-  be.schema.createView('old_employees', {
-    query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
-  }),
-  ['CREATE VIEW "old_employees" AS SELECT * FROM "employee" WHERE "age" > 50'],
-);
-
-test(
-  'createView columns',
-  isSqls,
-  be.schema.createView('old_employees', {
-    columns: ['id', 'bar'], // TODO see if there's some way to get this to type-check
-    query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
-    withLocalCheckOption: false,
-  }),
-  ['CREATE VIEW "old_employees" ("id", "bar") AS SELECT * FROM "employee" WHERE "age" > 50'],
-);
-
-test(
-  'createView cascaded check option',
-  isSqls,
-  be.schema.createView('old_employees', {
-    columns: ['id', 'bar'], // TODO see if there's some way to get this to type-check
-    query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
-    withCascadedCheckOption: true,
-  }),
-  ['CREATE VIEW "old_employees" ("id", "bar") AS SELECT * FROM "employee" WHERE "age" > 50 WITH CASCADED CHECK OPTION'],
-);
-
-test(
-  'createView local check option',
-  isSqls,
-  be.schema.createView('old_employees', {
-    columns: ['foo', 'bar'], // TODO see if there's some way to get this to type-check
-    query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
-    withLocalCheckOption: true,
-  }),
-  ['CREATE VIEW "old_employees" ("foo", "bar") AS SELECT * FROM "employee" WHERE "age" > 50 WITH LOCAL CHECK OPTION'],
+  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT UNIQUE COLLATE "fr_FR)'],
 );

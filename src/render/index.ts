@@ -591,7 +591,7 @@ class Renderer<Ext extends Extension = NoExtension> {
           return this.renderCheckConstraint(def.constraint);
       }
     })();
-    const namePart = def.name !== null ? `${this.renderIdent(def.name)} ` : '';
+    const namePart = def.name !== null ? `CONSTRAINT ${this.renderIdent(def.name)} ` : '';
     const attributes = def.attributes !== null ? ` ${this.renderConstraintCheckTime(def.attributes)}` : '';
     return namePart + cstr + attributes;
   }
@@ -666,7 +666,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     return namePart + constraint + attributes;
   }
   renderViewDefinition(def: ViewDefinition<any>): string {
-    const columns = def.columns !== null ? ` ${def.columns.map(this.renderIdent)}` : '';
+    const columns = def.columns.length > 0 ? ` (${def.columns.map(this.renderIdent).join(', ')})` : '';
     const query = this.renderQuery(def.query);
     let checkOption = '';
     if (def.checkOption === 'Cascaded') {
