@@ -276,19 +276,15 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
     return this._binop<Numeric, Numeric>(BinOp.Modulus, left, right);
   }
 
-  /*
-      MySQL incorrectly uses || as a synonym for OR unless a specific server option is set.
-      MS SQL uses + for string concatenation.
-      So unfortunately this needs to be moved downstream to the dialects.
-    concat<
-        String extends Ext['builder']['types']['string'],
-        Col extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
-        Col2 extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
-    >(
-        left_: Col,
-        right_: Col2,
-    ): TypedAst<Schema, String, BinaryApp<Ext>> {
-        return this._binop<String, String>(BinOp.Modulus, left, right);
-    }
-    */
+  /** `[left] || [right]` */
+  concat<
+      String extends Ext['builder']['types']['string'],
+      Col extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
+      Col2 extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
+  >(
+      left: Col,
+      right: Col2,
+  ): TypedAst<Schema, String, BinaryApp<Ext>> {
+      return this._binop<String, String>(BinOp.StringConcat, left, right);
+  }
 }

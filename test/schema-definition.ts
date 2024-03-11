@@ -102,6 +102,28 @@ test(
 );
 
 test(
+  'createTable timestamp default',
+  isSqls,
+  b.schema.createTable('employee', {
+    columns: {
+      id: {
+        type: b.type.bigInt,
+        constraints: ['primary key'],
+      },
+      name: {
+        type: b.type.text,
+        default: null,
+      },
+      created: {
+        type: b.type.timestamp,
+        default: b.default.currentTimestamp(),
+      },
+    },
+  }),
+  ['CREATE TABLE "employee" ("id" BIGINT PRIMARY KEY, "name" TEXT DEFAULT NULL, "created" TIMESTAMP DEFAULT CURRENT_TIMESTAMP)'],
+);
+
+test(
   'createTable on commit',
   isSqls,
   b.schema.createTable('employees', {
@@ -112,7 +134,7 @@ test(
       },
       name: {
         type: b.type.text,
-        default: null,
+        default: b.default.null(),
       },
       age: {
         type: b.type.smallInt,
@@ -485,3 +507,28 @@ test(
   }),
   ['CREATE DOMAIN "cat_breed" AS SMALLINT DEFAULT 5'],
 );
+
+test(
+  'create domain collation',
+  isSqls,
+  b.schema.createDomain('cat_breed', {
+    type: b.type.varChar(32),
+    default: b.default('tabby'),
+    collate: "fr_FR"
+  }),
+  ['CREATE DOMAIN "cat_breed" AS VARCHAR(32) DEFAULT \'tabby\' COLLATE "fr_FR"'],
+);
+
+/* TODO need to rework check constraints a bit to get the proper API for this.
+test(
+  'create domain constraint',
+  isSqls,
+  b.schema.createDomain('cat_breed', {
+    type: b.type.varChar(32),
+    default: b.default('tabby'),
+    constraints: b.constraint.check(),
+    collate: 'fr_FR',
+  }),
+  ['CREATE DOMAIN "cat_breed" AS VARCHAR(32) DEFAULT \'tabby\' COLLATE "fr_FR"'],
+);
+*/

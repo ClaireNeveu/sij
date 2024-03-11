@@ -100,13 +100,8 @@ type DomainArgs = Args<{
   type: DataType;
   default?: DefaultOption | null;
   constraints?: Array<AssertionDefinition>;
-  collation?: string;
+  collate?: string;
 }>;
-type AssertionArgs<Database, Table, Return, Ext extends BuilderExtension> = {
-  search: QueryBuilder<Database, Table, Return, Ext>;
-  initiallyDeferred: boolean;
-  deferrable?: boolean;
-};
 type RevokeArgs =
   | {
       privileges?: Array<PrivilegeArg>;
@@ -349,26 +344,8 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       dataType: opts.type,
       default: opts.default === undefined ? null : opts.default === null ? NullDefault : opts.default,
       constraints: opts.constraints !== undefined ? opts.constraints : [],
-      collation: opts.collation !== undefined ? Ident(opts.collation) : null,
+      collation: opts.collate !== undefined ? Ident(opts.collate) : null,
       extensions: null,
-    });
-    return new SchemaBuilder<Database, Return, Ext>(
-      [...this._statements, def],
-      this.fn as Functions<Database, any, Ext>,
-    );
-  }
-  createAssertion<Table extends keyof Database>(
-    name: string,
-    opts: AssertionArgs<Database, Table, Return, Ext>,
-  ): SchemaBuilder<Database, Return, Ext> {
-    const checkTime = ConstraintCheckTime({
-      deferrable: opts.deferrable ?? true,
-      initiallyDeferred: opts.initiallyDeferred ?? false,
-    });
-    const def = AssertionDefinition({
-      name: Ident(name),
-      search: opts.search._statement,
-      checkTime,
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
