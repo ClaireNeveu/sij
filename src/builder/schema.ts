@@ -86,13 +86,13 @@ type ViewArgs<Database, Table, Return, Ext extends BuilderExtension> =
 type GrantArgs<N extends string> =
   | {
       privileges: Array<PrivilegeArg> | 'all' | 'ALL';
-      on: `table ${N}` | `TABLE ${N}` | `domain ${N}` | `DOMAIN ${N}` | `collation ${N}` | `COLLATION ${N}`;
+      on: `table ${N}` | `TABLE ${N}` | `domain ${string}` | `DOMAIN ${string}` | `collation ${string}` | `COLLATION ${string}`;
       to: Array<string>;
       withGrantOption?: boolean;
     }
   | {
       privileges: Array<PrivilegeArg> | 'all' | 'ALL';
-      on: `table ${N}` | `TABLE ${N}` | `domain ${N}` | `DOMAIN ${N}` | `collation ${N}` | `COLLATION ${N}`;
+      on: `table ${N}` | `TABLE ${N}` | `domain ${string}` | `DOMAIN ${string}` | `collation ${string}` | `COLLATION ${string}`;
       public: true;
       withGrantOption?: boolean;
     };
@@ -102,17 +102,17 @@ type DomainArgs = Args<{
   constraints?: Array<AssertionDefinition>;
   collate?: string;
 }>;
-type RevokeArgs =
+type RevokeArgs<N extends string> =
   | {
-      privileges?: Array<PrivilegeArg>;
-      on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
+      privileges: Array<PrivilegeArg> | 'all' | 'ALL';
+      on: `table ${N}` | `TABLE ${N}` | `domain ${string}` | `DOMAIN ${string}` | `collation ${string}` | `COLLATION ${string}`;
       from?: Array<string>;
       withGrantOption?: boolean;
       behavior: DropBehaviorArg;
     }
   | {
-      privileges?: Array<PrivilegeArg>;
-      on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
+      privileges: Array<PrivilegeArg> | 'all' | 'ALL';
+      on: `table ${N}` | `TABLE ${N}` | `domain ${string}` | `DOMAIN ${string}` | `collation ${string}` | `COLLATION ${string}`;
       public: true;
       withGrantOption?: boolean;
       behavior: DropBehaviorArg;
@@ -399,21 +399,24 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database, any, Ext>,
     );
   }
-  revoke(opts: RevokeArgs): SchemaBuilder<Database, Return, Ext> {
+  revoke<N extends keyof Database & string>(opts: RevokeArgs<N>): SchemaBuilder<Database, Return, Ext> {
     const [objectTypeRaw, objectName] = opts.on.split(' ', 2);
     const objectType: 'Table' | 'Domain' | 'Collation' = (() => {
-      switch (objectTypeRaw as 'TABLE' | 'DOMAIN' | 'COLLATION') {
+      switch (objectTypeRaw as 'table' | 'TABLE' | 'domain' | 'DOMAIN' | 'collation' | 'COLLATION') {
+        case 'table':
         case 'TABLE':
           return 'Table';
+        case 'domain':
         case 'DOMAIN':
           return 'Domain';
+        case 'collation':
         case 'COLLATION':
           return 'Collation';
       }
     })()!;
     const grantees = 'public' in opts ? null : opts.from!.map(Ident);
     const def = RevokePrivilege({
-      privileges: opts.privileges?.map(this._makePrivilege) ?? null,
+      privileges: typeof opts.privileges === 'string' ? null : opts.privileges.map(this._makePrivilege),
       objectName: Ident(objectName),
       objectType: objectType,
       grantees,
@@ -435,22 +438,13 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database, any, Ext>,
     );
   }
-  dropAssertion(name: string): SchemaBuilder<Database, Return, Ext> {
-    const def = DropAssertion({
-      name: Ident(name),
-    });
-    return new SchemaBuilder<Database, Return, Ext>(
-      [...this._statements, def],
-      this.fn as Functions<Database, any, Ext>,
-    );
-  }
   /*
    * AlterTableBuilder<`|`> for single dialects
    * AlterTableBuilder<`|${string}`> for single dialects
    */
-  alterTable<ND, N extends keyof Database & keyof ND & string>(
+  alterTable<ND extends { [P in keyof Database]: any }, N extends keyof Database & string>(
     name: N,
-    action: (builder: AlterTableBuilder<N, Database, Return, Ext>) => AlterTableBuilder<N, Database, Return, Ext>,
+    action: (builder: AlterTableBuilder<N, Database, Return, Ext>) => AlterTableBuilder<N, ND, Return, Ext>,
   ): SchemaBuilder<ND, Return, Ext> {
     const builder = action(new this._AlterTableBuilder(name, [], this, this.fn));
     if (builder._actions.length < 1) {

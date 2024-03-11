@@ -278,13 +278,10 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
 
   /** `[left] || [right]` */
   concat<
-      String extends Ext['builder']['types']['string'],
-      Col extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
-      Col2 extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
-  >(
-      left: Col,
-      right: Col2,
-  ): TypedAst<Schema, String, BinaryApp<Ext>> {
-      return this._binop<String, String>(BinOp.StringConcat, left, right);
+    String extends Ext['builder']['types']['string'],
+    Col extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
+    Col2 extends ColumnOfType<String, Table> | TypedAst<Schema, String, Expr<Ext>>,
+  >(left: Col, right: Col2): TypedAst<Schema, String, BinaryApp<Ext>> {
+    return this._binop<String, String>(BinOp.StringConcat, left, right);
   }
 }

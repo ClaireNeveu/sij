@@ -746,11 +746,28 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `DROP VIEW ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
   renderRevokePrivilege(def: RevokePrivilege): string {
+    const objectType = (() => {
+      switch (def.objectType) {
+        case 'Table':
+          return 'TABLE ';
+        case 'Domain':
+          return 'DOMAIN ';
+        case 'Collation':
+          return 'COLLATION ';
+        case 'CharacterSet':
+          return 'CHARACTER SET ';
+        case 'Translation':
+          return 'TRANSLATION ';
+        default:
+          return exhaustive(def.objectType);
+      }
+    })();
+    const objectName = objectType + this.renderIdent(def.objectName);
     const grantOption = def.grantOption ? ' GRANT OPTION FOR' : '';
     const privileges = def.privileges == null ? 'ALL PRIVILEGES' : def.privileges.map(this.renderPrivilege).join(', ');
-    const grantees = def.grantees?.map(this.renderIdent).join(', ') ?? null;
+    const grantees = def.grantees?.map(this.renderIdent).join(', ') ?? 'PUBLIC';
     const dropBehavior = this.renderDropBehavior(def.behavior);
-    return `REVOKE ${grantOption} ${privileges} ON ${this.renderIdent(def.objectName)} FROM ${grantees} ${dropBehavior}`;
+    return `REVOKE${grantOption} ${privileges} ON ${objectName} FROM ${grantees} ${dropBehavior}`;
   }
   renderDropDomain(def: DropDomain): string {
     return `DROP DOMAIN ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
@@ -759,17 +776,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `DROP ASSERTION ${this.renderIdent(def.name)}`;
   }
   renderAlterTable(def: AlterTable<any>): string {
-    /*
-    <alter table statement> ::=
-        ALTER TABLE <table name> <alter table action>
-    <alter table action> ::=
-          <add column definition>
-        | <alter column definition>
-        | <drop column definition>
-        | <add table constraint definition>
-        | <drop table constraint definition>
-  */
-    return `ALTER TABLE ${this.renderIdent(def.name)}`;
+    return `ALTER TABLE ${this.renderIdent(def.name)} ${this.renderAlterTableAction(def.action)}`;
   }
   renderAlterTableAction(def: AlterTableAction<any>): string {
     switch (def._tag) {

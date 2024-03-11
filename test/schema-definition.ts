@@ -120,7 +120,9 @@ test(
       },
     },
   }),
-  ['CREATE TABLE "employee" ("id" BIGINT PRIMARY KEY, "name" TEXT DEFAULT NULL, "created" TIMESTAMP DEFAULT CURRENT_TIMESTAMP)'],
+  [
+    'CREATE TABLE "employee" ("id" BIGINT PRIMARY KEY, "name" TEXT DEFAULT NULL, "created" TIMESTAMP DEFAULT CURRENT_TIMESTAMP)',
+  ],
 );
 
 test(
@@ -514,7 +516,7 @@ test(
   b.schema.createDomain('cat_breed', {
     type: b.type.varChar(32),
     default: b.default('tabby'),
-    collate: "fr_FR"
+    collate: 'fr_FR',
   }),
   ['CREATE DOMAIN "cat_breed" AS VARCHAR(32) DEFAULT \'tabby\' COLLATE "fr_FR"'],
 );

@@ -1,7 +1,16 @@
 import CallableInstance from 'callable-instance';
 import { BuilderExtension, makeLit } from './util';
 import { Lit, NumLit } from '../ast';
-import { CurrentDateDefault, CurrentTime, CurrentTimeStamp, CurrentUserDefault, NullDefault, SessionUserDefault, SystemUserDefault, UserDefault } from '../ast/schema-definition';
+import {
+  CurrentDateDefault,
+  CurrentTime,
+  CurrentTimeStamp,
+  CurrentUserDefault,
+  NullDefault,
+  SessionUserDefault,
+  SystemUserDefault,
+  UserDefault,
+} from '../ast/schema-definition';
 
 class DefaultBuilder<Ext extends BuilderExtension> extends CallableInstance<Array<never>, unknown> {
   constructor() {
@@ -20,31 +29,31 @@ class DefaultBuilder<Ext extends BuilderExtension> extends CallableInstance<Arra
   }
 
   currentDate(): CurrentDateDefault {
-    return CurrentDateDefault
+    return CurrentDateDefault;
   }
 
   currentTime(precision?: number): CurrentTime {
     return CurrentTime({
-        precision: precision === undefined ? null : NumLit(precision)
+      precision: precision === undefined ? null : NumLit(precision),
     });
   }
 
   currentTimestamp(precision?: number): CurrentTimeStamp {
     return CurrentTimeStamp({
-        precision: precision === undefined ? null : NumLit(precision)
-    })
+      precision: precision === undefined ? null : NumLit(precision),
+    });
   }
 
   user(): UserDefault {
-    return UserDefault
+    return UserDefault;
   }
 
   currentUser(): CurrentUserDefault {
-    return CurrentUserDefault
+    return CurrentUserDefault;
   }
 
   sessionUser(): SessionUserDefault {
-    return SessionUserDefault
+    return SessionUserDefault;
   }
 
   systemUser(): SystemUserDefault {
@@ -52,7 +61,7 @@ class DefaultBuilder<Ext extends BuilderExtension> extends CallableInstance<Arra
   }
 
   null(): NullDefault {
-    return NullDefault
+    return NullDefault;
   }
 }
 
