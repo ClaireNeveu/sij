@@ -1,5 +1,5 @@
 import CallableInstance from 'callable-instance';
-import { BuilderExtension, DataTypeToJs, SijError, TypeTag, TypedAst, makeLit, typeTag } from './util';
+import { BuilderExtension, DataTypeToJs, Args, SijError, TypeTag, TypedAst, makeLit, typeTag } from './util';
 import {
   AddDomainConstraint,
   AddTableConstraint,
@@ -56,19 +56,19 @@ const exhaustive = (n: never): never => n;
 type ColumnSet = {
   [C in string]: ColumnArgs<any>;
 };
-type TableArgs<CS extends ColumnSet> = {
+type TableArgs<CS extends ColumnSet> = Args<{
   local?: boolean;
   temporary?: boolean;
   columns: CS;
   constraints?: Array<TableConstraint>;
   onCommit?: 'Delete' | 'Preserve';
-};
-type ColumnArgs<T extends DataType | string> = {
+}>;
+type ColumnArgs<T extends DataType | string> = Args<{
   type: T; // Data type or domain identifier
   default?: DefaultOption | null;
   constraints?: Array<ConstraintArg> | ConstraintArg;
   collation?: string;
-};
+}>;
 type ColumnsToTable<Cs extends { [k: string]: ColumnArgs<any> }> = {
   [K in keyof Cs]: Cs[K] extends ColumnArgs<infer T> ? (T extends DataType ? DataTypeToJs<T> : never) : never;
 };
@@ -83,25 +83,25 @@ type ViewArgs<Database, Table, Return, Ext extends BuilderExtension> =
       query: QueryBuilder<Database, Table, Return, Ext>; // TODO can also be a VALUES statement
       withLocalCheckOption?: boolean;
     };
-type GrantArgs =
+type GrantArgs<N extends string> =
   | {
-      privileges?: Array<PrivilegeArg>;
-      on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
-      to?: Array<string>;
+      privileges: Array<PrivilegeArg> | 'all' | 'ALL';
+      on: `table ${N}` | `TABLE ${N}` | `domain ${N}` | `DOMAIN ${N}` | `collation ${N}` | `COLLATION ${N}`;
+      to: Array<string>;
       withGrantOption?: boolean;
     }
   | {
-      privileges?: Array<PrivilegeArg>;
-      on: `TABLE ${string}` | `DOMAIN ${string}` | `COLLATION ${string}`;
+      privileges: Array<PrivilegeArg> | 'all' | 'ALL';
+      on: `table ${N}` | `TABLE ${N}` | `domain ${N}` | `DOMAIN ${N}` | `collation ${N}` | `COLLATION ${N}`;
       public: true;
       withGrantOption?: boolean;
     };
-type DomainArgs = {
+type DomainArgs = Args<{
   type: DataType;
   default?: DefaultOption | null;
   constraints?: Array<AssertionDefinition>;
   collation?: string;
-};
+}>;
 type AssertionArgs<Database, Table, Return, Ext extends BuilderExtension> = {
   search: QueryBuilder<Database, Table, Return, Ext>;
   initiallyDeferred: boolean;
@@ -315,21 +315,24 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
         return exhaustive(p);
     }
   }
-  grant(opts: GrantArgs): SchemaBuilder<Database, Return, Ext> {
+  grant<N extends keyof Database & string>(opts: GrantArgs<N>): SchemaBuilder<Database, Return, Ext> {
     const [objectTypeRaw, objectName] = opts.on.split(' ', 2);
     const objectType: 'Table' | 'Domain' | 'Collation' = (() => {
-      switch (objectTypeRaw as 'TABLE' | 'DOMAIN' | 'COLLATION') {
+      switch (objectTypeRaw as 'table' | 'TABLE' | 'domain' | 'DOMAIN' | 'collation' | 'COLLATION') {
+        case 'table':
         case 'TABLE':
           return 'Table';
+        case 'domain':
         case 'DOMAIN':
           return 'Domain';
+        case 'collation':
         case 'COLLATION':
           return 'Collation';
       }
     })()!;
     const grantees = 'public' in opts ? null : opts.to!.map(Ident);
     const def = GrantStatement({
-      privileges: opts.privileges?.map(this._makePrivilege) ?? null,
+      privileges: typeof opts.privileges === 'string' ? null : opts.privileges.map(this._makePrivilege),
       objectName: Ident(objectName),
       objectType: objectType,
       grantees,
@@ -344,7 +347,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     const def = DomainDefinition({
       name: Ident(name),
       dataType: opts.type,
-      default: opts.default !== undefined ? opts.default : null,
+      default: opts.default === undefined ? null : opts.default === null ? NullDefault : opts.default,
       constraints: opts.constraints !== undefined ? opts.constraints : [],
       collation: opts.collation !== undefined ? Ident(opts.collation) : null,
       extensions: null,

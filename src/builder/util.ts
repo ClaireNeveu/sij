@@ -30,7 +30,7 @@ import {
   Custom,
 } from '../ast/data-type';
 
-export type Debug<T> = { [K in keyof T]: T[K] };
+export type Args<T> = { [K in keyof T]: T[K] };
 export type MergeInsertions<T> = T extends object ? { [K in keyof T]: MergeInsertions<T[K]> } : T;
 
 export type BuilderExtension = Extension & {
@@ -69,7 +69,7 @@ export interface MultiStatementBuilder<Ext extends BuilderExtension> {
 export type TypeTag<T> = { __tag: T };
 export const typeTag = <T>(): TypeTag<T> => null as unknown as TypeTag<T>;
 
-export const makeLit = <Ext extends Extension>(l: number | string | boolean | Date | null): Expr<Ext> => {
+export const makeLit = (l: number | string | boolean | Date | null): Lit => {
   const lit: Literal = (() => {
     if (typeof l === 'number') {
       return NumLit(l);

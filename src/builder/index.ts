@@ -22,6 +22,7 @@ import { SchemaBuilder as SB } from './schema';
 import { TypeBuilder as TB } from './type';
 import { ConstraintBuilder as CB } from './constraint';
 import { TransactionBuilder } from './transaction';
+import { DefaultBuilder as DefB } from './default';
 
 const exhaustive = (n: never): never => n;
 
@@ -37,6 +38,7 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
     readonly SchemaBuilder: typeof SB = SB,
     readonly TypeBuilder: typeof TB = TB,
     readonly ConstraintBuilder: typeof CB = CB,
+    readonly DefaultBuilder: typeof DefB = DefB,
   ) {
     super();
   }
@@ -118,6 +120,10 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
 
   get constraint() {
     return new this.ConstraintBuilder();
+  }
+
+  get default() {
+    return new this.DefaultBuilder();
   }
 
   /**

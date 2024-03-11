@@ -285,7 +285,7 @@ interface NullDefault extends Tagged<'NullDefault', {}> {}
 const NullDefault: NullDefault = tag('NullDefault', {});
 
 interface CurrentDateDefault extends Tagged<'CurrentDateDefault', {}> {}
-const CurrentDateDefault = tag('CurrentDateDefault', {});
+const CurrentDateDefault: CurrentDateDefault = tag('CurrentDateDefault', {});
 
 /*
 <table constraint definition> ::=

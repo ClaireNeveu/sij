@@ -400,3 +400,88 @@ test(
   }),
   ['CREATE VIEW "old_employees" ("foo", "bar") AS SELECT * FROM "employee" WHERE "age" > 50 WITH LOCAL CHECK OPTION'],
 );
+
+test(
+  'grant simple',
+  isSqls,
+  be.schema.grant({
+    privileges: ['select'],
+    on: 'TABLE employee',
+    to: ['emily'],
+  }),
+  ['GRANT SELECT ON TABLE "employee" TO "emily"'],
+);
+
+test(
+  'grant with grant option',
+  isSqls,
+  be.schema.grant({
+    privileges: ['select'],
+    on: 'TABLE employee',
+    to: ['emily'],
+    withGrantOption: true,
+  }),
+  ['GRANT SELECT ON TABLE "employee" TO "emily" WITH GRANT OPTION'],
+);
+
+test(
+  'grant public',
+  isSqls,
+  be.schema.grant({
+    privileges: ['select'],
+    on: 'TABLE employee',
+    public: true,
+  }),
+  ['GRANT SELECT ON TABLE "employee" TO PUBLIC'],
+);
+
+test(
+  'grant all privileges',
+  isSqls,
+  be.schema.grant({
+    privileges: 'ALL',
+    on: 'TABLE employee',
+    to: ['emily'],
+  }),
+  ['GRANT ALL PRIVILEGES ON TABLE "employee" TO "emily"'],
+);
+
+test(
+  'grant all privileges public',
+  isSqls,
+  be.schema.grant({
+    privileges: 'ALL',
+    on: 'TABLE employee',
+    public: true,
+  }),
+  ['GRANT ALL PRIVILEGES ON TABLE "employee" TO PUBLIC'],
+);
+
+test(
+  'create domain simple',
+  isSqls,
+  b.schema.createDomain('cat_breed', {
+    type: b.type.smallInt,
+  }),
+  ['CREATE DOMAIN "cat_breed" AS SMALLINT'],
+);
+
+test(
+  'create domain default null',
+  isSqls,
+  b.schema.createDomain('cat_breed', {
+    type: b.type.smallInt,
+    default: null,
+  }),
+  ['CREATE DOMAIN "cat_breed" AS SMALLINT DEFAULT NULL'],
+);
+
+test(
+  'create domain default 5',
+  isSqls,
+  b.schema.createDomain('cat_breed', {
+    type: b.type.smallInt,
+    default: b.default(5),
+  }),
+  ['CREATE DOMAIN "cat_breed" AS SMALLINT DEFAULT 5'],
+);
