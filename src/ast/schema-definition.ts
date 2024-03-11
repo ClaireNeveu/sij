@@ -22,7 +22,6 @@ type SchemaDefinitionStatement<Ext extends Extension> =
   | ViewDefinition<Ext>
   | GrantStatement
   | DomainDefinition<Ext>
-  | AssertionDefinition;
 
 /*
 <schema definition> ::=
@@ -79,7 +78,7 @@ interface DomainDefinition<Ext extends Extension> // MySQL doesn't support domai
       readonly name: Ident;
       readonly dataType: DataType;
       readonly default: DefaultOption | null;
-      readonly constraints: Array<AssertionDefinition>;
+      readonly constraints: Array<ConstraintDefinition<CheckConstraint>>;
       readonly collation: Ident | null; // TODO qualify
       readonly extensions: Ext['DomainDefinition'] | null;
     }
@@ -146,27 +145,14 @@ const ColumnDefinition = <Ext extends Extension>(args: UnTag<ColumnDefinition<Ex
       [ <constraint attributes> ]
 
 <constraint name definition> ::= CONSTRAINT <constraint name>
-*/
-interface ColumnConstraintDefinition
-  extends Tagged<
-    'ColumnConstraintDefinition',
-    {
-      readonly name: Ident | null;
-      readonly constraint: ColumnConstraint;
-      readonly attributes: ConstraintCheckTime | null;
-    }
-  > {}
-const ColumnConstraintDefinition = (args: UnTag<ColumnConstraintDefinition>): ColumnConstraintDefinition =>
-  tag('ColumnConstraintDefinition', args);
 
-/*
 <column constraint> ::=
       NOT NULL
     | <unique specification>
     | <references specification>
     | <check constraint definition>
 */
-type ColumnConstraint = ColumnNotNull | UniqueConstraint | ReferenceConstraint | CheckConstraint;
+type ColumnConstraintDefinition = ConstraintDefinition<ColumnNotNull | UniqueConstraint | ReferenceConstraint | CheckConstraint>;
 
 interface ColumnNotNull extends Tagged<'ColumnNotNull', {}> {}
 const ColumnNotNull: ColumnNotNull = tag('ColumnNotNull', {});
@@ -297,12 +283,14 @@ const CurrentDateDefault: CurrentDateDefault = tag('CurrentDateDefault', {});
     | <referential constraint definition>
     | <check constraint definition>
 */
-interface TableConstraint extends Tagged<'TableConstraint', {}> {
+interface ConstraintDefinition<C> extends Tagged<'ConstraintDefinition', {}> {
   readonly name: Ident | null;
-  readonly constraint: UniqueConstraint | ReferenceConstraint | CheckConstraint;
+  readonly constraint: C;
   readonly checkTime: ConstraintCheckTime | null;
 }
-const TableConstraint = (args: UnTag<TableConstraint>): TableConstraint => tag('TableConstraint', args);
+const ConstraintDefinition = <C>(args: UnTag<ConstraintDefinition<C>>): ConstraintDefinition<C> => tag('ConstraintDefinition', args);
+
+type TableConstraint = ConstraintDefinition<UniqueConstraint | ReferenceConstraint | CheckConstraint>
 
 /*
 <constraint attributes> ::=
@@ -343,7 +331,7 @@ type SchemaDefinitionElement<Ext extends Extension> =
   | TableDefinition<Ext>
   | ViewDefinition<Ext>
   | GrantStatement
-  | AssertionDefinition;
+//  | AssertionDefinition;
 //  | CharacterSetDefinitions Unimplemented in major dialects
 //  | CollationDefinition Unimplemented in major dialects
 //  | TranslationDefinition Unimplemented in major dialects
@@ -433,22 +421,6 @@ interface ReferencePrivilege extends Tagged<'ReferencePrivilege', {}> {
   readonly columns: Array<Ident> | null;
 }
 const ReferencePrivilege = (args: UnTag<ReferencePrivilege>): ReferencePrivilege => tag('ReferencePrivilege', args);
-
-/*
-<assertion definition> ::=
-    CREATE ASSERTION <constraint name> <assertion check>
-    [ <constraint attributes> ]
-
-<assertion check> ::=
-    CHECK <left paren> <search condition> <right paren>
-*/
-interface AssertionDefinition extends Tagged<'AssertionDefinition', {}> {
-  readonly name: Ident; // TODO qualify
-  readonly search: Query;
-  readonly checkTime: ConstraintCheckTime | null;
-}
-const AssertionDefinition = (args: UnTag<AssertionDefinition>): AssertionDefinition => tag('AssertionDefinition', args);
-
 /*
 <character set definition> ::=
     CREATE CHARACTER SET <character set name> [ AS ]
@@ -573,7 +545,6 @@ export {
   TableDefinition,
   ViewDefinition,
   DomainDefinition,
-  AssertionDefinition,
   Privilege,
   SelectPrivilege,
   DeletePrivilege,
@@ -585,7 +556,7 @@ export {
   ColumnDefinition,
   TableConstraint,
   DefaultOption,
-  ColumnConstraint,
+  ConstraintDefinition,
   ReferenceConstraint,
   ReferentialAction,
   CheckConstraint,

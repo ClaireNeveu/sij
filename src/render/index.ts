@@ -5,13 +5,12 @@ import {
   AlterDomain,
   AlterTable,
   AlterTableAction,
-  AssertionDefinition,
   CheckConstraint,
-  ColumnConstraint,
   ColumnConstraintDefinition,
   ColumnDefinition,
   Commit,
   ConstraintCheckTime,
+  ConstraintDefinition,
   DataType,
   DefaultOption,
   Delete,
@@ -100,8 +99,6 @@ class Renderer<Ext extends Extension = NoExtension> {
         return this.renderGrantStatement(statement);
       case 'DomainDefinition':
         return this.renderDomainDefinition(statement);
-      case 'AssertionDefinition':
-        return this.renderAssertionDefinition(statement);
       case 'DropSchema':
         return this.renderDropSchema(statement);
       case 'DropTable':
@@ -487,8 +484,6 @@ class Renderer<Ext extends Extension = NoExtension> {
             return null;
           case 'GrantStatement':
             return null;
-          case 'AssertionDefinition':
-            return null;
         }
       })
       .join(' ');
@@ -500,7 +495,7 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
   renderDomainDefinition(def: DomainDefinition<any>): string {
     const defaultOption = def.default !== null ? ` ${this.renderDefaultOption(def.default)}` : '';
-    let constraints = def.constraints.map(this.renderAssertionDefinition).join(' ');
+    let constraints = def.constraints.map(this.renderConstraintDefinition).join(' ');
     if (constraints !== '') {
       constraints = ' ' + constraints;
     }
@@ -592,7 +587,7 @@ class Renderer<Ext extends Extension = NoExtension> {
       }
     })();
     const namePart = def.name !== null ? `CONSTRAINT ${this.renderIdent(def.name)} ` : '';
-    const attributes = def.attributes !== null ? ` ${this.renderConstraintCheckTime(def.attributes)}` : '';
+    const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
     return namePart + cstr + attributes;
   }
   renderUniqueConstraint(constraint: UniqueConstraint): string {
@@ -723,9 +718,10 @@ class Renderer<Ext extends Extension = NoExtension> {
         return exhaustive(def);
     }
   }
-  renderAssertionDefinition(def: AssertionDefinition): string {
+  renderConstraintDefinition(def: ConstraintDefinition<CheckConstraint>): string {
+    const name = def.name === null ? '' : `${this.renderIdent(def.name)} `
     const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
-    return `CREATE ASSERTION ${this.renderIdent(def.name)} CHECK (${this.renderQuery(def.search)})${attributes}`;
+    return `${name}CHECK (${this.renderQuery(def.constraint.search)})${attributes}`;
   }
   renderDropSchema(def: DropSchema): string {
     return `DROP SCHEMA ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
@@ -781,7 +777,7 @@ class Renderer<Ext extends Extension = NoExtension> {
   renderAlterTableAction(def: AlterTableAction<any>): string {
     switch (def._tag) {
       case 'ColumnDefinition':
-        return this.renderColumnDefinition(def);
+        return 'ADD COLUMN ' + this.renderColumnDefinition(def);
       case 'AlterColumn':
         return this.renderAlterColumn(def);
       case 'DropColumn':
@@ -811,7 +807,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `DROP COLUMN ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
   renderAddTableConstraint(def: AddTableConstraint): string {
-    return `ADD ${this.renderTableConstraint(def.constraint)}`;
+    return `ADD CONSTRAINT ${this.renderTableConstraint(def.constraint)}`;
   }
   renderDropTableConstraint(def: DropTableConstraint): string {
     /*
@@ -841,7 +837,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     }
   }
   renderAddDomainConstraint(def: AddDomainConstraint): string {
-    return `ADD ${this.renderAssertionDefinition(def.constraint)}`;
+    return `ADD ${this.renderConstraintDefinition(def.constraint)}`;
   }
   renderSetTransaction(def: SetTransaction): string {
     const modes = def.modes

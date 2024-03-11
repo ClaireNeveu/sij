@@ -1,9 +1,10 @@
 import { Ident } from './expr';
 import { Query } from './query';
 import {
-  AssertionDefinition,
+  CheckConstraint,
   ColumnDefinition,
   ConstraintCheckTime,
+  ConstraintDefinition,
   DefaultOption,
   Privilege,
   TableConstraint,
@@ -244,7 +245,7 @@ interface AddDomainConstraint
   extends Tagged<
     'AddDomainConstraint',
     {
-      readonly constraint: AssertionDefinition;
+      readonly constraint: ConstraintDefinition<CheckConstraint>;
     }
   > {}
 const AddDomainConstraint = (args: UnTag<AddDomainConstraint>): AddDomainConstraint => tag('AddDomainConstraint', args);

@@ -81,8 +81,49 @@ test(
 );
 
 test(
-  'alter table simple',
+  'alter table drop column restrict',
   isSqls,
   b.schema.alterTable('employee', b => b.dropColumn('name', 'restrict')),
   ['ALTER TABLE "employee" DROP COLUMN "name" RESTRICT'],
+);
+
+test(
+  'alter table drop column cascade',
+  isSqls,
+  b.schema.alterTable('employee', b => b.dropColumn('age', 'CASCADE')),
+  ['ALTER TABLE "employee" DROP COLUMN "age" CASCADE'],
+);
+
+test(
+  'alter table add column',
+  isSqls,
+  b.schema.alterTable('employee', t => t.addColumn('favorite_color', {
+    type: b.type.char(5)
+  })),
+  ['ALTER TABLE "employee" ADD COLUMN "favorite_color" CHAR(5)'],
+);
+
+test(
+  'alter table alter column set default',
+  isSqls,
+  b.schema.alterTable('employee', t => t.alterColumn('age', {
+    default: null,
+  })),
+  ['ALTER TABLE "employee" ALTER COLUMN "age" SET DEFAULT NULL'],
+);
+
+test(
+  'alter table alter column drop default',
+  isSqls,
+  b.schema.alterTable('employee', t => t.alterColumn('age', {
+    default: 'drop',
+  })),
+  ['ALTER TABLE "employee" ALTER COLUMN "age" DROP DEFAULT'],
+);
+
+test(
+  'alter table add constraint',
+  isSqls,
+  b.schema.alterTable('employee', t => t.addConstraint(b.constraint.unique({ columns: ['age'] }))),
+  ['ALTER TABLE "employee" ADD CONSTRAINT UNIQUE ("age")'],
 );

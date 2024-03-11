@@ -8,6 +8,7 @@ import {
   ReferentialAction,
   UniqueConstraint,
 } from '../ast';
+import { ConstraintDefinition } from '../ast/schema-definition';
 import { QueryBuilder } from './query';
 import { BuilderExtension } from './util';
 
@@ -24,20 +25,20 @@ type ReferentialActionArg =
   | 'NO ACTION';
 
 class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
-  notNull(opts: { name?: string; deferrable?: boolean; initiallyDeferred?: boolean } = {}): ColumnConstraintDefinition {
-    let attributes;
+  notNull(opts: { name?: string; deferrable?: boolean; initiallyDeferred?: boolean } = {}): ConstraintDefinition<ColumnNotNull> {
+    let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
-      attributes = null;
+      checkTime = null;
     } else {
-      attributes = ConstraintCheckTime({
+      checkTime = ConstraintCheckTime({
         deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
       });
     }
-    return ColumnConstraintDefinition({
+    return ConstraintDefinition({
       name: opts.name === undefined ? null : Ident(opts.name),
       constraint: ColumnNotNull,
-      attributes,
+      checkTime,
     });
   }
   unique(
@@ -48,23 +49,23 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
       columns?: Array<string>;
       primaryKey?: boolean;
     } = {},
-  ): ColumnConstraintDefinition {
-    let attributes;
+  ): ConstraintDefinition<UniqueConstraint> {
+    let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
-      attributes = null;
+      checkTime = null;
     } else {
-      attributes = ConstraintCheckTime({
+      checkTime = ConstraintCheckTime({
         deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
       });
     }
-    return ColumnConstraintDefinition({
+    return ConstraintDefinition({
       name: opts.name === undefined ? null : Ident(opts.name),
       constraint: UniqueConstraint({
         columns: opts.columns?.map(Ident) ?? [],
         primaryKey: opts.primaryKey ?? false,
       }),
-      attributes,
+      checkTime,
     });
   }
   references(opts: {
@@ -76,12 +77,12 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
     name?: string;
     deferrable?: boolean;
     initiallyDeferred?: boolean;
-  }): ColumnConstraintDefinition {
-    let attributes;
+  }): ConstraintDefinition<ReferenceConstraint> {
+    let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
-      attributes = null;
+      checkTime = null;
     } else {
-      attributes = ConstraintCheckTime({
+      checkTime = ConstraintCheckTime({
         deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
       });
@@ -121,10 +122,10 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
       onUpdate,
       onDelete,
     });
-    return ColumnConstraintDefinition({
+    return ConstraintDefinition({
       name: opts.name === undefined ? null : Ident(opts.name),
       constraint: reference,
-      attributes,
+      checkTime,
     });
   }
   check<Table>(
@@ -134,12 +135,12 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
       deferrable?: boolean;
       initiallyDeferred?: boolean;
     } = {},
-  ): ColumnConstraintDefinition {
-    let attributes;
+  ): ConstraintDefinition<CheckConstraint> {
+    let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
-      attributes = null;
+      checkTime = null;
     } else {
-      attributes = ConstraintCheckTime({
+      checkTime = ConstraintCheckTime({
         deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
       });
@@ -147,10 +148,10 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
     const check = CheckConstraint({
       search: query.finish(),
     });
-    return ColumnConstraintDefinition({
+    return ConstraintDefinition({
       name: opts.name === undefined ? null : Ident(opts.name),
       constraint: check,
-      attributes,
+      checkTime,
     });
   }
 }

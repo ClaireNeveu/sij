@@ -7,7 +7,6 @@ import {
   AlterDomain,
   AlterTable,
   AlterTableAction,
-  AssertionDefinition,
   ColumnConstraintDefinition,
   ColumnDefinition,
   ColumnNotNull,
@@ -48,6 +47,7 @@ import {
 } from '../ast';
 import { Functions } from './functions';
 import { QueryBuilder } from './query';
+import { CheckConstraint, ConstraintDefinition } from '../ast/schema-definition';
 
 type SchemaStatement<Ext extends Extension> = SchemaDefinitionStatement<Ext> | SchemaManipulationStatement<Ext>;
 
@@ -99,7 +99,7 @@ type GrantArgs<N extends string> =
 type DomainArgs = Args<{
   type: DataType;
   default?: DefaultOption | null;
-  constraints?: Array<AssertionDefinition>;
+  constraints?: Array<ConstraintDefinition<CheckConstraint>>;
   collate?: string;
 }>;
 type RevokeArgs<N extends string> =
@@ -203,20 +203,20 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       switch (con) {
         case 'not null':
         case 'NOT NULL':
-          return ColumnConstraintDefinition({ name: null, constraint: ColumnNotNull, attributes: null });
+          return ConstraintDefinition({ name: null, constraint: ColumnNotNull, checkTime: null });
         case 'unique':
         case 'UNIQUE':
-          return ColumnConstraintDefinition({
+          return ConstraintDefinition({
             name: null,
             constraint: UniqueConstraint({ primaryKey: false, columns: [] }),
-            attributes: null,
+            checkTime: null,
           });
         case 'primary key':
         case 'PRIMARY KEY':
-          return ColumnConstraintDefinition({
+          return ConstraintDefinition({
             name: null,
             constraint: UniqueConstraint({ primaryKey: true, columns: [] }),
-            attributes: null,
+            checkTime: null,
           });
       }
     };
@@ -511,7 +511,7 @@ class AlterTableBuilder<N extends keyof Database & string, Database, Return, Ext
     readonly fn: Functions<Database, never, Ext>,
   ) {}
 
-  addColumn<Col extends keyof Database[N] & string, T extends DataType>(
+  addColumn<Col extends string, T extends DataType>(
     name: Col,
     args: ColumnArgs<T>,
   ): AlterTableBuilder<N, Database & { [P in N]: { [C in Col]: DataTypeToJs<T> } }, Return, Ext> {
@@ -602,7 +602,7 @@ class AlterDomainBuilder<Database, Return, Ext extends BuilderExtension> {
     );
   }
 
-  addConstraint(constraint: AssertionDefinition): AlterDomainBuilder<Database, Return, Ext> {
+  addConstraint(constraint: ConstraintDefinition<CheckConstraint>): AlterDomainBuilder<Database, Return, Ext> {
     return new AlterDomainBuilder<Database, Return, Ext>(
       [...this._actions, AddDomainConstraint({ constraint })],
       this._builder as any,
