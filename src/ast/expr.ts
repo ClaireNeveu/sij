@@ -52,6 +52,8 @@ const QualifiedWildcard = (qualifiers: Array<Ident>): QualifiedWildcard => tag('
 interface CompoundIdentifier extends Tagged<'CompoundIdentifier', { readonly idChain: Array<Ident> }> {}
 const CompoundIdentifier = (idChain: Array<Ident>): CompoundIdentifier => tag('CompoundIdentifier', { idChain });
 
+type QualifiedIdent = Ident | CompoundIdentifier
+
 /**
  * Clause that evaluates to a boolean, e.g. `<expr> [NOT] BETWEEN <low> AND <high>`
  */
@@ -261,6 +263,7 @@ export {
   Wildcard,
   QualifiedWildcard,
   CompoundIdentifier,
+  QualifiedIdent,
   Between,
   BinaryApp,
   Case,

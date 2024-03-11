@@ -1,5 +1,5 @@
-import { Expr, Ident, Lit } from '../ast/expr';
-import { Query, Select, BasicTable, JoinedTable } from '../ast/query';
+import { CompoundIdentifier, Expr, Ident, Lit, QualifiedIdent } from '../ast/expr';
+import { Query, Select, BasicTable, JoinedTable, Join } from '../ast/query';
 import { Insert, Update, Delete } from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
@@ -46,7 +46,19 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
   from<TableName extends keyof Schema & string>(
     table?: TableName,
   ): QB<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}, Ext> {
-    const tableAst = table === undefined ? null : JoinedTable<Ext>({ table: BasicTable(Ident(table)), joins: [] });
+    let tableAst: JoinedTable<Ext> | null;
+    if (table === undefined) {
+      tableAst = null;
+    } else {
+      const idParts = table.split('.');
+      let tableId: QualifiedIdent
+      if (idParts.length === 1) {
+        tableId = Ident(idParts[0] as string);
+      } else {
+        tableId = CompoundIdentifier(idParts.map(Ident));
+      }
+      tableAst = JoinedTable<Ext>({ table: BasicTable(tableId), joins: [] });
+    }
     const select = Select<Ext>({
       selections: [],
       from: tableAst,

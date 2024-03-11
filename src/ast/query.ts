@@ -1,5 +1,5 @@
 import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
-import { Ident, Expr } from './expr';
+import { Ident, Expr, QualifiedIdent } from './expr';
 
 interface Query<Ext extends Extension = NoExtension>
   extends Tagged<
@@ -140,10 +140,10 @@ interface BasicTable
   extends Tagged<
     'BasicTable',
     {
-      readonly name: Ident;
+      readonly name: QualifiedIdent;
     }
   > {}
-const BasicTable = (name: Ident): BasicTable => tag('BasicTable', { name });
+const BasicTable = (name: QualifiedIdent): BasicTable => tag('BasicTable', { name });
 
 interface DerivedTable<Ext extends Extension = NoExtension>
   extends Tagged<

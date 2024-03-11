@@ -26,6 +26,10 @@ type MySchema = {
     id: number;
     budget: number;
   };
+  'finance.department': {
+    id: number;
+    secret_stash_location: string;
+  }
 };
 
 const realNumber: { _tag: 'Real'; val: string } = { _tag: 'Real', val: '5000' };
@@ -54,6 +58,14 @@ test('basic select works', isSql, b.from('employee').select('id', 'name'), 'SELE
 test('wildcard select works', isSql, b.from('employee').select('*'), 'SELECT * FROM "employee"');
 
 test('select without table works', isSql, b.from().selectAs('my_val', b.lit(1)), 'SELECT 1 AS "my_val"');
+
+
+test(
+  'select from schema works', 
+  isSql, 
+  b.from('finance.department').select('id', 'secret_stash_location'), 
+  'SELECT "id", "secret_stash_location" FROM "finance"."department"'
+);
 
 test(
   'select with custom literal works',

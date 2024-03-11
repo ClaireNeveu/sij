@@ -53,6 +53,7 @@ import {
   UpdatePositioned,
   ViewDefinition,
 } from '../ast';
+import { QualifiedIdent } from '../ast/expr';
 
 const exhaustive = (n: never): never => n;
 
@@ -69,6 +70,13 @@ class Renderer<Ext extends Extension = NoExtension> {
 
   renderIdent(ident: Ident): string {
     return `"${ident.name}"`;
+  }
+  renderQualifiedIdent(ident: QualifiedIdent): string {
+    switch(ident._tag) {
+      case 'CompoundIdentifier': return ident.idChain.map(e => this.renderIdent(e)).join('.');
+      case 'Ident': return this.renderIdent(ident)
+      default: return exhaustive(ident)
+    }
   }
 
   renderPlaceholder(n: number): string {
@@ -339,7 +347,7 @@ class Renderer<Ext extends Extension = NoExtension> {
   renderTable(table: Table<any>): string | null {
     switch (table._tag) {
       case 'BasicTable':
-        return this.renderIdent(table.name);
+        return this.renderQualifiedIdent(table.name);
       case 'DerivedTable':
         return `(${this.renderQuery(table.subQuery)}) AS ${this.renderIdent(table.alias)}`;
       case 'FunctionTable':
