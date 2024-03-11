@@ -25,7 +25,9 @@ type ReferentialActionArg =
   | 'NO ACTION';
 
 class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
-  notNull(opts: { name?: string; deferrable?: boolean; initiallyDeferred?: boolean } = {}): ConstraintDefinition<ColumnNotNull> {
+  notNull(
+    opts: { name?: string; deferrable?: boolean; initiallyDeferred?: boolean } = {},
+  ): ConstraintDefinition<ColumnNotNull> {
     let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       checkTime = null;

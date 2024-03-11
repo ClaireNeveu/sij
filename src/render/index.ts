@@ -719,7 +719,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     }
   }
   renderConstraintDefinition(def: ConstraintDefinition<CheckConstraint>): string {
-    const name = def.name === null ? '' : `${this.renderIdent(def.name)} `
+    const name = def.name === null ? '' : `${this.renderIdent(def.name)} `;
     const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
     return `${name}CHECK (${this.renderQuery(def.constraint.search)})${attributes}`;
   }
@@ -810,12 +810,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `ADD CONSTRAINT ${this.renderTableConstraint(def.constraint)}`;
   }
   renderDropTableConstraint(def: DropTableConstraint): string {
-    /*
-    <drop table constraint definition> ::=
-      DROP CONSTRAINT <constraint name> <drop behavior>
-    */
-    return `
-    DROP CONSTRAINT ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
+    return `DROP CONSTRAINT ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
   renderAlterDomain(def: AlterDomain): string {
     /*

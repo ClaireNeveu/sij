@@ -21,7 +21,7 @@ type SchemaDefinitionStatement<Ext extends Extension> =
   | TableDefinition<Ext>
   | ViewDefinition<Ext>
   | GrantStatement
-  | DomainDefinition<Ext>
+  | DomainDefinition<Ext>;
 
 /*
 <schema definition> ::=
@@ -152,7 +152,9 @@ const ColumnDefinition = <Ext extends Extension>(args: UnTag<ColumnDefinition<Ex
     | <references specification>
     | <check constraint definition>
 */
-type ColumnConstraintDefinition = ConstraintDefinition<ColumnNotNull | UniqueConstraint | ReferenceConstraint | CheckConstraint>;
+type ColumnConstraintDefinition = ConstraintDefinition<
+  ColumnNotNull | UniqueConstraint | ReferenceConstraint | CheckConstraint
+>;
 
 interface ColumnNotNull extends Tagged<'ColumnNotNull', {}> {}
 const ColumnNotNull: ColumnNotNull = tag('ColumnNotNull', {});
@@ -288,9 +290,10 @@ interface ConstraintDefinition<C> extends Tagged<'ConstraintDefinition', {}> {
   readonly constraint: C;
   readonly checkTime: ConstraintCheckTime | null;
 }
-const ConstraintDefinition = <C>(args: UnTag<ConstraintDefinition<C>>): ConstraintDefinition<C> => tag('ConstraintDefinition', args);
+const ConstraintDefinition = <C>(args: UnTag<ConstraintDefinition<C>>): ConstraintDefinition<C> =>
+  tag('ConstraintDefinition', args);
 
-type TableConstraint = ConstraintDefinition<UniqueConstraint | ReferenceConstraint | CheckConstraint>
+type TableConstraint = ConstraintDefinition<UniqueConstraint | ReferenceConstraint | CheckConstraint>;
 
 /*
 <constraint attributes> ::=
@@ -330,7 +333,7 @@ type SchemaDefinitionElement<Ext extends Extension> =
   | DomainDefinition<Ext>
   | TableDefinition<Ext>
   | ViewDefinition<Ext>
-  | GrantStatement
+  | GrantStatement;
 //  | AssertionDefinition;
 //  | CharacterSetDefinitions Unimplemented in major dialects
 //  | CollationDefinition Unimplemented in major dialects

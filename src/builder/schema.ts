@@ -86,13 +86,25 @@ type ViewArgs<Database, Table, Return, Ext extends BuilderExtension> =
 type GrantArgs<N extends string> =
   | {
       privileges: Array<PrivilegeArg> | 'all' | 'ALL';
-      on: `table ${N}` | `TABLE ${N}` | `domain ${string}` | `DOMAIN ${string}` | `collation ${string}` | `COLLATION ${string}`;
+      on:
+        | `table ${N}`
+        | `TABLE ${N}`
+        | `domain ${string}`
+        | `DOMAIN ${string}`
+        | `collation ${string}`
+        | `COLLATION ${string}`;
       to: Array<string>;
       withGrantOption?: boolean;
     }
   | {
       privileges: Array<PrivilegeArg> | 'all' | 'ALL';
-      on: `table ${N}` | `TABLE ${N}` | `domain ${string}` | `DOMAIN ${string}` | `collation ${string}` | `COLLATION ${string}`;
+      on:
+        | `table ${N}`
+        | `TABLE ${N}`
+        | `domain ${string}`
+        | `DOMAIN ${string}`
+        | `collation ${string}`
+        | `COLLATION ${string}`;
       public: true;
       withGrantOption?: boolean;
     };
@@ -105,14 +117,26 @@ type DomainArgs = Args<{
 type RevokeArgs<N extends string> =
   | {
       privileges: Array<PrivilegeArg> | 'all' | 'ALL';
-      on: `table ${N}` | `TABLE ${N}` | `domain ${string}` | `DOMAIN ${string}` | `collation ${string}` | `COLLATION ${string}`;
+      on:
+        | `table ${N}`
+        | `TABLE ${N}`
+        | `domain ${string}`
+        | `DOMAIN ${string}`
+        | `collation ${string}`
+        | `COLLATION ${string}`;
       from?: Array<string>;
       withGrantOption?: boolean;
       behavior: DropBehaviorArg;
     }
   | {
       privileges: Array<PrivilegeArg> | 'all' | 'ALL';
-      on: `table ${N}` | `TABLE ${N}` | `domain ${string}` | `DOMAIN ${string}` | `collation ${string}` | `COLLATION ${string}`;
+      on:
+        | `table ${N}`
+        | `TABLE ${N}`
+        | `domain ${string}`
+        | `DOMAIN ${string}`
+        | `collation ${string}`
+        | `COLLATION ${string}`;
       public: true;
       withGrantOption?: boolean;
       behavior: DropBehaviorArg;
