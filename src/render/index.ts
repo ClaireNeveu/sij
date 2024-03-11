@@ -509,7 +509,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     }
     const collation = def.collation !== null ? ` COLLATE ${this.renderIdent(def.collation)}` : '';
     return (
-      `CREATE DOMAIN ${this.renderIdent(def.name)} AS ${this.renderDataType(def.dataType)}` +
+      `CREATE DOMAIN ${this.renderQualifiedIdent(def.name)} AS ${this.renderDataType(def.dataType)}` +
       defaultOption +
       constraints +
       collation
@@ -569,7 +569,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     } else if (def.onCommit === 'Preserve') {
       onCommit = ' ON COMMIT PRESERVE ROWS';
     }
-    return `CREATE${locality} TABLE ${this.renderIdent(def.name)} ${els}${onCommit}`;
+    return `CREATE${locality} TABLE ${this.renderQualifiedIdent(def.name)} ${els}${onCommit}`;
   }
   renderColumnDefinition(def: ColumnDefinition<any>): string {
     const typ = def.type._tag === 'Ident' ? this.renderIdent(def.type) : this.renderDataType(def.type);
@@ -677,7 +677,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     } else if (def.checkOption === 'Local') {
       checkOption = ' WITH LOCAL CHECK OPTION';
     }
-    return `CREATE VIEW ${this.renderIdent(def.name)}${columns} AS ${query}${checkOption}`;
+    return `CREATE VIEW ${this.renderQualifiedIdent(def.name)}${columns} AS ${query}${checkOption}`;
   }
   renderGrantStatement(def: GrantStatement): string {
     const objectType = (() => {

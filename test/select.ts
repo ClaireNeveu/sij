@@ -59,7 +59,6 @@ test('wildcard select works', isSql, b.from('employee').select('*'), 'SELECT * F
 
 test('select without table works', isSql, b.from().selectAs('my_val', b.lit(1)), 'SELECT 1 AS "my_val"');
 
-
 test(
   'select from schema works', 
   isSql, 

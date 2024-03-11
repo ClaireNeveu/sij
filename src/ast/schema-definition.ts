@@ -1,6 +1,6 @@
 import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
 import type { Query } from './query';
-import type { Ident, Expr, Lit } from './expr';
+import type { Ident, Expr, Lit, QualifiedIdent } from './expr';
 import { DataType } from './data-type';
 import { NumLit } from './literal';
 
@@ -75,7 +75,7 @@ interface DomainDefinition<Ext extends Extension> // MySQL doesn't support domai
   extends Tagged<
     'DomainDefinition',
     {
-      readonly name: Ident;
+      readonly name: QualifiedIdent;
       readonly dataType: DataType;
       readonly default: DefaultOption | null;
       readonly constraints: Array<ConstraintDefinition<CheckConstraint>>;
@@ -103,7 +103,7 @@ interface TableDefinition<Ext extends Extension>
   extends Tagged<
     'TableDefinition',
     {
-      readonly name: Ident;
+      readonly name: QualifiedIdent;
       readonly mode: 'Persistent' | 'GlobalTemp' | 'LocalTemp';
       readonly columns: Array<ColumnDefinition<Ext>>;
       readonly constraints: Array<TableConstraint>;
@@ -346,7 +346,7 @@ type SchemaDefinitionElement<Ext extends Extension> =
       [ WITH [ CASCADED | LOCAL ] CHECK OPTION ]
 */
 interface ViewDefinition<Ext extends Extension> extends Tagged<'ViewDefinition', {}> {
-  readonly name: Ident;
+  readonly name: QualifiedIdent;
   readonly columns: Array<Ident>;
   readonly query: Query<Ext>; // TODO can also be a VALUES statement
   readonly checkOption: 'Cascaded' | 'Local' | null;

@@ -81,6 +81,26 @@ test(
 );
 
 test(
+  'createTable in schema',
+  isSqls,
+  b.schema.createTable('finance.employees', {
+    columns: {
+      id: {
+        type: b.type.bigInt,
+        constraints: ['primary key'],
+      },
+      name: {
+        type: b.type.text,
+      },
+      age: {
+        type: b.type.smallInt,
+      },
+    },
+  }),
+  ['CREATE TABLE "finance"."employees" ("id" BIGINT PRIMARY KEY, "name" TEXT, "age" SMALLINT)'],
+);
+
+test(
   'createTable null default',
   isSqls,
   b.schema.createTable('employees', {
@@ -393,6 +413,15 @@ test(
 );
 
 test(
+  'createView in schema',
+  isSqls,
+  be.schema.createView('foo.old_employees', {
+    query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
+  }),
+  ['CREATE VIEW "foo"."old_employees" AS SELECT * FROM "employee" WHERE "age" > 50'],
+);
+
+test(
   'createView columns',
   isSqls,
   be.schema.createView('old_employees', {
@@ -488,6 +517,15 @@ test(
     type: b.type.smallInt,
   }),
   ['CREATE DOMAIN "cat_breed" AS SMALLINT'],
+);
+
+test(
+  'create domain in schema',
+  isSqls,
+  b.schema.createDomain('fancy_feast.cat_breed', {
+    type: b.type.smallInt,
+  }),
+  ['CREATE DOMAIN "fancy_feast"."cat_breed" AS SMALLINT'],
 );
 
 test(

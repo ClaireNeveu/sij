@@ -48,6 +48,7 @@ import {
 import { Functions } from './functions';
 import { QueryBuilder } from './query';
 import { CheckConstraint, ConstraintDefinition } from '../ast/schema-definition';
+import { CompoundIdentifier, QualifiedIdent } from '../ast/expr';
 
 type SchemaStatement<Ext extends Extension> = SchemaDefinitionStatement<Ext> | SchemaManipulationStatement<Ext>;
 
@@ -202,7 +203,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
   createSchema<N extends string>(
     name: N,
     opts: SchemaArgs<Ext> = {},
-  ): SchemaBuilder<Database & { schemae: { [P in N]: null } }, Return, Ext> {
+  ): SchemaBuilder<Database, Return, Ext> {
     const def = SchemaDefinition<Ext>({
         name: Ident(name),
         catalog: opts.catalog !== undefined ? Ident(opts.catalog) : null,
@@ -211,9 +212,9 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
         definitions: [],
         extensions: null,
     })
-    return new SchemaBuilder<Database & { schemae: { [P in N]: null } }, Return, Ext>(
+    return new SchemaBuilder<Database }, Return, Ext>(
         [def, ...this._statements],
-        this.fn as Functions<Database & { schemae: { [P in N]: null } }, any, Ext>,
+        this.fn as Functions<Database, any, Ext>,
       );
   }
   */
@@ -263,6 +264,14 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       extensions: null,
     });
   }
+  _makeIdent(ident: string): QualifiedIdent {
+    const idParts = ident.split('.');
+    if (idParts.length === 1) {
+      return Ident(idParts[0] as string);
+    } else {
+      return CompoundIdentifier(idParts.map(Ident));
+    }
+  }
   createTable<N extends string, CS extends ColumnSet>(
     name: N,
     opts: TableArgs<CS>,
@@ -273,7 +282,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       return this._makeColumn(colName, col);
     });
     const def = TableDefinition<Ext>({
-      name: Ident(name),
+      name: this._makeIdent(name),
       mode: mode,
       columns: columns,
       constraints: opts.constraints ?? [],
@@ -297,7 +306,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
           ? 'Local'
           : null;
     const def = ViewDefinition({
-      name: Ident(name),
+      name: this._makeIdent(name),
       columns: opts.columns !== undefined ? opts.columns.map(Ident) : [],
       query: opts.query._statement,
       checkOption,
@@ -364,7 +373,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
   }
   createDomain(name: string, opts: DomainArgs): SchemaBuilder<Database, Return, Ext> {
     const def = DomainDefinition({
-      name: Ident(name),
+      name: this._makeIdent(name),
       dataType: opts.type,
       default: opts.default === undefined ? null : opts.default === null ? NullDefault : opts.default,
       constraints: opts.constraints !== undefined ? opts.constraints : [],
