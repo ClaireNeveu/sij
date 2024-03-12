@@ -76,6 +76,6 @@ test(
       department_id: 55,
     }),
   ),
-  'INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES ($1, $2, $3 + $4, $5)',
+  'INSERT INTO "employee" ("id", "name", "salary", "department_id") VALUES ($1, $2, ($3 + $4), $5)',
   [5, 'Charlotte', 5000, 5, 55],
 );

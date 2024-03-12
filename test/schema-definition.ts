@@ -115,7 +115,7 @@ test(
     },
     constraints: [b.constraint.check(b.fn.gt('name', b.lit(5)))],
   }),
-  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT, CHECK "name" > 5)'],
+  ['CREATE TABLE "employees" ("id" BIGINT PRIMARY KEY, "name" TEXT, CHECK ("name" > 5))'],
 );
 
 test(
@@ -427,7 +427,7 @@ test(
   be.schema.createView('old_employees', {
     query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
   }),
-  ['CREATE VIEW "old_employees" AS SELECT * FROM "employee" WHERE "age" > 50'],
+  ['CREATE VIEW "old_employees" AS SELECT * FROM "employee" WHERE ("age" > 50)'],
 );
 
 test(
@@ -436,7 +436,7 @@ test(
   be.schema.createView('foo.old_employees', {
     query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
   }),
-  ['CREATE VIEW "foo"."old_employees" AS SELECT * FROM "employee" WHERE "age" > 50'],
+  ['CREATE VIEW "foo"."old_employees" AS SELECT * FROM "employee" WHERE ("age" > 50)'],
 );
 
 test(
@@ -447,7 +447,7 @@ test(
     query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
     withLocalCheckOption: false,
   }),
-  ['CREATE VIEW "old_employees" ("id", "bar") AS SELECT * FROM "employee" WHERE "age" > 50'],
+  ['CREATE VIEW "old_employees" ("id", "bar") AS SELECT * FROM "employee" WHERE ("age" > 50)'],
 );
 
 test(
@@ -458,7 +458,7 @@ test(
     query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
     withCascadedCheckOption: true,
   }),
-  ['CREATE VIEW "old_employees" ("id", "bar") AS SELECT * FROM "employee" WHERE "age" > 50 WITH CASCADED CHECK OPTION'],
+  ['CREATE VIEW "old_employees" ("id", "bar") AS SELECT * FROM "employee" WHERE ("age" > 50) WITH CASCADED CHECK OPTION'],
 );
 
 test(
@@ -469,7 +469,7 @@ test(
     query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
     withLocalCheckOption: true,
   }),
-  ['CREATE VIEW "old_employees" ("foo", "bar") AS SELECT * FROM "employee" WHERE "age" > 50 WITH LOCAL CHECK OPTION'],
+  ['CREATE VIEW "old_employees" ("foo", "bar") AS SELECT * FROM "employee" WHERE ("age" > 50) WITH LOCAL CHECK OPTION'],
 );
 
 test(
@@ -586,7 +586,7 @@ test(
     constraints: [b.constraint.check(b.fn.lt(b.value, b.lit(20)))],
     collate: 'fr_FR',
   }),
-  ['CREATE DOMAIN "cat_breed" AS VARCHAR(32) DEFAULT \'tabby\' COLLATE "fr_FR" CHECK (VALUE < 20)'],
+  ['CREATE DOMAIN "cat_breed" AS VARCHAR(32) DEFAULT \'tabby\' COLLATE "fr_FR" CHECK ((VALUE < 20))'],
 );
 
 test(

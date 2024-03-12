@@ -78,91 +78,91 @@ test(
   'select with + works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.selectAs('new_salary', b.fn.add('salary', b.lit(5)))),
-  'SELECT "id", "name", "salary" + 5 AS "new_salary" FROM "employee"',
+  'SELECT "id", "name", ("salary" + 5) AS "new_salary" FROM "employee"',
 );
 
 test(
   'select with - works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.selectAs('new_salary', b.fn.subtract('salary', b.lit(5)))),
-  'SELECT "id", "name", "salary" - 5 AS "new_salary" FROM "employee"',
+  'SELECT "id", "name", ("salary" - 5) AS "new_salary" FROM "employee"',
 );
 
 test(
   'select with * (mult) works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.selectAs('new_salary', b.fn.multiply('salary', b.lit(5)))),
-  'SELECT "id", "name", "salary" * 5 AS "new_salary" FROM "employee"',
+  'SELECT "id", "name", ("salary" * 5) AS "new_salary" FROM "employee"',
 );
 
 test(
   'select with / works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.selectAs('new_salary', b.fn.divide('salary', b.lit(5)))),
-  'SELECT "id", "name", "salary" / 5 AS "new_salary" FROM "employee"',
+  'SELECT "id", "name", ("salary" / 5) AS "new_salary" FROM "employee"',
 );
 
 test(
   'select with % works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.selectAs('new_salary', b.fn.mod('salary', b.lit(5)))),
-  'SELECT "id", "name", "salary" % 5 AS "new_salary" FROM "employee"',
+  'SELECT "id", "name", ("salary" % 5) AS "new_salary" FROM "employee"',
 );
 
 test(
   'where with = works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.where(b.fn.eq('id', b.lit(5)))),
-  'SELECT "id", "name" FROM "employee" WHERE "id" = 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" = 5)',
 );
 
 test(
   'where with <> works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.where(b.fn.neq('id', b.lit(5)))),
-  'SELECT "id", "name" FROM "employee" WHERE "id" <> 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" <> 5)',
 );
 
 test(
   'where with LIKE works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.where(b.fn.like('id', b.lit(5)))),
-  'SELECT "id", "name" FROM "employee" WHERE "id" LIKE 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" LIKE 5)',
 );
 
 test(
   'where with NOT LIKE works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.where(b.fn.notLike('id', b.lit(5)))),
-  'SELECT "id", "name" FROM "employee" WHERE "id" NOT LIKE 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" NOT LIKE 5)',
 );
 
 test(
   'where with > works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.where(b.fn.greaterThan('id', b.lit(5)))),
-  'SELECT "id", "name" FROM "employee" WHERE "id" > 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" > 5)',
 );
 
 test(
   'where with < works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.where(b.fn.lessThan('id', b.lit(5)))),
-  'SELECT "id", "name" FROM "employee" WHERE "id" < 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" < 5)',
 );
 
 test(
   'where with >= works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.where(b.fn.gte('id', b.lit(5)))),
-  'SELECT "id", "name" FROM "employee" WHERE "id" >= 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" >= 5)',
 );
 
 test(
   'where with <= works',
   isSql,
   b.from('employee').select('id', 'name')(b => b.where(b.fn.lte('id', b.lit(5)))),
-  'SELECT "id", "name" FROM "employee" WHERE "id" <= 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" <= 5)',
 );
 
 test(
@@ -171,7 +171,7 @@ test(
   b.from('employee').select('id', 'name')(b =>
     b.where(b.fn.or(b.fn.lessThan('id', b.lit(5)), b.fn.greaterThan('id', b.lit(50)))),
   ),
-  'SELECT "id", "name" FROM "employee" WHERE "id" < 5 OR "id" > 50',
+  'SELECT "id", "name" FROM "employee" WHERE (("id" < 5) OR ("id" > 50))',
 );
 
 test(
@@ -181,7 +181,7 @@ test(
     id: 5,
     name: 'Charlie',
   }),
-  `SELECT "id", "name" FROM "employee" WHERE "id" = 5 AND "name" = 'Charlie'`,
+  `SELECT "id", "name" FROM "employee" WHERE (("id" = 5) AND ("name" = 'Charlie'))`,
 );
 
 test(
@@ -190,7 +190,7 @@ test(
   b.from('employee').select('id', 'name')(b =>
     b.where(b.fn.or(b.fn.lessThan('id', b.lit(5)), b.fn.greaterThan('id', b.lit(50)))),
   ),
-  'SELECT "id", "name" FROM "employee" WHERE "id" < $1 OR "id" > $2',
+  'SELECT "id", "name" FROM "employee" WHERE (("id" < $1) OR ("id" > $2))',
   [5, 50],
 );
 
@@ -198,21 +198,21 @@ test(
   'where shorthand works',
   isSql,
   b.from('employee').select('id', 'name').where({ id: 5 }),
-  'SELECT "id", "name" FROM "employee" WHERE "id" = 5',
+  'SELECT "id", "name" FROM "employee" WHERE ("id" = 5)',
 );
 
 test(
   'multiple where shorthand works',
   isSql,
   b.from('employee').select('id', 'name').where({ id: 5, name: 'Charlie' }),
-  `SELECT "id", "name" FROM "employee" WHERE "id" = 5 AND "name" = 'Charlie'`,
+  `SELECT "id", "name" FROM "employee" WHERE (("id" = 5) AND ("name" = 'Charlie'))`,
 );
 
 test(
   'multiple where clauses works',
   isSql,
   b.from('employee').select('id', 'name').where({ id: 5 }).where({ name: 'Charlie' }),
-  `SELECT "id", "name" FROM "employee" WHERE "id" = 5 AND "name" = 'Charlie'`,
+  `SELECT "id", "name" FROM "employee" WHERE (("id" = 5) AND ("name" = 'Charlie'))`,
 );
 
 test(
@@ -222,7 +222,7 @@ test(
     .from('employee')
     .leftJoin('department', b => b.fn.eq('department.id', 'employee.department_id'))
     .select('name', 'department.budget'),
-  `SELECT "name", "department"."budget" FROM "employee" LEFT OUTER JOIN "department" ON "department"."id" = "employee"."department_id"`,
+  `SELECT "name", "department"."budget" FROM "employee" LEFT OUTER JOIN "department" ON ("department"."id" = "employee"."department_id")`,
 );
 
 test(
@@ -232,5 +232,5 @@ test(
     .from('employee')
     .leftJoin(b.as('t1', b.from('department').select('id', 'budget')), b => b.fn.eq('t1.id', 'employee.department_id'))
     .select('name', 't1.budget'),
-  `SELECT "name", "t1"."budget" FROM "employee" LEFT OUTER JOIN (SELECT "id", "budget" FROM "department") AS "t1" ON "t1"."id" = "employee"."department_id"`,
+  `SELECT "name", "t1"."budget" FROM "employee" LEFT OUTER JOIN (SELECT "id", "budget" FROM "department") AS "t1" ON ("t1"."id" = "employee"."department_id")`,
 );

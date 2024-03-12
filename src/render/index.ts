@@ -162,7 +162,7 @@ class Renderer<Ext extends Extension = NoExtension> {
       case 'BinaryApp': {
         const left = this.renderExpr(expr.left);
         const right = this.renderExpr(expr.right);
-        return `${left} ${expr.op} ${right}`;
+        return `(${left} ${expr.op} ${right})`;
       }
       case 'Case': {
         const operand = expr.expr === null ? '' : ' ' + this.renderExpr(expr.expr);

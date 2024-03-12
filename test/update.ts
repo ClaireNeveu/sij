@@ -68,5 +68,5 @@ test(
       salary: b.fn.add(b.col('salary'), b.lit(500)),
     }),
   ),
-  `UPDATE "employee" SET "salary" = "salary" + 500`,
+  `UPDATE "employee" SET "salary" = ("salary" + 500)`,
 );
