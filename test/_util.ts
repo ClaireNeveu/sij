@@ -9,6 +9,9 @@ const isSql: Macro<[StatementBuilder<any>, string]> = test.macro((t, builder, ou
   t.is(r.renderStatement(builder._statement), out),
 );
 
+const isSqlR = (renderer: Renderer): Macro<[StatementBuilder<any>, string]> =>
+  test.macro((t, builder, out) => t.is(renderer.renderStatement(builder._statement), out));
+
 const isSqls: Macro<[MultiStatementBuilder<any>, Array<string>]> = test.macro((t, builder, out) =>
   t.deepEqual(
     builder._statements.map(s => r.renderStatement(s)),
@@ -24,4 +27,4 @@ const isParamsSql: Macro<[StatementBuilder<any>, string, Array<any>]> = test.mac
   t.deepEqual(params, par);
 });
 
-export { isSql, isSqls, isParamsSql };
+export { isSql, isSqlR, isSqls, isParamsSql };

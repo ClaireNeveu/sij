@@ -134,7 +134,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
       }
     });
     if (this._statement.unions.length === 0) {
-      return new QueryBuilder(
+      return new (this.constructor as typeof QueryBuilder)(
         lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._statement),
         this.fn as any,
       );
@@ -144,13 +144,20 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
 
     const newUnion = lens<SetOp<any>>().select.selections.set(s => [...s, ...selections])(currentUnion);
 
-    return new QueryBuilder(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._statement),
       this.fn as any,
     );
   }
 
-  selectExpr<Alias extends string, ColType>(...cols: Array<WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>>) {
+  selectExpr<Alias extends string, ColType>(
+    ...cols: Array<WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>>
+  ): QueryBuilder<
+    Schema,
+    { [K in Alias]: ColType } & Table,
+    UnQualifiedTable<{ [K in Alias]: ColType }> & Return,
+    Ext
+  > {
     const selections = cols.map(c => {
       const wa = c as WithAlias<Alias, TypedAst<Schema, ColType, Expr<Ext>>>;
       return AliasedSelection<Ext>({
@@ -159,11 +166,8 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
       });
     });
 
-    type NewReturn = UnQualifiedTable<{ [K in Alias]: ColType }> & Return;
-    // Pick up any new aliases
-    type NewTable = { [K in Alias]: ColType } & Table;
     if (this._statement.unions.length === 0) {
-      return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
+      return new (this.constructor as typeof QueryBuilder)(
         lens<Query<Ext>>().selection.selections.set(s => [...s, ...selections])(this._statement),
         this.fn as any,
       );
@@ -173,7 +177,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
 
     const newUnion = lens<SetOp<any>>().select.selections.set(s => [...s, ...selections])(currentUnion);
 
-    return new QueryBuilder<Schema, NewTable, NewReturn, Ext>(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().unions.set(u => [...u.slice(0, numUnions - 1), newUnion])(this._statement),
       this.fn as any,
     );
@@ -219,7 +223,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
       kind: kind,
       on: on_.ast,
     });
-    return new QueryBuilder<Schema, Table & MakeJoinTable<Schema, JoinTable, Alias>, Return, Ext>(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().selection.from.joins.set(js => [...js, newJoin])(this._statement),
       this.fn as any,
     );
@@ -303,18 +307,16 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
   ): QueryBuilder<Schema, Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] }, Return, Ext> {
     const tAlias = TableAlias({ name: Ident(alias), columns: [] });
     const newCte = CommonTableExpr({ alias: tAlias, query: sub._statement });
-    return new QueryBuilder<
-      Schema,
-      Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] },
-      Return,
-      Ext
-    >(lens<Query<Ext>>().commonTableExprs.set(ctes => [...ctes, newCte])(this._statement), this.fn as any);
+    return new (this.constructor as typeof QueryBuilder)(
+      lens<Query<Ext>>().commonTableExprs.set(ctes => [...ctes, newCte])(this._statement),
+      this.fn as any,
+    );
   }
 
   orderBy<Id extends keyof Table & string, Exp extends Expr<Ext>, Col extends Id | Exp>(
     col: Col,
     opts?: { order?: 'ASC' | 'DESC'; nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
-  ) {
+  ): QueryBuilder<Schema, Table, Return, Ext> {
     const expr = (() => {
       if (typeof col === 'object') {
         return col as Expr<Ext>;
@@ -331,7 +333,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
       order: opts?.order ?? null,
       nullHandling: opts?.nullHandling ?? null,
     });
-    return new QueryBuilder<Schema, Table, Return, Ext>(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().ordering.set(os => [...os, newOrder])(this._statement),
       this.fn as any,
     );
@@ -356,9 +358,9 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
   /**
    * `LIMIT [expr]`
    */
-  limit(expr: Expr<Ext> | number) {
+  limit(expr: Expr<Ext> | number): QueryBuilder<Schema, Table, Return, Ext> {
     const lim = typeof expr === 'number' ? Lit(NumLit(expr)) : expr;
-    return new QueryBuilder<Schema, Table, Return, Ext>(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().limit.set(() => lim)(this._statement),
       this.fn as any,
     );
@@ -367,9 +369,9 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
   /**
    * `OFFSET [expr]`
    */
-  offset(expr: Expr<Ext> | number) {
+  offset(expr: Expr<Ext> | number): QueryBuilder<Schema, Table, Return, Ext> {
     const off = typeof expr === 'number' ? Lit(NumLit(expr)) : expr;
-    return new QueryBuilder<Schema, Table, Return, Ext>(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().offset.set(() => off)(this._statement),
       this.fn as any,
     );
@@ -380,7 +382,9 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
    * @param clause Either an expression that evaluates to a boolean or a
    *        shorthand equality object mapping columns to values.
    */
-  where(clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<Ext>>) {
+  where(
+    clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<Ext>>,
+  ): QueryBuilder<Schema, Table, Return, Ext> {
     const expr: Expr<Ext> = (() => {
       if (typeof clause === 'object' && !('ast' in clause)) {
         return Object.keys(clause)
@@ -398,13 +402,15 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
       }
       return this.fn.and(ast<Schema, boolean, Expr<Ext>>(old), ast<Schema, boolean, Expr<Ext>>(expr)).ast;
     };
-    return new QueryBuilder<Schema, Table, Return, Ext>(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().selection.where.set(e => updateWhere(e))(this._statement),
       this.fn as any,
     );
   }
 
-  groupBy<Id extends keyof Table & string, Exp extends Expr<Ext>, Col extends Id | Exp>(...cols: Array<Col>) {
+  groupBy<Id extends keyof Table & string, Exp extends Expr<Ext>, Col extends Id | Exp>(
+    ...cols: Array<Col>
+  ): QueryBuilder<Schema, Table, Return, Ext> {
     const makeColumn = (col: Col): Expr<Ext> => {
       if (typeof col === 'object') {
         return col as Expr<Ext>;
@@ -412,7 +418,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
       return Ident(col);
     };
     const columns = cols.map(makeColumn);
-    return new QueryBuilder<Schema, Table, Return, Ext>(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().selection.groupBy.set(e => [...e, ...columns])(this._statement),
       this.fn as any,
     );
@@ -423,7 +429,9 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
    * @param clause Either an expression that evaluates to a boolean or a
    *        shorthand equality object mapping columns to values.
    */
-  having(clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<Ext>>) {
+  having(
+    clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<Ext>>,
+  ): QueryBuilder<Schema, Table, Return, Ext> {
     const expr: Expr<Ext> = (() => {
       if (typeof clause === 'object' && !('ast' in clause)) {
         return Object.keys(clause)
@@ -441,7 +449,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
       }
       return this.fn.and(ast<Schema, boolean, Expr<Ext>>(old), ast<Schema, boolean, Expr<Ext>>(expr)).ast;
     };
-    return new QueryBuilder<Schema, Table, Return, Ext>(
+    return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().selection.having.set(e => updateHaving(e))(this._statement),
       this.fn as any,
     );
