@@ -36,13 +36,17 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
     ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Expr<Ext>> }>
   ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'fromQuery' | 'columns'> {
     const newInsert = (() => {
-      if (this._statement.values === null) {
-        // This is where reflection would be really nice
-        const columnSet: Set<string> = new Set();
-        vs.forEach(v => {
-          Object.keys(v).forEach(k => columnSet.add(k));
-        });
-        const columns: Array<string> = Array.from(columnSet);
+      if (this._statement.values === null) {        
+        const columns: Array<string> = (() => {
+          if (this._statement.columns.length > 0) {
+            return this._statement.columns.map(i => i.name);
+          }
+          const columnSet: Set<string> = new Set();
+          vs.forEach(v => {
+            Object.keys(v).forEach(k => columnSet.add(k));
+          });
+          return Array.from(columnSet);
+        })()
         const values = ValuesConstructor<Ext>({
           values: vs.map((o: { [p: string]: any }) =>
             columns.map(c => {
@@ -87,7 +91,7 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
     }
     const newInsert = (() => {
       if (this._statement.values === null) {
-        const columns: Array<string> = Array.from(Object.keys(vs[0]));
+        const columns: Array<string> = this._statement.columns.length > 0 ? this._statement.columns.map(i => i.name) : Array.from(Object.keys(vs[0]));
         const values = ValuesConstructor<Ext>({
           values: vs.map((o: { [p: string]: any }) =>
             columns.map(c => {
@@ -125,10 +129,15 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
    * use `columns` to specify the columns manually and avoid the
    * extra computation.
    */
-  columns(...cols: Array<keyof Table>) {
+  columns(...columns: Array<keyof Table>): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'columns'> {
     if (this._statement.values !== null) {
       throw new Error('Cannot set columns after values');
     }
+    const newInsert = (() => {
+      const insertLens = lens<Insert<Ext>>();
+      return insertLens.columns.set(columns.map(c => Ident(c as string)))(this._statement);
+    })();
+    return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn as Functions<Schema, any, Ext>);
   }
 
   /**

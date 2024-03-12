@@ -47,6 +47,19 @@ test(
 );
 
 test(
+  'explicit columns',
+  isParamsSql,
+  b.insertInto('employee').columns('id', 'name').values({
+    id: 5,
+    name: 'Charlotte',
+    salary: 5000,
+    department_id: 55,
+  }),
+  'INSERT INTO "employee" ("id", "name") VALUES ($1, $2)',
+  [5, 'Charlotte'],
+);
+
+test(
   'no params',
   isSql,
   b.insertInto('employee').values({
