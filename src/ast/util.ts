@@ -23,7 +23,7 @@ type Extension = {
 type NoExtension = {
   Expr: unknown;
   Query: unknown;
-  Select: unknown;
+  Select: null;
   Table: unknown;
   Insert: unknown;
   Update: unknown;

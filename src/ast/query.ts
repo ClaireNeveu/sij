@@ -70,6 +70,17 @@ interface SetOp<Ext extends Extension = NoExtension>
 const SetOp = <Ext extends Extension = NoExtension>(args: UnTag<SetOp<Ext>>): SetOp<Ext> => tag('SetOp', args);
 
 // TODO: do table names need to be qualified?
+/*
+<group by clause> ::=
+  GROUP BY <grouping column reference list>
+
+<grouping column reference list> ::=
+  <grouping column reference> [ { <comma> <grouping column reference> }... ]
+
+
+<grouping column reference> ::=
+  <column reference> [ <collate clause> ]
+*/
 interface Select<Ext extends Extension = NoExtension>
   extends Tagged<
     'Select',
@@ -79,7 +90,7 @@ interface Select<Ext extends Extension = NoExtension>
       readonly where: Expr<Ext> | null;
       readonly groupBy: Array<Expr<Ext>>;
       readonly having: Expr<Ext> | null;
-      readonly extensions: Ext['Select'] | null;
+      readonly extensions: Ext['Select'];
     }
   > {}
 const Select = <Ext extends Extension = NoExtension>(args: UnTag<Select<Ext>>): Select<Ext> => tag('Select', args);

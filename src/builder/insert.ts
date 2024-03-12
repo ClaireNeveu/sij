@@ -36,7 +36,7 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
     ...vs: Array<{ [Key in keyof Table]?: Table[Key] | DefaultValue | TypedAst<Schema, Table[Key], Expr<Ext>> }>
   ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'fromQuery' | 'columns'> {
     const newInsert = (() => {
-      if (this._statement.values === null) {        
+      if (this._statement.values === null) {
         const columns: Array<string> = (() => {
           if (this._statement.columns.length > 0) {
             return this._statement.columns.map(i => i.name);
@@ -46,7 +46,7 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
             Object.keys(v).forEach(k => columnSet.add(k));
           });
           return Array.from(columnSet);
-        })()
+        })();
         const values = ValuesConstructor<Ext>({
           values: vs.map((o: { [p: string]: any }) =>
             columns.map(c => {
@@ -91,7 +91,10 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
     }
     const newInsert = (() => {
       if (this._statement.values === null) {
-        const columns: Array<string> = this._statement.columns.length > 0 ? this._statement.columns.map(i => i.name) : Array.from(Object.keys(vs[0]));
+        const columns: Array<string> =
+          this._statement.columns.length > 0
+            ? this._statement.columns.map(i => i.name)
+            : Array.from(Object.keys(vs[0]));
         const values = ValuesConstructor<Ext>({
           values: vs.map((o: { [p: string]: any }) =>
             columns.map(c => {

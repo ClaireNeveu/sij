@@ -72,10 +72,13 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `"${ident.name}"`;
   }
   renderQualifiedIdent(ident: QualifiedIdent): string {
-    switch(ident._tag) {
-      case 'CompoundIdentifier': return ident.idChain.map(e => this.renderIdent(e)).join('.');
-      case 'Ident': return this.renderIdent(ident)
-      default: return exhaustive(ident)
+    switch (ident._tag) {
+      case 'CompoundIdentifier':
+        return ident.idChain.map(e => this.renderIdent(e)).join('.');
+      case 'Ident':
+        return this.renderIdent(ident);
+      default:
+        return exhaustive(ident);
     }
   }
 
@@ -140,7 +143,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     }
   }
 
-  renderExpr(expr: Expr): string {
+  renderExpr(expr: Expr<any>): string {
     switch (expr._tag) {
       case 'Ident':
         return this.renderIdent(expr);
@@ -319,6 +322,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `${ctes}${selection}${unions}${ordering}${limit}${offset}`;
   }
 
+  // maybe have _renderSelect(select: Select<any>): Array<string> for extensions
   renderSelect(select: Select<any>): string {
     const selections = select.selections
       .map(s => {
@@ -333,8 +337,8 @@ class Renderer<Ext extends Extension = NoExtension> {
 
     const where = select.where === null ? '' : ' WHERE ' + this.renderExpr(select.where);
     const groupBy =
-      select.groupBy.length === 0 ? '' : ' GROUP BY' + select.groupBy.map(e => this.renderExpr(e)).join(', ');
-    const having = select.having === null ? '' : ' HAVING' + this.renderExpr(select.having);
+      select.groupBy.length === 0 ? '' : ' GROUP BY ' + select.groupBy.map(e => this.renderExpr(e)).join(', ');
+    const having = select.having === null ? '' : ' HAVING ' + this.renderExpr(select.having);
 
     const table = (() => {
       if (select.from === null) {
@@ -472,7 +476,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `DELETE FROM ${this.renderIdent(del.table)} WHERE CURRENT OF ${this.renderIdent(del.cursor)}`;
   }
   renderSchemaDefinition(schema: SchemaDefinition<any>): string {
-    const name = this.renderQualifiedIdent(schema.name)
+    const name = this.renderQualifiedIdent(schema.name);
     const auth = schema.authorization !== null ? ` AUTHORIZATION ${this.renderIdent(schema.authorization)}` : '';
     const charSet =
       schema.characterSet !== null ? ` DEFAULT CHARACTER SET ${this.renderIdent(schema.characterSet)}` : '';

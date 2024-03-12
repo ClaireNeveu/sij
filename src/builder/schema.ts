@@ -58,7 +58,7 @@ const exhaustive = (n: never): never => n;
 type SchemaArgs = {
   authorization?: string;
   characterSet?: string;
-}
+};
 type ColumnSet<Ext extends Extension> = {
   [C in string]: ColumnArgs<any, Ext>;
 };
@@ -203,10 +203,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     } as TypedAst<Database, Return, Expr<Ext>>;
   }
 
-  createSchema<N extends string>(
-    name: N,
-    opts: SchemaArgs = {},
-  ): SchemaBuilder<Database, Return, Ext> {
+  createSchema<N extends string>(name: N, opts: SchemaArgs = {}): SchemaBuilder<Database, Return, Ext> {
     const def = SchemaDefinition<Ext>({
       name: this._makeIdent(name),
       authorization: opts.authorization !== undefined ? Ident(opts.authorization) : null,
@@ -386,11 +383,11 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database, any, Ext>,
     );
   }
-  
+
   dropSchema(name: string, behavior: DropBehaviorArg): SchemaBuilder<Database, Return, Ext> {
     const def = DropSchema({
       name: this._makeIdent(name),
-      behavior: this._makeBehavior(behavior)
+      behavior: this._makeBehavior(behavior),
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],

@@ -4,16 +4,7 @@ import { Insert, Update, Delete } from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension, VTagged } from '../ast/util';
 import { Functions } from './functions';
-import {
-  BuilderExtension,
-  NoBuilderExtension,
-  Extend,
-  WithAlias,
-  QualifiedTable,
-  makeLit,
-  TypedAst,
-  ast,
-} from './util';
+import { BuilderExtension, WithAlias, QualifiedTable, makeLit, TypedAst, ast } from './util';
 import { QueryBuilder as QB } from './query';
 import { InsertBuilder as IB } from './insert';
 import { UpdateBuilder as UB } from './update';
@@ -51,7 +42,7 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
       tableAst = null;
     } else {
       const idParts = table.split('.');
-      let tableId: QualifiedIdent
+      let tableId: QualifiedIdent;
       if (idParts.length === 1) {
         tableId = Ident(idParts[0] as string);
       } else {

@@ -132,7 +132,8 @@ interface AddTableConstraint<Ext extends Extension>
       readonly constraint: TableConstraint<Ext>;
     }
   > {}
-const AddTableConstraint = <Ext extends Extension>(args: UnTag<AddTableConstraint<Ext>>): AddTableConstraint<Ext> => tag('AddTableConstraint', args);
+const AddTableConstraint = <Ext extends Extension>(args: UnTag<AddTableConstraint<Ext>>): AddTableConstraint<Ext> =>
+  tag('AddTableConstraint', args);
 
 /*
 <drop table constraint definition> ::=
@@ -208,7 +209,8 @@ interface AlterDomain<Ext extends Extension>
       readonly action: DomainAction<Ext>;
     }
   > {}
-const AlterDomain = <Ext extends Extension>(args: UnTag<AlterDomain<Ext>>): AlterDomain<Ext> => tag('AlterDomain', args);
+const AlterDomain = <Ext extends Extension>(args: UnTag<AlterDomain<Ext>>): AlterDomain<Ext> =>
+  tag('AlterDomain', args);
 
 /*
 <alter domain action> ::=
@@ -248,7 +250,8 @@ interface AddDomainConstraint<Ext extends Extension>
       readonly constraint: ConstraintDefinition<CheckConstraint<Ext>>;
     }
   > {}
-const AddDomainConstraint = <Ext extends Extension>(args: UnTag<AddDomainConstraint<Ext>>): AddDomainConstraint<Ext> => tag('AddDomainConstraint', args);
+const AddDomainConstraint = <Ext extends Extension>(args: UnTag<AddDomainConstraint<Ext>>): AddDomainConstraint<Ext> =>
+  tag('AddDomainConstraint', args);
 
 /*
 <drop domain constraint definition> ::=

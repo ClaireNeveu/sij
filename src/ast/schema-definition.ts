@@ -292,7 +292,9 @@ interface ConstraintDefinition<C> extends Tagged<'ConstraintDefinition', {}> {
 const ConstraintDefinition = <C>(args: UnTag<ConstraintDefinition<C>>): ConstraintDefinition<C> =>
   tag('ConstraintDefinition', args);
 
-type TableConstraint<Ext extends Extension> = ConstraintDefinition<UniqueConstraint | ReferenceConstraint | CheckConstraint<Ext>>;
+type TableConstraint<Ext extends Extension> = ConstraintDefinition<
+  UniqueConstraint | ReferenceConstraint | CheckConstraint<Ext>
+>;
 
 /*
 <constraint attributes> ::=
@@ -315,7 +317,8 @@ const ConstraintCheckTime = (args: UnTag<ConstraintCheckTime>): ConstraintCheckT
 interface CheckConstraint<Ext extends Extension> extends Tagged<'CheckConstraint', {}> {
   readonly search: Expr<Ext>;
 }
-const CheckConstraint = <Ext extends Extension>(args: UnTag<CheckConstraint<Ext>>): CheckConstraint<Ext> => tag('CheckConstraint', args);
+const CheckConstraint = <Ext extends Extension>(args: UnTag<CheckConstraint<Ext>>): CheckConstraint<Ext> =>
+  tag('CheckConstraint', args);
 
 /*
 <schema element> ::=

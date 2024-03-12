@@ -29,7 +29,7 @@ type MySchema = {
   'finance.department': {
     id: number;
     secret_stash_location: string;
-  }
+  };
 };
 
 const realNumber: { _tag: 'Real'; val: string } = { _tag: 'Real', val: '5000' };
@@ -60,10 +60,10 @@ test('wildcard select works', isSql, b.from('employee').select('*'), 'SELECT * F
 test('select without table works', isSql, b.from().selectAs('my_val', b.lit(1)), 'SELECT 1 AS "my_val"');
 
 test(
-  'select from schema works', 
-  isSql, 
-  b.from('finance.department').select('id', 'secret_stash_location'), 
-  'SELECT "id", "secret_stash_location" FROM "finance"."department"'
+  'select from schema works',
+  isSql,
+  b.from('finance.department').select('id', 'secret_stash_location'),
+  'SELECT "id", "secret_stash_location" FROM "finance"."department"',
 );
 
 test(
@@ -233,4 +233,25 @@ test(
     .leftJoin(b.as('t1', b.from('department').select('id', 'budget')), b => b.fn.eq('t1.id', 'employee.department_id'))
     .select('name', 't1.budget'),
   `SELECT "name", "t1"."budget" FROM "employee" LEFT OUTER JOIN (SELECT "id", "budget" FROM "department") AS "t1" ON ("t1"."id" = "employee"."department_id")`,
+);
+
+test(
+  'having shorthand works',
+  isSql,
+  b.from('employee').select('id', 'name').groupBy('department_id').having({ id: 5 }),
+  'SELECT "id", "name" FROM "employee" GROUP BY "department_id" HAVING ("id" = 5)',
+);
+
+test(
+  'multiple having shorthand works',
+  isSql,
+  b.from('employee').select('id', 'name').groupBy('department_id').having({ id: 5, name: 'Charlie' }),
+  `SELECT "id", "name" FROM "employee" GROUP BY "department_id" HAVING (("id" = 5) AND ("name" = 'Charlie'))`,
+);
+
+test(
+  'multiple having clauses works',
+  isSql,
+  b.from('employee').select('id', 'name').groupBy('department_id').having({ id: 5 }).having({ name: 'Charlie' }),
+  `SELECT "id", "name" FROM "employee" GROUP BY "department_id" HAVING (("id" = 5) AND ("name" = 'Charlie'))`,
 );

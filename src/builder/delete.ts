@@ -3,9 +3,8 @@ import { lens } from 'lens.ts';
 
 import { Expr, Ident, Lit } from '../ast/expr';
 import { DefaultValue, Delete, ValuesConstructor, ValuesQuery } from '../ast/statement';
-import { Extension, NoExtension, VTagged } from '../ast/util';
 import { Functions } from './functions';
-import { BuilderExtension, NoBuilderExtension, WithAlias, QualifiedTable, makeLit, TypedAst, ast } from './util';
+import { BuilderExtension, makeLit, TypedAst, ast } from './util';
 import { QueryBuilder } from './query';
 
 class DeleteBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends CallableInstance<

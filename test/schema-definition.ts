@@ -458,7 +458,9 @@ test(
     query: be.from('employee').select('*')(be => be.where(be.fn.gt('age', be.lit(50)))),
     withCascadedCheckOption: true,
   }),
-  ['CREATE VIEW "old_employees" ("id", "bar") AS SELECT * FROM "employee" WHERE ("age" > 50) WITH CASCADED CHECK OPTION'],
+  [
+    'CREATE VIEW "old_employees" ("id", "bar") AS SELECT * FROM "employee" WHERE ("age" > 50) WITH CASCADED CHECK OPTION',
+  ],
 );
 
 test(
@@ -589,18 +591,13 @@ test(
   ['CREATE DOMAIN "cat_breed" AS VARCHAR(32) DEFAULT \'tabby\' COLLATE "fr_FR" CHECK ((VALUE < 20))'],
 );
 
-test(
-  'create schema simple',
-  isSqls,
-  b.schema.createSchema('myschema'),
-  ['CREATE SCHEMA "myschema"'],
-);
+test('create schema simple', isSqls, b.schema.createSchema('myschema'), ['CREATE SCHEMA "myschema"']);
 
 test(
   'create schema authorization',
   isSqls,
   b.schema.createSchema('myschema', {
-    authorization: 'emily'
+    authorization: 'emily',
   }),
   ['CREATE SCHEMA "myschema" AUTHORIZATION "emily"'],
 );
@@ -619,7 +616,7 @@ test(
   'create schema in catalog',
   isSqls,
   b.schema.createSchema('mycatalog.myschema', {
-    authorization: 'emily'
+    authorization: 'emily',
   }),
   ['CREATE SCHEMA "mycatalog"."myschema" AUTHORIZATION "emily"'],
 );

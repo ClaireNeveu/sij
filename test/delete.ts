@@ -41,4 +41,9 @@ test(
   'DELETE FROM "employee" WHERE ("id" > 5)',
 );
 
-test('with where shorthand', isSql, b.deleteFrom('employee').where({ id: 5 }), 'DELETE FROM "employee" WHERE ("id" = 5)');
+test(
+  'with where shorthand',
+  isSql,
+  b.deleteFrom('employee').where({ id: 5 }),
+  'DELETE FROM "employee" WHERE ("id" = 5)',
+);

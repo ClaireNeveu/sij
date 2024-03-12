@@ -1,6 +1,5 @@
 import CallableInstance from 'callable-instance';
 import { lens } from 'lens.ts';
-import type { Any } from 'ts-toolbelt';
 
 import { Expr, Ident, CompoundIdentifier, Lit, Wildcard } from '../ast/expr';
 import {
@@ -9,22 +8,17 @@ import {
   CommonTableExpr,
   Join,
   JoinKind,
-  JoinedTable,
   OrderingExpr,
   Query,
-  Select,
   SetOp,
   TableAlias,
   BasicTable,
   DerivedTable,
 } from '../ast/query';
 import { Literal, NumLit, StringLit, BoolLit, NullLit } from '../ast/literal';
-import { DefaultValue } from '../ast/statement';
-import { Extension, NoExtension, VTagged } from '../ast/util';
 import { Functions } from './functions';
 import {
   BuilderExtension,
-  NoBuilderExtension,
   WithAlias,
   withAlias,
   AstToAlias,
@@ -406,6 +400,49 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
     };
     return new QueryBuilder<Schema, Table, Return, Ext>(
       lens<Query<Ext>>().selection.where.set(e => updateWhere(e))(this._statement),
+      this.fn as any,
+    );
+  }
+
+  groupBy<Id extends keyof Table & string, Exp extends Expr<Ext>, Col extends Id | Exp>(...cols: Array<Col>) {
+    const makeColumn = (col: Col): Expr<Ext> => {
+      if (typeof col === 'object') {
+        return col as Expr<Ext>;
+      }
+      return Ident(col);
+    };
+    const columns = cols.map(makeColumn);
+    return new QueryBuilder<Schema, Table, Return, Ext>(
+      lens<Query<Ext>>().selection.groupBy.set(e => [...e, ...columns])(this._statement),
+      this.fn as any,
+    );
+  }
+
+  /**
+   * `having [expr]`
+   * @param clause Either an expression that evaluates to a boolean or a
+   *        shorthand equality object mapping columns to values.
+   */
+  having(clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<Ext>>) {
+    const expr: Expr<Ext> = (() => {
+      if (typeof clause === 'object' && !('ast' in clause)) {
+        return Object.keys(clause)
+          .map(k => {
+            const val: any = (clause as any)[k] as any;
+            return this.fn.eq(k as any, ast<Schema, any, Expr<Ext>>(makeLit(val)));
+          })
+          .reduce((acc, val) => this.fn.and(acc, val)).ast;
+      }
+      return clause.ast;
+    })();
+    const updateHaving = (old: Expr<Ext> | null): Expr<Ext> => {
+      if (old === null) {
+        return expr;
+      }
+      return this.fn.and(ast<Schema, boolean, Expr<Ext>>(old), ast<Schema, boolean, Expr<Ext>>(expr)).ast;
+    };
+    return new QueryBuilder<Schema, Table, Return, Ext>(
+      lens<Query<Ext>>().selection.having.set(e => updateHaving(e))(this._statement),
       this.fn as any,
     );
   }
