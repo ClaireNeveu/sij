@@ -16,6 +16,7 @@ type DateTimeField = 'Year' | 'Month' | 'Day' | 'Hour' | 'Minute' | 'Second';
 type Expr<Ext extends Extension = NoExtension> =
   | Ident
   | Wildcard
+  | Value
   | QualifiedWildcard
   | CompoundIdentifier
   | Between<Ext>
@@ -39,6 +40,11 @@ interface Wildcard {
   _tag: 'Wildcard';
 }
 const Wildcard: Wildcard = { _tag: 'Wildcard' };
+
+interface Value {
+  _tag: 'Value';
+}
+const Value: Value = { _tag: 'Value' };
 
 /**
  * Wildcard with qualifiers, e.g. `table.*` or `db.table.*`.
@@ -261,6 +267,7 @@ export {
   identToString,
   Expr,
   Wildcard,
+  Value,
   QualifiedWildcard,
   CompoundIdentifier,
   QualifiedIdent,

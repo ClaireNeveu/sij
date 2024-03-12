@@ -33,7 +33,7 @@ type SchemaManipulationStatement<Ext extends Extension> =
   | DropDomain
   | DropAssertion
   | AlterTable<Ext>
-  | AlterDomain;
+  | AlterDomain<Ext>;
 
 /*
 <drop behavior> ::= CASCADE | RESTRICT
@@ -80,7 +80,7 @@ type AlterTableAction<Ext extends Extension> =
   | ColumnDefinition<Ext>
   | AlterColumn
   | DropColumn
-  | AddTableConstraint
+  | AddTableConstraint<Ext>
   | DropTableConstraint;
 
 /*
@@ -125,14 +125,14 @@ const DropColumn = (args: UnTag<DropColumn>): DropColumn => tag('DropColumn', ar
 <add table constraint definition> ::=
   ADD <table constraint definition>
 */
-interface AddTableConstraint
+interface AddTableConstraint<Ext extends Extension>
   extends Tagged<
     'AddTableConstraint',
     {
-      readonly constraint: TableConstraint;
+      readonly constraint: TableConstraint<Ext>;
     }
   > {}
-const AddTableConstraint = (args: UnTag<AddTableConstraint>): AddTableConstraint => tag('AddTableConstraint', args);
+const AddTableConstraint = <Ext extends Extension>(args: UnTag<AddTableConstraint<Ext>>): AddTableConstraint<Ext> => tag('AddTableConstraint', args);
 
 /*
 <drop table constraint definition> ::=
@@ -200,15 +200,15 @@ const RevokePrivilege = (args: UnTag<RevokePrivilege>): RevokePrivilege => tag('
 <alter domain statement> ::=
     ALTER DOMAIN <domain name> <alter domain action>
 */
-interface AlterDomain
+interface AlterDomain<Ext extends Extension>
   extends Tagged<
     'AlterDomain',
     {
       readonly name: Ident;
-      readonly action: DomainAction;
+      readonly action: DomainAction<Ext>;
     }
   > {}
-const AlterDomain = (args: UnTag<AlterDomain>): AlterDomain => tag('AlterDomain', args);
+const AlterDomain = <Ext extends Extension>(args: UnTag<AlterDomain<Ext>>): AlterDomain<Ext> => tag('AlterDomain', args);
 
 /*
 <alter domain action> ::=
@@ -217,7 +217,7 @@ const AlterDomain = (args: UnTag<AlterDomain>): AlterDomain => tag('AlterDomain'
     | <add domain constraint definition>
     | <drop domain constraint definition>
 */
-type DomainAction = SetDefault | DropDefault | AddDomainConstraint | DropDomainConstraint;
+type DomainAction<Ext extends Extension> = SetDefault | DropDefault | AddDomainConstraint<Ext> | DropDomainConstraint;
 
 /*
 <set domain default clause> ::= SET <default clause>
@@ -241,14 +241,14 @@ const DropDefault: DropDefault = tag('DropDefault', {});
 <add domain constraint definition> ::=
   ADD <domain constraint>
 */
-interface AddDomainConstraint
+interface AddDomainConstraint<Ext extends Extension>
   extends Tagged<
     'AddDomainConstraint',
     {
-      readonly constraint: ConstraintDefinition<CheckConstraint>;
+      readonly constraint: ConstraintDefinition<CheckConstraint<Ext>>;
     }
   > {}
-const AddDomainConstraint = (args: UnTag<AddDomainConstraint>): AddDomainConstraint => tag('AddDomainConstraint', args);
+const AddDomainConstraint = <Ext extends Extension>(args: UnTag<AddDomainConstraint<Ext>>): AddDomainConstraint<Ext> => tag('AddDomainConstraint', args);
 
 /*
 <drop domain constraint definition> ::=

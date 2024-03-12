@@ -3,6 +3,7 @@ import {
   ColumnConstraintDefinition,
   ColumnNotNull,
   ConstraintCheckTime,
+  Expr,
   Ident,
   ReferenceConstraint,
   ReferentialAction,
@@ -10,7 +11,7 @@ import {
 } from '../ast';
 import { ConstraintDefinition } from '../ast/schema-definition';
 import { QueryBuilder } from './query';
-import { BuilderExtension } from './util';
+import { BuilderExtension, TypedAst } from './util';
 
 const exhaustive = (n: never): never => n;
 
@@ -131,13 +132,13 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
     });
   }
   check<Table>(
-    query: QueryBuilder<Schema, Table, boolean, Ext>,
+    query: TypedAst<Schema, boolean, Expr<Ext>>,
     opts: {
       name?: string;
       deferrable?: boolean;
       initiallyDeferred?: boolean;
     } = {},
-  ): ConstraintDefinition<CheckConstraint> {
+  ): ConstraintDefinition<CheckConstraint<Ext>> {
     let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       checkTime = null;
@@ -148,7 +149,7 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
       });
     }
     const check = CheckConstraint({
-      search: query.finish(),
+      search: query.ast,
     });
     return ConstraintDefinition({
       name: opts.name === undefined ? null : Ident(opts.name),

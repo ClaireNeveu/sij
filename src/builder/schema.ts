@@ -59,24 +59,24 @@ type SchemaArgs = {
   authorization?: string;
   characterSet?: string;
 }
-type ColumnSet = {
-  [C in string]: ColumnArgs<any>;
+type ColumnSet<Ext extends Extension> = {
+  [C in string]: ColumnArgs<any, Ext>;
 };
-type TableArgs<CS extends ColumnSet> = Args<{
+type TableArgs<CS extends ColumnSet<Ext>, Ext extends Extension> = Args<{
   local?: boolean;
   temporary?: boolean;
   columns: CS;
-  constraints?: Array<TableConstraint>;
+  constraints?: Array<TableConstraint<Ext>>;
   onCommit?: 'Delete' | 'Preserve';
 }>;
-type ColumnArgs<T extends DataType | string> = Args<{
+type ColumnArgs<T extends DataType | string, Ext extends Extension> = Args<{
   type: T; // Data type or domain identifier
   default?: DefaultOption | null;
-  constraints?: Array<ConstraintArg> | ConstraintArg;
+  constraints?: Array<ConstraintArg<Ext>> | ConstraintArg<Ext>;
   collation?: string;
 }>;
-type ColumnsToTable<Cs extends { [k: string]: ColumnArgs<any> }> = {
-  [K in keyof Cs]: Cs[K] extends ColumnArgs<infer T> ? (T extends DataType ? DataTypeToJs<T> : never) : never;
+type ColumnsToTable<Ext extends Extension, Cs extends { [k: string]: ColumnArgs<any, Ext> }> = {
+  [K in keyof Cs]: Cs[K] extends ColumnArgs<infer T, Ext> ? (T extends DataType ? DataTypeToJs<T> : never) : never;
 };
 type ViewArgs<Database, Table, Return, Ext extends BuilderExtension> =
   | {
@@ -114,10 +114,10 @@ type GrantArgs<N extends string> =
       public: true;
       withGrantOption?: boolean;
     };
-type DomainArgs = Args<{
+type DomainArgs<Ext extends Extension> = Args<{
   type: DataType;
   default?: DefaultOption | null;
-  constraints?: Array<ConstraintDefinition<CheckConstraint>>;
+  constraints?: Array<ConstraintDefinition<CheckConstraint<Ext>>>;
   collate?: string;
 }>;
 type RevokeArgs<N extends string> =
@@ -153,8 +153,8 @@ type AlterColumnArgs = {
 };
 type DropBehaviorArg = 'cascade' | 'CASCADE' | 'restrict' | 'RESTRICT';
 
-type ConstraintArg =
-  | ColumnConstraintDefinition
+type ConstraintArg<Ext extends Extension> =
+  | ColumnConstraintDefinition<Ext>
   | 'NOT NULL'
   | 'not null'
   | 'UNIQUE'
@@ -219,10 +219,10 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database, any, Ext>,
     );
   }
-  _makeColumn<T extends DataType>(name: string, col: ColumnArgs<T>): ColumnDefinition<Ext> {
+  _makeColumn<T extends DataType>(name: string, col: ColumnArgs<T, Ext>): ColumnDefinition<Ext> {
     const typ = typeof col.type === 'string' ? Ident(col.type) : col.type;
     const def = col.default === null ? NullDefault : col.default === undefined ? null : col.default;
-    const makeConstraint = (con: ConstraintArg) => {
+    const makeConstraint = (con: ConstraintArg<Ext>) => {
       if (typeof con !== 'string') {
         return con;
       }
@@ -273,10 +273,10 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       return CompoundIdentifier(idParts.map(Ident));
     }
   }
-  createTable<N extends string, CS extends ColumnSet>(
+  createTable<N extends string, CS extends ColumnSet<Ext>>(
     name: N,
-    opts: TableArgs<CS>,
-  ): SchemaBuilder<Database & { [P in N]: ColumnsToTable<CS> }, Return, Ext> {
+    opts: TableArgs<CS, Ext>,
+  ): SchemaBuilder<Database & { [P in N]: ColumnsToTable<Ext, CS> }, Return, Ext> {
     const mode = opts.local ? 'LocalTemp' : opts.temporary ? 'GlobalTemp' : 'Persistent';
     const columns: Array<ColumnDefinition<Ext>> = Object.keys(opts.columns).map(colName => {
       const col = opts.columns[colName];
@@ -290,9 +290,9 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       onCommit: opts.onCommit ?? null,
       extensions: null,
     });
-    return new SchemaBuilder<Database & { [P in N]: ColumnsToTable<CS> }, Return, Ext>(
+    return new SchemaBuilder<Database & { [P in N]: ColumnsToTable<Ext, CS> }, Return, Ext>(
       [...this._statements, def],
-      this.fn as Functions<Database & { [P in N]: ColumnsToTable<CS> }, any, Ext>,
+      this.fn as Functions<Database & { [P in N]: ColumnsToTable<Ext, CS> }, any, Ext>,
     );
   }
   createView<N extends string, QReturn, Table, T extends ViewArgs<Database, Table, QReturn, Ext>>(
@@ -372,7 +372,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database, any, Ext>,
     );
   }
-  createDomain(name: string, opts: DomainArgs): SchemaBuilder<Database, Return, Ext> {
+  createDomain(name: string, opts: DomainArgs<Ext>): SchemaBuilder<Database, Return, Ext> {
     const def = DomainDefinition({
       name: this._makeIdent(name),
       dataType: opts.type,
@@ -507,7 +507,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
         `Invalid ALTER DOMAIN operation on domain "${name}" had multiple actions. This is not supported by your dialect.`,
       );
     }
-    const def = AlterDomain({
+    const def = AlterDomain<Ext>({
       name: Ident(name),
       action: builder._actions[0],
     });
@@ -543,7 +543,7 @@ class AlterTableBuilder<N extends keyof Database & string, Database, Return, Ext
 
   addColumn<Col extends string, T extends DataType>(
     name: Col,
-    args: ColumnArgs<T>,
+    args: ColumnArgs<T, Ext>,
   ): AlterTableBuilder<N, Database & { [P in N]: { [C in Col]: DataTypeToJs<T> } }, Return, Ext> {
     const def = this._builder._makeColumn(name, args);
     return new AlterTableBuilder<N, Database & { [P in N]: { [C in Col]: DataTypeToJs<T> } }, Return, Ext>(
@@ -589,7 +589,7 @@ class AlterTableBuilder<N extends keyof Database & string, Database, Return, Ext
       this.fn as any,
     );
   }
-  addConstraint(constraint: TableConstraint): AlterTableBuilder<N, Database, Return, Ext> {
+  addConstraint(constraint: TableConstraint<Ext>): AlterTableBuilder<N, Database, Return, Ext> {
     const def = AddTableConstraint({ constraint });
     return new AlterTableBuilder<N, Database, Return, Ext>(
       this._table,
@@ -611,7 +611,7 @@ class AlterTableBuilder<N extends keyof Database & string, Database, Return, Ext
 
 class AlterDomainBuilder<Database, Return, Ext extends BuilderExtension> {
   constructor(
-    readonly _actions: Array<DomainAction>,
+    readonly _actions: Array<DomainAction<Ext>>,
     readonly _builder: SchemaBuilder<Database, Return, Ext>,
     readonly fn: Functions<Database, never, Ext>,
   ) {}
@@ -632,7 +632,7 @@ class AlterDomainBuilder<Database, Return, Ext extends BuilderExtension> {
     );
   }
 
-  addConstraint(constraint: ConstraintDefinition<CheckConstraint>): AlterDomainBuilder<Database, Return, Ext> {
+  addConstraint(constraint: ConstraintDefinition<CheckConstraint<Ext>>): AlterDomainBuilder<Database, Return, Ext> {
     return new AlterDomainBuilder<Database, Return, Ext>(
       [...this._actions, AddDomainConstraint({ constraint })],
       this._builder as any,

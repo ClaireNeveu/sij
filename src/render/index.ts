@@ -53,7 +53,7 @@ import {
   UpdatePositioned,
   ViewDefinition,
 } from '../ast';
-import { QualifiedIdent } from '../ast/expr';
+import { QualifiedIdent, Value } from '../ast/expr';
 
 const exhaustive = (n: never): never => n;
 
@@ -77,6 +77,10 @@ class Renderer<Ext extends Extension = NoExtension> {
       case 'Ident': return this.renderIdent(ident)
       default: return exhaustive(ident)
     }
+  }
+
+  renderValue(value: Value): string {
+    return 'VALUE';
   }
 
   renderPlaceholder(n: number): string {
@@ -202,6 +206,8 @@ class Renderer<Ext extends Extension = NoExtension> {
         return `(${this.renderQuery(expr.query)})`;
       case 'UnaryApp':
         return `${expr.op}${this.renderExpr(expr.expr)}`;
+      case 'Value':
+        return this.renderValue(expr);
       case 'ExprExtension':
         return this.renderCustomExpr(expr.val);
     }
@@ -492,7 +498,7 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
   renderDomainDefinition(def: DomainDefinition<any>): string {
     const defaultOption = def.default !== null ? ` ${this.renderDefaultOption(def.default)}` : '';
-    let constraints = def.constraints.map(this.renderConstraintDefinition).join(' ');
+    let constraints = def.constraints.map(c => this.renderConstraintDefinition(c)).join(' ');
     if (constraints !== '') {
       constraints = ' ' + constraints;
     }
@@ -500,8 +506,8 @@ class Renderer<Ext extends Extension = NoExtension> {
     return (
       `CREATE DOMAIN ${this.renderQualifiedIdent(def.name)} AS ${this.renderDataType(def.dataType)}` +
       defaultOption +
-      constraints +
-      collation
+      collation +
+      constraints
     );
   }
   renderDefaultOption(opt: DefaultOption): string {
@@ -570,7 +576,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     const collation = def.collation !== null ? ` COLLATE ${this.renderIdent(def.collation)}` : '';
     return `${this.renderIdent(def.name)} ${typ}${defaultOption}${constraints}${collation}`;
   }
-  renderColumnConstraint(def: ColumnConstraintDefinition): string {
+  renderColumnConstraint(def: ColumnConstraintDefinition<any>): string {
     const cstr = (() => {
       switch (def.constraint._tag) {
         case 'ColumnNotNull':
@@ -627,10 +633,10 @@ class Renderer<Ext extends Extension = NoExtension> {
     const onDelete = def.onDelete !== null ? ' ON DELETE' + renderAction(def.onDelete) : '';
     return `REFERENCES ${this.renderIdent(def.table)}${columns}${match}${onUpdate}${onDelete}`;
   }
-  renderCheckConstraint(def: CheckConstraint): string {
-    return `CHECK ${this.renderQuery(def.search)}`;
+  renderCheckConstraint(def: CheckConstraint<any>): string {
+    return `CHECK ${this.renderExpr(def.search)}`;
   }
-  renderTableConstraint(def: TableConstraint): string {
+  renderTableConstraint(def: TableConstraint<any>): string {
     /*
         <table constraint definition> ::=
             [ <constraint name definition> ]
@@ -715,10 +721,10 @@ class Renderer<Ext extends Extension = NoExtension> {
         return exhaustive(def);
     }
   }
-  renderConstraintDefinition(def: ConstraintDefinition<CheckConstraint>): string {
+  renderConstraintDefinition(def: ConstraintDefinition<CheckConstraint<any>>): string {
     const name = def.name === null ? '' : `${this.renderIdent(def.name)} `;
     const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
-    return `${name}CHECK (${this.renderQuery(def.constraint.search)})${attributes}`;
+    return `${name}CHECK (${this.renderExpr(def.constraint.search)})${attributes}`;
   }
   renderDropSchema(def: DropSchema): string {
     return `DROP SCHEMA ${this.renderQualifiedIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
@@ -803,20 +809,20 @@ class Renderer<Ext extends Extension = NoExtension> {
   renderDropColumn(def: DropColumn): string {
     return `DROP COLUMN ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
-  renderAddTableConstraint(def: AddTableConstraint): string {
+  renderAddTableConstraint(def: AddTableConstraint<any>): string {
     return `ADD CONSTRAINT ${this.renderTableConstraint(def.constraint)}`;
   }
   renderDropTableConstraint(def: DropTableConstraint): string {
     return `DROP CONSTRAINT ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
-  renderAlterDomain(def: AlterDomain): string {
+  renderAlterDomain(def: AlterDomain<any>): string {
     /*
         <alter domain statement> ::=
         ALTER DOMAIN <domain name> <alter domain action>
     */
     return `ALTER DOMAIN ${this.renderIdent(def.name)} ${this.renderDomainAction(def.action)}`;
   }
-  renderDomainAction(def: DomainAction): string {
+  renderDomainAction(def: DomainAction<any>): string {
     switch (def._tag) {
       case 'AddDomainConstraint':
         return this.renderAddDomainConstraint(def);
@@ -828,7 +834,7 @@ class Renderer<Ext extends Extension = NoExtension> {
         return `SET ${this.renderDefaultOption(def.default)}`;
     }
   }
-  renderAddDomainConstraint(def: AddDomainConstraint): string {
+  renderAddDomainConstraint(def: AddDomainConstraint<any>): string {
     return `ADD ${this.renderConstraintDefinition(def.constraint)}`;
   }
   renderSetTransaction(def: SetTransaction): string {

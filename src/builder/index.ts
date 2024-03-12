@@ -1,4 +1,4 @@
-import { CompoundIdentifier, Expr, Ident, Lit, QualifiedIdent } from '../ast/expr';
+import { CompoundIdentifier, Expr, Ident, Lit, QualifiedIdent, Value } from '../ast/expr';
 import { Query, Select, BasicTable, JoinedTable, Join } from '../ast/query';
 import { Insert, Update, Delete } from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
@@ -30,7 +30,7 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
   dialect: string = 'SQL-92';
 
   constructor(
-    readonly fn: Functions<Schema, {}, Ext>,
+    readonly fn: Functions<Schema, { [P in string]: any }, Ext>,
     readonly QueryBuilder: typeof QB = QB,
     readonly InsertBuilder: typeof IB = IB,
     readonly UpdateBuilder: typeof UB = UB,
@@ -172,6 +172,12 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
     return {
       ast: makeLit(l as any),
     } as TypedAst<Schema, Return, Lit>;
+  }
+
+  get value(): TypedAst<Schema, any, Value> {
+    return {
+      ast: Value,
+    } as TypedAst<Schema, any, Value>;
   }
 }
 

@@ -77,7 +77,7 @@ interface DomainDefinition<Ext extends Extension> // MySQL doesn't support domai
       readonly name: QualifiedIdent;
       readonly dataType: DataType;
       readonly default: DefaultOption | null;
-      readonly constraints: Array<ConstraintDefinition<CheckConstraint>>;
+      readonly constraints: Array<ConstraintDefinition<CheckConstraint<Ext>>>;
       readonly collation: Ident | null; // TODO qualify
       readonly extensions: Ext['DomainDefinition'] | null;
     }
@@ -105,7 +105,7 @@ interface TableDefinition<Ext extends Extension>
       readonly name: QualifiedIdent;
       readonly mode: 'Persistent' | 'GlobalTemp' | 'LocalTemp';
       readonly columns: Array<ColumnDefinition<Ext>>;
-      readonly constraints: Array<TableConstraint>;
+      readonly constraints: Array<TableConstraint<Ext>>;
       readonly onCommit: 'Delete' | 'Preserve' | null;
       readonly extensions: Ext['TableDefinition'] | null;
     }
@@ -129,7 +129,7 @@ interface ColumnDefinition<Ext extends Extension>
       readonly name: Ident;
       readonly type: DataType | Ident; // Data type or domain identifier
       readonly default: DefaultOption | null;
-      readonly constraints: Array<ColumnConstraintDefinition>;
+      readonly constraints: Array<ColumnConstraintDefinition<Ext>>;
       readonly collation: Ident | null; // TODO qualify
       readonly extensions: Ext['ColumnDefinition'] | null;
     }
@@ -151,8 +151,8 @@ const ColumnDefinition = <Ext extends Extension>(args: UnTag<ColumnDefinition<Ex
     | <references specification>
     | <check constraint definition>
 */
-type ColumnConstraintDefinition = ConstraintDefinition<
-  ColumnNotNull | UniqueConstraint | ReferenceConstraint | CheckConstraint
+type ColumnConstraintDefinition<Ext extends Extension> = ConstraintDefinition<
+  ColumnNotNull | UniqueConstraint | ReferenceConstraint | CheckConstraint<Ext>
 >;
 
 interface ColumnNotNull extends Tagged<'ColumnNotNull', {}> {}
@@ -292,7 +292,7 @@ interface ConstraintDefinition<C> extends Tagged<'ConstraintDefinition', {}> {
 const ConstraintDefinition = <C>(args: UnTag<ConstraintDefinition<C>>): ConstraintDefinition<C> =>
   tag('ConstraintDefinition', args);
 
-type TableConstraint = ConstraintDefinition<UniqueConstraint | ReferenceConstraint | CheckConstraint>;
+type TableConstraint<Ext extends Extension> = ConstraintDefinition<UniqueConstraint | ReferenceConstraint | CheckConstraint<Ext>>;
 
 /*
 <constraint attributes> ::=
@@ -312,10 +312,10 @@ const ConstraintCheckTime = (args: UnTag<ConstraintCheckTime>): ConstraintCheckT
 <check constraint definition> ::=
   CHECK <left paren> <search condition> <right paren>
 */
-interface CheckConstraint extends Tagged<'CheckConstraint', {}> {
-  readonly search: Query;
+interface CheckConstraint<Ext extends Extension> extends Tagged<'CheckConstraint', {}> {
+  readonly search: Expr<Ext>;
 }
-const CheckConstraint = (args: UnTag<CheckConstraint>): CheckConstraint => tag('CheckConstraint', args);
+const CheckConstraint = <Ext extends Extension>(args: UnTag<CheckConstraint<Ext>>): CheckConstraint<Ext> => tag('CheckConstraint', args);
 
 /*
 <schema element> ::=

@@ -45,6 +45,7 @@ export {
   QualifiedWildcard,
   SubQuery,
   UnaryApp,
+  Value,
   Wildcard,
   identToString,
 } from './expr';
