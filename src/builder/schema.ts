@@ -21,6 +21,7 @@ import {
   DropDefault,
   DropDomain,
   DropDomainConstraint,
+  DropSchema,
   DropTable,
   DropTableConstraint,
   DropView,
@@ -54,6 +55,10 @@ type SchemaStatement<Ext extends Extension> = SchemaDefinitionStatement<Ext> | S
 
 const exhaustive = (n: never): never => n;
 
+type SchemaArgs = {
+  authorization?: string;
+  characterSet?: string;
+}
 type ColumnSet = {
   [C in string]: ColumnArgs<any>;
 };
@@ -198,26 +203,22 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     } as TypedAst<Database, Return, Expr<Ext>>;
   }
 
-  /*
-  TODO I need to rewrite how the Schema is represented to account for schemas
   createSchema<N extends string>(
     name: N,
-    opts: SchemaArgs<Ext> = {},
+    opts: SchemaArgs = {},
   ): SchemaBuilder<Database, Return, Ext> {
     const def = SchemaDefinition<Ext>({
-        name: Ident(name),
-        catalog: opts.catalog !== undefined ? Ident(opts.catalog) : null,
-        authorization: opts.authorization !== undefined ? Ident(opts.authorization) : null,
-        characterSet: opts.characterSet !== undefined ? Ident(opts.characterSet) : null,
-        definitions: [],
-        extensions: null,
-    })
-    return new SchemaBuilder<Database }, Return, Ext>(
-        [def, ...this._statements],
-        this.fn as Functions<Database, any, Ext>,
-      );
+      name: this._makeIdent(name),
+      authorization: opts.authorization !== undefined ? Ident(opts.authorization) : null,
+      characterSet: opts.characterSet !== undefined ? Ident(opts.characterSet) : null,
+      definitions: [],
+      extensions: null,
+    });
+    return new SchemaBuilder<Database, Return, Ext>(
+      [def, ...this._statements],
+      this.fn as Functions<Database, any, Ext>,
+    );
   }
-  */
   _makeColumn<T extends DataType>(name: string, col: ColumnArgs<T>): ColumnDefinition<Ext> {
     const typ = typeof col.type === 'string' ? Ident(col.type) : col.type;
     const def = col.default === null ? NullDefault : col.default === undefined ? null : col.default;
@@ -385,21 +386,17 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       this.fn as Functions<Database, any, Ext>,
     );
   }
-  /*
-  dropSchema(name: string, opts: DomainArgs): SchemaBuilder<Database, Return, Ext> {
-    const def = DomainDefinition({
-      name: Ident(name),
-      dataType: opts.type,
-      default: opts.default !== undefined ? opts.default : null,
-      constraints: opts.constraints !== undefined ? opts.constraints : [],
-      collation: opts.collation !== undefined ? Ident(opts.collation) : null,
-      extensions: null,
+  
+  dropSchema(name: string, behavior: DropBehaviorArg): SchemaBuilder<Database, Return, Ext> {
+    const def = DropSchema({
+      name: this._makeIdent(name),
+      behavior: this._makeBehavior(behavior)
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
-    */
+  }
   _makeBehavior(behavior: DropBehaviorArg) {
     switch (behavior) {
       case 'cascade':

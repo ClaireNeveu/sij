@@ -49,8 +49,7 @@ interface SchemaDefinition<Ext extends Extension>
   extends Tagged<
     'SchemaDefinition',
     {
-      readonly name: Ident;
-      readonly catalog: Ident | null;
+      readonly name: QualifiedIdent;
       readonly authorization: Ident | null;
       readonly characterSet: Ident | null; // TODO the spec seems to say this could be scoped by schema?
       readonly definitions: Array<SchemaDefinitionElement<Ext>>;

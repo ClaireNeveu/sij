@@ -466,21 +466,10 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `DELETE FROM ${this.renderIdent(del.table)} WHERE CURRENT OF ${this.renderIdent(del.cursor)}`;
   }
   renderSchemaDefinition(schema: SchemaDefinition<any>): string {
-    const name = (() => {
-      let ret = '';
-      if (schema.catalog !== null) {
-        ret += this.renderIdent(schema.catalog);
-        ret += '.';
-      }
-      if (schema.name !== null) {
-        ret += this.renderIdent(schema.name);
-        ret += ' ';
-      }
-      return ret;
-    })();
-    const auth = schema.authorization !== null ? `AUTHORIZATION ${this.renderIdent(schema.authorization)} ` : '';
+    const name = this.renderQualifiedIdent(schema.name)
+    const auth = schema.authorization !== null ? ` AUTHORIZATION ${this.renderIdent(schema.authorization)}` : '';
     const charSet =
-      schema.characterSet !== null ? `DEFAULT CHARACTER SET ${this.renderIdent(schema.characterSet)} ` : '';
+      schema.characterSet !== null ? ` DEFAULT CHARACTER SET ${this.renderIdent(schema.characterSet)}` : '';
     let defs = schema.definitions
       .map(def => {
         switch (def._tag) {
@@ -732,7 +721,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     return `${name}CHECK (${this.renderQuery(def.constraint.search)})${attributes}`;
   }
   renderDropSchema(def: DropSchema): string {
-    return `DROP SCHEMA ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
+    return `DROP SCHEMA ${this.renderQualifiedIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
   renderDropBehavior(def: DropBehavior): string {
     if (def === 'Cascade') {

@@ -572,3 +572,38 @@ test(
   ['CREATE DOMAIN "cat_breed" AS VARCHAR(32) DEFAULT \'tabby\' COLLATE "fr_FR"'],
 );
 */
+
+test(
+  'create schema simple',
+  isSqls,
+  b.schema.createSchema('myschema'),
+  ['CREATE SCHEMA "myschema"'],
+);
+
+test(
+  'create schema authorization',
+  isSqls,
+  b.schema.createSchema('myschema', {
+    authorization: 'emily'
+  }),
+  ['CREATE SCHEMA "myschema" AUTHORIZATION "emily"'],
+);
+
+test(
+  'create schema character set',
+  isSqls,
+  b.schema.createSchema('myschema', {
+    authorization: 'emily',
+    characterSet: 'fr_FR',
+  }),
+  ['CREATE SCHEMA "myschema" AUTHORIZATION "emily" DEFAULT CHARACTER SET "fr_FR"'],
+);
+
+test(
+  'create schema in catalog',
+  isSqls,
+  b.schema.createSchema('mycatalog.myschema', {
+    authorization: 'emily'
+  }),
+  ['CREATE SCHEMA "mycatalog"."myschema" AUTHORIZATION "emily"'],
+);

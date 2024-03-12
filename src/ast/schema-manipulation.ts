@@ -1,4 +1,4 @@
-import { Ident } from './expr';
+import { Ident, QualifiedIdent } from './expr';
 import { Query } from './query';
 import {
   CheckConstraint,
@@ -48,7 +48,7 @@ interface DropSchema
   extends Tagged<
     'DropSchema',
     {
-      readonly name: Ident;
+      readonly name: QualifiedIdent;
       readonly behavior: DropBehavior;
     }
   > {}

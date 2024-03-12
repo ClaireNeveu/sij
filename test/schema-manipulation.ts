@@ -30,6 +30,10 @@ test('dropView restrict', isSqls, b.schema.dropView('employee', 'restrict'), ['D
 
 test('dropView cascade', isSqls, b.schema.dropView('employee', 'CASCADE'), ['DROP VIEW "employee" CASCADE']);
 
+test('dropSchema restrict', isSqls, b.schema.dropSchema('employee', 'restrict'), ['DROP SCHEMA "employee" RESTRICT']);
+
+test('dropSchema cascade', isSqls, b.schema.dropSchema('employee', 'CASCADE'), ['DROP SCHEMA "employee" CASCADE']);
+
 test(
   'revoke simple',
   isSqls,
