@@ -26,12 +26,12 @@ import { Extension, Tagged, UnTag, tag } from './util';
   | <drop assertion statement>
 */
 type SchemaManipulationStatement<Ext extends Extension> =
-  | DropSchema
-  | DropTable
-  | DropView
-  | RevokePrivilege
-  | DropDomain
-  | DropAssertion
+  | DropSchema<Ext>
+  | DropTable<Ext>
+  | DropView<Ext>
+  | RevokePrivilege<Ext>
+  | DropDomain<Ext>
+  | DropAssertion<Ext>
   | AlterTable<Ext>
   | AlterDomain<Ext>;
 
@@ -44,15 +44,16 @@ type DropBehavior = 'Cascade' | 'Restrict';
 <drop schema statement> ::=
     DROP SCHEMA <schema name> <drop behavior>
 */
-interface DropSchema
+interface DropSchema<Ext extends Extension>
   extends Tagged<
     'DropSchema',
     {
       readonly name: QualifiedIdent;
       readonly behavior: DropBehavior;
+      readonly extensions: Ext['DropSchema'] | null;
     }
   > {}
-const DropSchema = (args: UnTag<DropSchema>): DropSchema => tag('DropSchema', args);
+const DropSchema = <Ext extends Extension>(args: UnTag<DropSchema<Ext>>): DropSchema<Ext> => tag('DropSchema', args);
 
 /*
 <alter table statement> ::=
@@ -64,6 +65,7 @@ interface AlterTable<Ext extends Extension>
     {
       readonly name: Ident;
       readonly action: AlterTableAction<Ext>;
+      readonly extensions: Ext['AlterTable'] | null;
     }
   > {}
 const AlterTable = <Ext extends Extension>(args: UnTag<AlterTable<Ext>>): AlterTable<Ext> => tag('AlterTable', args);
@@ -78,10 +80,10 @@ const AlterTable = <Ext extends Extension>(args: UnTag<AlterTable<Ext>>): AlterT
 */
 type AlterTableAction<Ext extends Extension> =
   | ColumnDefinition<Ext>
-  | AlterColumn
-  | DropColumn
+  | AlterColumn<Ext>
+  | DropColumn<Ext>
   | AddTableConstraint<Ext>
-  | DropTableConstraint;
+  | DropTableConstraint<Ext>;
 
 /*
 <alter column definition> ::=
@@ -97,29 +99,32 @@ type AlterTableAction<Ext extends Extension> =
 <drop column default clause> ::=
   DROP DEFAULT
 */
-interface AlterColumn
+interface AlterColumn<Ext extends Extension>
   extends Tagged<
     'AlterColumn',
     {
       readonly name: Ident;
-      readonly action: SetDefault | DropDefault; // TODO check if there are common other actions in dialects
+      readonly action: SetDefault<Ext> | DropDefault; // TODO check if there are common other actions in dialects
+      readonly extensions: Ext['AlterColumn'] | null;
     }
   > {}
-const AlterColumn = (args: UnTag<AlterColumn>): AlterColumn => tag('AlterColumn', args);
+const AlterColumn = <Ext extends Extension>(args: UnTag<AlterColumn<Ext>>): AlterColumn<Ext> =>
+  tag('AlterColumn', args);
 
 /*
 <drop column definition> ::=
   DROP [ COLUMN ] <column name> <drop behavior>
 */
-interface DropColumn
+interface DropColumn<Ext extends Extension>
   extends Tagged<
     'DropColumn',
     {
       readonly name: Ident;
       readonly behavior: DropBehavior;
+      readonly extensions: Ext['DropColumn'] | null;
     }
   > {}
-const DropColumn = (args: UnTag<DropColumn>): DropColumn => tag('DropColumn', args);
+const DropColumn = <Ext extends Extension>(args: UnTag<DropColumn<Ext>>): DropColumn<Ext> => tag('DropColumn', args);
 
 /*
 <add table constraint definition> ::=
@@ -130,6 +135,7 @@ interface AddTableConstraint<Ext extends Extension>
     'AddTableConstraint',
     {
       readonly constraint: TableConstraint<Ext>;
+      readonly extensions: Ext['AddTableConstraint'] | null;
     }
   > {}
 const AddTableConstraint = <Ext extends Extension>(args: UnTag<AddTableConstraint<Ext>>): AddTableConstraint<Ext> =>
@@ -139,43 +145,47 @@ const AddTableConstraint = <Ext extends Extension>(args: UnTag<AddTableConstrain
 <drop table constraint definition> ::=
   DROP CONSTRAINT <constraint name> <drop behavior>
 */
-interface DropTableConstraint
+interface DropTableConstraint<Ext extends Extension>
   extends Tagged<
     'DropTableConstraint',
     {
       readonly name: Ident;
       readonly behavior: DropBehavior;
+      readonly extensions: Ext['DropTableConstraint'] | null;
     }
   > {}
-const DropTableConstraint = (args: UnTag<DropTableConstraint>): DropTableConstraint => tag('DropTableConstraint', args);
+const DropTableConstraint = <Ext extends Extension>(args: UnTag<DropTableConstraint<Ext>>): DropTableConstraint<Ext> =>
+  tag('DropTableConstraint', args);
 
 /*
 <drop table statement> ::=
     DROP TABLE <table name> <drop behavior>
 */
-interface DropTable
+interface DropTable<Ext extends Extension>
   extends Tagged<
     'DropTable',
     {
       readonly name: Ident;
       readonly behavior: DropBehavior;
+      readonly extensions: Ext['DropTable'] | null;
     }
   > {}
-const DropTable = (args: UnTag<DropTable>): DropTable => tag('DropTable', args);
+const DropTable = <Ext extends Extension>(args: UnTag<DropTable<Ext>>): DropTable<Ext> => tag('DropTable', args);
 
 /*
 <drop view statement> ::=
     DROP VIEW <table name> <drop behavior>
 */
-interface DropView
+interface DropView<Ext extends Extension>
   extends Tagged<
     'DropView',
     {
       readonly name: Ident;
       readonly behavior: DropBehavior;
+      readonly extensions: Ext['DropView'] | null;
     }
   > {}
-const DropView = (args: UnTag<DropView>): DropView => tag('DropView', args);
+const DropView = <Ext extends Extension>(args: UnTag<DropView<Ext>>): DropView<Ext> => tag('DropView', args);
 
 /*
 <revoke statement> ::=
@@ -183,7 +193,7 @@ const DropView = (args: UnTag<DropView>): DropView => tag('DropView', args);
       ON <object name>
     FROM <grantee> [ { <comma> <grantee> }... ] <drop behavior>
 */
-interface RevokePrivilege
+interface RevokePrivilege<Ext extends Extension>
   extends Tagged<
     'RevokePrivilege',
     {
@@ -193,9 +203,11 @@ interface RevokePrivilege
       readonly grantees: Array<Ident> | null; // null means public
       readonly grantOption: boolean;
       readonly behavior: DropBehavior;
+      readonly extensions: Ext['RevokePrivilege'] | null;
     }
   > {}
-const RevokePrivilege = (args: UnTag<RevokePrivilege>): RevokePrivilege => tag('RevokePrivilege', args);
+const RevokePrivilege = <Ext extends Extension>(args: UnTag<RevokePrivilege<Ext>>): RevokePrivilege<Ext> =>
+  tag('RevokePrivilege', args);
 
 /*
 <alter domain statement> ::=
@@ -207,6 +219,7 @@ interface AlterDomain<Ext extends Extension>
     {
       readonly name: Ident;
       readonly action: DomainAction<Ext>;
+      readonly extensions: Ext['AlterDomain'] | null;
     }
   > {}
 const AlterDomain = <Ext extends Extension>(args: UnTag<AlterDomain<Ext>>): AlterDomain<Ext> =>
@@ -219,19 +232,24 @@ const AlterDomain = <Ext extends Extension>(args: UnTag<AlterDomain<Ext>>): Alte
     | <add domain constraint definition>
     | <drop domain constraint definition>
 */
-type DomainAction<Ext extends Extension> = SetDefault | DropDefault | AddDomainConstraint<Ext> | DropDomainConstraint;
+type DomainAction<Ext extends Extension> =
+  | SetDefault<Ext>
+  | DropDefault
+  | AddDomainConstraint<Ext>
+  | DropDomainConstraint<Ext>;
 
 /*
 <set domain default clause> ::= SET <default clause>
 */
-interface SetDefault
+interface SetDefault<Ext extends Extension>
   extends Tagged<
     'SetDefault',
     {
       readonly default: DefaultOption;
+      readonly extensions: Ext['SetDefault'] | null;
     }
   > {}
-const SetDefault = (args: UnTag<SetDefault>): SetDefault => tag('SetDefault', args);
+const SetDefault = <Ext extends Extension>(args: UnTag<SetDefault<Ext>>): SetDefault<Ext> => tag('SetDefault', args);
 
 /*
 <drop domain default clause> ::= DROP DEFAULT
@@ -247,7 +265,8 @@ interface AddDomainConstraint<Ext extends Extension>
   extends Tagged<
     'AddDomainConstraint',
     {
-      readonly constraint: ConstraintDefinition<CheckConstraint<Ext>>;
+      readonly constraint: ConstraintDefinition<CheckConstraint<Ext>, Ext>;
+      readonly extensions: Ext['AddDomainConstraint'] | null;
     }
   > {}
 const AddDomainConstraint = <Ext extends Extension>(args: UnTag<AddDomainConstraint<Ext>>): AddDomainConstraint<Ext> =>
@@ -257,42 +276,47 @@ const AddDomainConstraint = <Ext extends Extension>(args: UnTag<AddDomainConstra
 <drop domain constraint definition> ::=
   DROP CONSTRAINT <constraint name>
 */
-interface DropDomainConstraint
+interface DropDomainConstraint<Ext extends Extension>
   extends Tagged<
     'DropDomainConstraint',
     {
       readonly name: Ident;
+      readonly extensions: Ext['DropDomainConstraint'] | null;
     }
   > {}
-const DropDomainConstraint = (args: UnTag<DropDomainConstraint>): DropDomainConstraint =>
-  tag('DropDomainConstraint', args);
+const DropDomainConstraint = <Ext extends Extension>(
+  args: UnTag<DropDomainConstraint<Ext>>,
+): DropDomainConstraint<Ext> => tag('DropDomainConstraint', args);
 
 /*
 <drop domain statement> ::=
   DROP DOMAIN <domain name> <drop behavior>
 */
-interface DropDomain
+interface DropDomain<Ext extends Extension>
   extends Tagged<
     'DropDomain',
     {
       readonly name: Ident;
       readonly behavior: DropBehavior;
+      readonly extensions: Ext['DropDomain'] | null;
     }
   > {}
-const DropDomain = (args: UnTag<DropDomain>): DropDomain => tag('DropDomain', args);
+const DropDomain = <Ext extends Extension>(args: UnTag<DropDomain<Ext>>): DropDomain<Ext> => tag('DropDomain', args);
 
 /*
 <drop assertion statement> ::=
   DROP ASSERTION <constraint name>
 */
-interface DropAssertion
+interface DropAssertion<Ext extends Extension>
   extends Tagged<
     'DropAssertion',
     {
       readonly name: Ident;
+      readonly extensions: Ext['DropAssertion'] | null;
     }
   > {}
-const DropAssertion = (args: UnTag<DropAssertion>): DropAssertion => tag('DropAssertion', args);
+const DropAssertion = <Ext extends Extension>(args: UnTag<DropAssertion<Ext>>): DropAssertion<Ext> =>
+  tag('DropAssertion', args);
 
 export {
   SchemaManipulationStatement,

@@ -117,7 +117,7 @@ type GrantArgs<N extends string> =
 type DomainArgs<Ext extends Extension> = Args<{
   type: DataType;
   default?: DefaultOption | null;
-  constraints?: Array<ConstraintDefinition<CheckConstraint<Ext>>>;
+  constraints?: Array<ConstraintDefinition<CheckConstraint<Ext>, Ext>>;
   collate?: string;
 }>;
 type RevokeArgs<N extends string> =
@@ -219,27 +219,29 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
   _makeColumn<T extends DataType>(name: string, col: ColumnArgs<T, Ext>): ColumnDefinition<Ext> {
     const typ = typeof col.type === 'string' ? Ident(col.type) : col.type;
     const def = col.default === null ? NullDefault : col.default === undefined ? null : col.default;
-    const makeConstraint = (con: ConstraintArg<Ext>) => {
+    const makeConstraint = (con: ConstraintArg<Ext>): ColumnConstraintDefinition<Ext> => {
       if (typeof con !== 'string') {
         return con;
       }
       switch (con) {
         case 'not null':
         case 'NOT NULL':
-          return ConstraintDefinition({ name: null, constraint: ColumnNotNull, checkTime: null });
+          return ConstraintDefinition({ name: null, constraint: ColumnNotNull, checkTime: null, extensions: null });
         case 'unique':
         case 'UNIQUE':
           return ConstraintDefinition({
             name: null,
-            constraint: UniqueConstraint({ primaryKey: false, columns: [] }),
+            constraint: UniqueConstraint<Ext>({ primaryKey: false, columns: [], extensions: null }),
             checkTime: null,
+            extensions: null,
           });
         case 'primary key':
         case 'PRIMARY KEY':
           return ConstraintDefinition({
             name: null,
-            constraint: UniqueConstraint({ primaryKey: true, columns: [] }),
+            constraint: UniqueConstraint<Ext>({ primaryKey: true, columns: [], extensions: null }),
             checkTime: null,
+            extensions: null,
           });
       }
     };
@@ -253,7 +255,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       return [makeConstraint(col.constraints)];
     })();
     const collation = col.collation === undefined ? null : Ident(col.collation);
-    return ColumnDefinition({
+    return ColumnDefinition<Ext>({
       name: Ident(name),
       type: typ,
       default: def,
@@ -308,6 +310,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       columns: opts.columns !== undefined ? opts.columns.map(Ident) : [],
       query: opts.query._statement,
       checkOption,
+      extensions: null,
     });
     return new SchemaBuilder<Database & { [P in N]: QReturn }, Return, Ext>(
       [...this._statements, def],
@@ -363,6 +366,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       objectType: objectType,
       grantees,
       grantOption: opts.withGrantOption === undefined ? false : opts.withGrantOption,
+      extensions: null,
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -388,6 +392,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     const def = DropSchema({
       name: this._makeIdent(name),
       behavior: this._makeBehavior(behavior),
+      extensions: null,
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -410,6 +415,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     const def = DropTable({
       name: Ident(name),
       behavior: this._makeBehavior(behavior),
+      extensions: null,
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -420,6 +426,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     const def = DropView({
       name: Ident(name),
       behavior: this._makeBehavior(behavior),
+      extensions: null,
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -449,6 +456,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       grantees,
       grantOption: opts.withGrantOption === undefined ? false : opts.withGrantOption,
       behavior: this._makeBehavior(opts.behavior),
+      extensions: null,
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -459,6 +467,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     const def = DropDomain({
       name: Ident(name),
       behavior: this._makeBehavior(behavior),
+      extensions: null,
     });
     return new SchemaBuilder<Database, Return, Ext>(
       [...this._statements, def],
@@ -485,6 +494,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     const def = AlterTable({
       name: Ident(name),
       action: builder._actions[0],
+      extensions: null,
     });
     return new SchemaBuilder<ND, Return, Ext>(
       [...this._statements, def],
@@ -507,6 +517,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
     const def = AlterDomain<Ext>({
       name: Ident(name),
       action: builder._actions[0],
+      extensions: null,
     });
     return new SchemaBuilder<Database, Return, Ext>([...this._statements, def], this.fn);
   }
@@ -558,12 +569,12 @@ class AlterTableBuilder<N extends keyof Database & string, Database, Return, Ext
       if (typeof args.default === 'string') {
         return DropDefault;
       } else if (args.default === null) {
-        return SetDefault({ default: NullDefault });
+        return SetDefault({ default: NullDefault, extensions: null });
       } else {
-        return SetDefault({ default: args.default });
+        return SetDefault({ default: args.default, extensions: null });
       }
     })();
-    const def = AlterColumn({ name: Ident(name), action: defDef });
+    const def = AlterColumn({ name: Ident(name), action: defDef, extensions: null });
     return new AlterTableBuilder<N, Database, Return, Ext>(
       this._table,
       [...this._actions, def],
@@ -578,6 +589,7 @@ class AlterTableBuilder<N extends keyof Database & string, Database, Return, Ext
     const def = DropColumn({
       name: Ident(name),
       behavior: this._builder._makeBehavior(behavior),
+      extensions: null,
     });
     return new AlterTableBuilder<N, Omit<Database, N> & { [P in N]: Omit<Database[N], Col> }, Return, Ext>(
       this._table,
@@ -587,7 +599,7 @@ class AlterTableBuilder<N extends keyof Database & string, Database, Return, Ext
     );
   }
   addConstraint(constraint: TableConstraint<Ext>): AlterTableBuilder<N, Database, Return, Ext> {
-    const def = AddTableConstraint({ constraint });
+    const def = AddTableConstraint({ constraint, extensions: null });
     return new AlterTableBuilder<N, Database, Return, Ext>(
       this._table,
       [...this._actions, def],
@@ -596,7 +608,11 @@ class AlterTableBuilder<N extends keyof Database & string, Database, Return, Ext
     );
   }
   dropConstraint(name: string, behavior: DropBehaviorArg): AlterTableBuilder<N, Database, Return, Ext> {
-    const def = DropTableConstraint({ name: Ident(name), behavior: this._builder._makeBehavior(behavior) });
+    const def = DropTableConstraint({
+      name: Ident(name),
+      behavior: this._builder._makeBehavior(behavior),
+      extensions: null,
+    });
     return new AlterTableBuilder<N, Database, Return, Ext>(
       this._table,
       [...this._actions, def],
@@ -615,7 +631,7 @@ class AlterDomainBuilder<Database, Return, Ext extends BuilderExtension> {
 
   setDefault(def: DefaultOption): AlterDomainBuilder<Database, Return, Ext> {
     return new AlterDomainBuilder<Database, Return, Ext>(
-      [...this._actions, SetDefault({ default: def })],
+      [...this._actions, SetDefault({ default: def, extensions: null })],
       this._builder as any,
       this.fn as any,
     );
@@ -629,9 +645,11 @@ class AlterDomainBuilder<Database, Return, Ext extends BuilderExtension> {
     );
   }
 
-  addConstraint(constraint: ConstraintDefinition<CheckConstraint<Ext>>): AlterDomainBuilder<Database, Return, Ext> {
+  addConstraint(
+    constraint: ConstraintDefinition<CheckConstraint<Ext>, Ext>,
+  ): AlterDomainBuilder<Database, Return, Ext> {
     return new AlterDomainBuilder<Database, Return, Ext>(
-      [...this._actions, AddDomainConstraint({ constraint })],
+      [...this._actions, AddDomainConstraint({ constraint, extensions: null })],
       this._builder as any,
       this.fn as any,
     );
@@ -639,7 +657,7 @@ class AlterDomainBuilder<Database, Return, Ext extends BuilderExtension> {
 
   dropConstraint(name: string): AlterDomainBuilder<Database, Return, Ext> {
     return new AlterDomainBuilder<Database, Return, Ext>(
-      [...this._actions, DropDomainConstraint({ name: Ident(name) })],
+      [...this._actions, DropDomainConstraint({ name: Ident(name), extensions: null })],
       this._builder as any,
       this.fn as any,
     );

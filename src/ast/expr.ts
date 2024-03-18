@@ -13,7 +13,7 @@ const identToString = (id: Ident): string => id.name;
 
 type DateTimeField = 'Year' | 'Month' | 'Day' | 'Hour' | 'Minute' | 'Second';
 
-type Expr<Ext extends Extension = NoExtension> =
+type Expr<Ext extends Extension> =
   | Ident
   | Wildcard
   | Value
@@ -63,7 +63,7 @@ type QualifiedIdent = Ident | CompoundIdentifier;
 /**
  * Clause that evaluates to a boolean, e.g. `<expr> [NOT] BETWEEN <low> AND <high>`
  */
-interface Between<Ext extends Extension = NoExtension>
+interface Between<Ext extends Extension>
   extends Tagged<
     'Between',
     {
@@ -71,24 +71,25 @@ interface Between<Ext extends Extension = NoExtension>
       readonly negated: boolean;
       readonly low: Expr<Ext>;
       readonly high: Expr<Ext>;
+      readonly extensions: Ext['Between'] | null;
     }
   > {}
-const Between = <Ext extends Extension = NoExtension>(args: UnTag<Between<Ext>>): Between<Ext> => tag('Between', args);
+const Between = <Ext extends Extension>(args: UnTag<Between<Ext>>): Between<Ext> => tag('Between', args);
 
 /**
  * Application of a binary operator, e.g. `1 + 1`
  */
-interface BinaryApp<Ext extends Extension = NoExtension>
+interface BinaryApp<Ext extends Extension>
   extends Tagged<
     'BinaryApp',
     {
       readonly left: Expr<Ext>;
       readonly op: BinaryOperator;
       readonly right: Expr<Ext>;
+      readonly extensions: Ext['BinaryApp'] | null;
     }
   > {}
-const BinaryApp = <Ext extends Extension = NoExtension>(args: UnTag<BinaryApp<Ext>>): BinaryApp<Ext> =>
-  tag('BinaryApp', args);
+const BinaryApp = <Ext extends Extension>(args: UnTag<BinaryApp<Ext>>): BinaryApp<Ext> => tag('BinaryApp', args);
 
 /**
  * ```
@@ -98,117 +99,124 @@ const BinaryApp = <Ext extends Extension = NoExtension>(args: UnTag<BinaryApp<Ex
  * END
  * ```
  */
-interface Case<Ext extends Extension = NoExtension>
+interface Case<Ext extends Extension>
   extends Tagged<
     'Case',
     {
       readonly expr: Expr<Ext> | null;
       readonly cases: Array<{ readonly condition: Expr<Ext>; readonly result: Expr<Ext> }>;
       readonly elseCase: Expr<Ext> | null;
+      readonly extensions: Ext['Case'] | null;
     }
   > {}
-const Case = <Ext extends Extension = NoExtension>(args: UnTag<Case<Ext>>): Case<Ext> => tag('Case', args);
+const Case = <Ext extends Extension>(args: UnTag<Case<Ext>>): Case<Ext> => tag('Case', args);
 
 /**
  * Type-casting of expressions, e.g. `CAST(expr AS BIGINT)`
  */
-interface Cast<Ext extends Extension = NoExtension>
+interface Cast<Ext extends Extension>
   extends Tagged<
     'Cast',
     {
       readonly expr: Expr<Ext>;
       readonly dataType: DataType;
+      readonly extensions: Ext['Cast'] | null;
     }
   > {}
-const Cast = <Ext extends Extension = NoExtension>(args: UnTag<Cast<Ext>>): Cast<Ext> => tag('Cast', args);
+const Cast = <Ext extends Extension>(args: UnTag<Cast<Ext>>): Cast<Ext> => tag('Cast', args);
 
 /**
  * Specification of sorting method. e.g. `col COLLATE "de_DE"
  */
-interface Collate<Ext extends Extension = NoExtension>
+interface Collate<Ext extends Extension>
   extends Tagged<
     'Collate',
     {
       readonly expr: Expr<Ext>;
       readonly collation: CompoundIdentifier;
+      readonly extensions: Ext['Collate'] | null;
     }
   > {}
-const Collate = <Ext extends Extension = NoExtension>(args: UnTag<Collate<Ext>>): Collate<Ext> => tag('Collate', args);
+const Collate = <Ext extends Extension>(args: UnTag<Collate<Ext>>): Collate<Ext> => tag('Collate', args);
 
 /**
  * `EXISTS(subQuery)`
  */
-interface Exists<Ext extends Extension = NoExtension> extends Tagged<'Exists', { readonly subQuery: Query<Ext> }> {}
-const Exists = <Ext extends Extension = NoExtension>(subQuery: Query<Ext>): Exists<Ext> => tag('Exists', { subQuery });
+interface Exists<Ext extends Extension> extends Tagged<'Exists', { readonly subQuery: Query<Ext> }> {}
+const Exists = <Ext extends Extension>(subQuery: Query<Ext>): Exists<Ext> => tag('Exists', { subQuery });
 
 /**
  * `EXTRACT(field FROM source)`
  */
-interface Extract<Ext extends Extension = NoExtension>
+interface Extract<Ext extends Extension>
   extends Tagged<
     'Extract',
     {
       readonly field: DateTimeField;
       readonly source: Expr<Ext>;
+      readonly extensions: Ext['Extract'] | null;
     }
   > {}
-const Extract = <Ext extends Extension = NoExtension>(args: UnTag<Extract<Ext>>): Extract<Ext> => tag('Extract', args);
+const Extract = <Ext extends Extension>(args: UnTag<Extract<Ext>>): Extract<Ext> => tag('Extract', args);
 
 /**
  * Application of a function
  */
-interface FunctionApp<Ext extends Extension = NoExtension>
+interface FunctionApp<Ext extends Extension>
   extends Tagged<
     'FunctionApp',
     {
       readonly name: CompoundIdentifier;
       readonly args: Array<Expr<Ext>>;
+      readonly extensions: Ext['FunctionApp'] | null;
     }
   > {}
-const FunctionApp = <Ext extends Extension = NoExtension>(args: UnTag<FunctionApp<Ext>>): FunctionApp<Ext> =>
+const FunctionApp = <Ext extends Extension>(args: UnTag<FunctionApp<Ext>>): FunctionApp<Ext> =>
   tag('FunctionApp', args);
 
 /**
  * `IS [NOT] NULL`
  */
-interface IsNull<Ext extends Extension = NoExtension>
+interface IsNull<Ext extends Extension>
   extends Tagged<
     'IsNull',
     {
       readonly negated: boolean;
       readonly expr: Expr<Ext>;
+      readonly extensions: Ext['IsNull'] | null;
     }
   > {}
-const IsNull = <Ext extends Extension = NoExtension>(args: UnTag<IsNull<Ext>>): IsNull<Ext> => tag('IsNull', args);
+const IsNull = <Ext extends Extension>(args: UnTag<IsNull<Ext>>): IsNull<Ext> => tag('IsNull', args);
 
 /**
  * `[NOT] IN (...list)`
  */
-interface InList<Ext extends Extension = NoExtension>
+interface InList<Ext extends Extension>
   extends Tagged<
     'InList',
     {
       readonly negated: boolean;
       readonly expr: Expr<Ext>;
       readonly list: Array<Expr<Ext>>;
+      readonly extensions: Ext['InList'] | null;
     }
   > {}
-const InList = <Ext extends Extension = NoExtension>(args: UnTag<InList<Ext>>): InList<Ext> => tag('InList', args);
+const InList = <Ext extends Extension>(args: UnTag<InList<Ext>>): InList<Ext> => tag('InList', args);
 
 /**
  * `[NOT] IN (subquery)`
  */
-interface InSubQuery<Ext extends Extension = NoExtension>
+interface InSubQuery<Ext extends Extension>
   extends Tagged<
     'InSubQuery',
     {
       readonly negated: boolean;
       readonly expr: Expr<Ext>;
       readonly subQuery: Query<Ext>;
+      readonly extensions: Ext['InSubQuery'] | null;
     }
   > {}
-const InSubQuery = <Ext extends Extension = NoExtension>(args: UnTag<InSubQuery<Ext>>): InSubQuery<Ext> =>
-  tag('InSubQuery', args);
+const InSubQuery = <Ext extends Extension>(args: UnTag<InSubQuery<Ext>>): InSubQuery<Ext> => tag('InSubQuery', args);
 
 /**
  * Any literal
@@ -219,48 +227,46 @@ const Lit = (l: Literal): Lit => tag('Lit', { literal: l });
 /**
  * A parenthesized expression
  */
-interface Parenthesized<Ext extends Extension = NoExtension>
+interface Parenthesized<Ext extends Extension>
   extends Tagged<
     'Parenthesized',
     {
       readonly expr: Expr<Ext>;
     }
   > {}
-const Parenthesized = <Ext extends Extension = NoExtension>(e: Expr<Ext>): Parenthesized<Ext> =>
-  tag('Parenthesized', { expr: e });
+const Parenthesized = <Ext extends Extension>(e: Expr<Ext>): Parenthesized<Ext> => tag('Parenthesized', { expr: e });
 
 /**
  * A parenthesized subquery
  */
-interface SubQuery<Ext extends Extension = NoExtension> extends Tagged<'SubQuery', { readonly query: Query<Ext> }> {}
-const SubQuery = <Ext extends Extension = NoExtension>(query: Query<Ext>): SubQuery<Ext> => tag('SubQuery', { query });
+interface SubQuery<Ext extends Extension> extends Tagged<'SubQuery', { readonly query: Query<Ext> }> {}
+const SubQuery = <Ext extends Extension>(query: Query<Ext>): SubQuery<Ext> => tag('SubQuery', { query });
 
 /**
  * Application of a unary operator, e.g. `+1`
  */
-interface UnaryApp<Ext extends Extension = NoExtension>
+interface UnaryApp<Ext extends Extension>
   extends Tagged<
     'UnaryApp',
     {
       readonly op: UnaryOperator;
       readonly expr: Expr<Ext>;
+      readonly extensions: Ext['UnaryApp'] | null;
     }
   > {}
-const UnaryApp = <Ext extends Extension = NoExtension>(args: UnTag<UnaryApp<Ext>>): UnaryApp<Ext> =>
-  tag('UnaryApp', args);
+const UnaryApp = <Ext extends Extension>(args: UnTag<UnaryApp<Ext>>): UnaryApp<Ext> => tag('UnaryApp', args);
 
 /**
  * Wrapper for any expression extensions.
  */
-interface ExprExtension<Ext extends Extension = NoExtension>
+interface ExprExtension<Ext extends Extension>
   extends Tagged<
     'ExprExtension',
     {
       readonly val: Ext['Expr'];
     }
   > {}
-const ExprExtension = <Ext extends Extension = NoExtension>(val: Ext['Expr']): ExprExtension<Ext> =>
-  tag('ExprExtension', { val });
+const ExprExtension = <Ext extends Extension>(val: Ext['Expr']): ExprExtension<Ext> => tag('ExprExtension', { val });
 
 export {
   Ident,

@@ -28,20 +28,22 @@ type ReferentialActionArg =
 class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
   notNull(
     opts: { name?: string; deferrable?: boolean; initiallyDeferred?: boolean } = {},
-  ): ConstraintDefinition<ColumnNotNull> {
+  ): ConstraintDefinition<ColumnNotNull, Ext> {
     let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       checkTime = null;
     } else {
-      checkTime = ConstraintCheckTime({
+      checkTime = ConstraintCheckTime<Ext>({
         deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
+        extensions: null,
       });
     }
-    return ConstraintDefinition({
+    return ConstraintDefinition<ColumnNotNull, Ext>({
       name: opts.name === undefined ? null : Ident(opts.name),
       constraint: ColumnNotNull,
       checkTime,
+      extensions: null,
     });
   }
   unique(
@@ -52,14 +54,15 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
       columns?: Array<string>;
       primaryKey?: boolean;
     } = {},
-  ): ConstraintDefinition<UniqueConstraint> {
+  ): ConstraintDefinition<UniqueConstraint<Ext>, Ext> {
     let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       checkTime = null;
     } else {
-      checkTime = ConstraintCheckTime({
+      checkTime = ConstraintCheckTime<Ext>({
         deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
+        extensions: null,
       });
     }
     return ConstraintDefinition({
@@ -67,8 +70,10 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
       constraint: UniqueConstraint({
         columns: opts.columns?.map(Ident) ?? [],
         primaryKey: opts.primaryKey ?? false,
+        extensions: null,
       }),
       checkTime,
+      extensions: null,
     });
   }
   references(opts: {
@@ -80,17 +85,18 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
     name?: string;
     deferrable?: boolean;
     initiallyDeferred?: boolean;
-  }): ConstraintDefinition<ReferenceConstraint> {
+  }): ConstraintDefinition<ReferenceConstraint<Ext>, Ext> {
     let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       checkTime = null;
     } else {
-      checkTime = ConstraintCheckTime({
+      checkTime = ConstraintCheckTime<Ext>({
         deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
+        extensions: null,
       });
     }
-    let matchType: ReferenceConstraint['matchType'];
+    let matchType: ReferenceConstraint<Ext>['matchType'];
     if (opts.match === 'FULL' || opts.match === 'full') {
       matchType = 'Full';
     } else if (opts.match === 'PARTIAL' || opts.match === 'partial') {
@@ -118,17 +124,19 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
     };
     const onUpdate = opts.onUpdate === undefined ? null : makeRefAction(opts.onUpdate);
     const onDelete = opts.onDelete === undefined ? null : makeRefAction(opts.onDelete);
-    const reference = ReferenceConstraint({
+    const reference = ReferenceConstraint<Ext>({
       table: Ident(opts.table),
       columns: opts.columns.map(Ident),
       matchType,
       onUpdate,
       onDelete,
+      extensions: null,
     });
     return ConstraintDefinition({
       name: opts.name === undefined ? null : Ident(opts.name),
       constraint: reference,
       checkTime,
+      extensions: null,
     });
   }
   check<Table>(
@@ -138,14 +146,15 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
       deferrable?: boolean;
       initiallyDeferred?: boolean;
     } = {},
-  ): ConstraintDefinition<CheckConstraint<Ext>> {
+  ): ConstraintDefinition<CheckConstraint<Ext>, Ext> {
     let checkTime;
     if (opts.deferrable === undefined && opts.initiallyDeferred === undefined) {
       checkTime = null;
     } else {
-      checkTime = ConstraintCheckTime({
+      checkTime = ConstraintCheckTime<Ext>({
         deferrable: opts.deferrable ?? false,
         initiallyDeferred: opts.initiallyDeferred ?? false,
+        extensions: null,
       });
     }
     const check = CheckConstraint({
@@ -155,6 +164,7 @@ class ConstraintBuilder<Schema, Ext extends BuilderExtension> {
       name: opts.name === undefined ? null : Ident(opts.name),
       constraint: check,
       checkTime,
+      extensions: null,
     });
   }
 }

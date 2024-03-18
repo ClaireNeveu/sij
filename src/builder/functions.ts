@@ -28,6 +28,7 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
       UnaryApp({
         op,
         expr,
+        extensions: null,
       }),
     );
   }
@@ -44,6 +45,7 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
         op,
         left: left_,
         right: right_,
+        extensions: null,
       }),
     );
   }
@@ -59,6 +61,7 @@ export class Functions<Schema, Table, Ext extends BuilderExtension> {
       FunctionApp({
         name: CompoundIdentifier([Ident(name)]),
         args: args_,
+        extensions: null,
       }),
     );
   }

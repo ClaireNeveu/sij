@@ -545,7 +545,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     })();
     return `DEFAULT ${val}`;
   }
-  renderConstraintCheckTime(cct: ConstraintCheckTime): string {
+  renderConstraintCheckTime(cct: ConstraintCheckTime<any>): string {
     if (cct.deferrable && cct.initiallyDeferred) {
       return 'INITIALLY DEFERRED DEFERRABLE';
     } else if (cct.deferrable) {
@@ -597,7 +597,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
     return namePart + cstr + attributes;
   }
-  renderUniqueConstraint(constraint: UniqueConstraint): string {
+  renderUniqueConstraint(constraint: UniqueConstraint<any>): string {
     const typ = constraint.primaryKey ? 'PRIMARY KEY' : 'UNIQUE';
     let columns = constraint.columns.map(this.renderIdent).join(', ');
     if (columns !== '') {
@@ -605,7 +605,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     }
     return `${typ}${columns}`;
   }
-  renderReferenceConstraint(def: ReferenceConstraint): string {
+  renderReferenceConstraint(def: ReferenceConstraint<any>): string {
     const columns = def.columns === null ? '' : ` (${def.columns.map(this.renderIdent).join(', ')})`;
     const match = (() => {
       switch (def.matchType) {
@@ -678,7 +678,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     }
     return `CREATE VIEW ${this.renderQualifiedIdent(def.name)}${columns} AS ${query}${checkOption}`;
   }
-  renderGrantStatement(def: GrantStatement): string {
+  renderGrantStatement(def: GrantStatement<any>): string {
     const objectType = (() => {
       switch (def.objectType) {
         case 'Table':
@@ -725,12 +725,12 @@ class Renderer<Ext extends Extension = NoExtension> {
         return exhaustive(def);
     }
   }
-  renderConstraintDefinition(def: ConstraintDefinition<CheckConstraint<any>>): string {
+  renderConstraintDefinition(def: ConstraintDefinition<CheckConstraint<any>, any>): string {
     const name = def.name === null ? '' : `${this.renderIdent(def.name)} `;
     const attributes = def.checkTime !== null ? ` ${this.renderConstraintCheckTime(def.checkTime)}` : '';
     return `${name}CHECK (${this.renderExpr(def.constraint.search)})${attributes}`;
   }
-  renderDropSchema(def: DropSchema): string {
+  renderDropSchema(def: DropSchema<any>): string {
     return `DROP SCHEMA ${this.renderQualifiedIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
   renderDropBehavior(def: DropBehavior): string {
@@ -742,13 +742,13 @@ class Renderer<Ext extends Extension = NoExtension> {
       return exhaustive(def);
     }
   }
-  renderDropTable(def: DropTable): string {
+  renderDropTable(def: DropTable<any>): string {
     return `DROP TABLE ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
-  renderDropView(def: DropView): string {
+  renderDropView(def: DropView<any>): string {
     return `DROP VIEW ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
-  renderRevokePrivilege(def: RevokePrivilege): string {
+  renderRevokePrivilege(def: RevokePrivilege<any>): string {
     const objectType = (() => {
       switch (def.objectType) {
         case 'Table':
@@ -772,10 +772,10 @@ class Renderer<Ext extends Extension = NoExtension> {
     const dropBehavior = this.renderDropBehavior(def.behavior);
     return `REVOKE${grantOption} ${privileges} ON ${objectName} FROM ${grantees} ${dropBehavior}`;
   }
-  renderDropDomain(def: DropDomain): string {
+  renderDropDomain(def: DropDomain<any>): string {
     return `DROP DOMAIN ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
-  renderDropAssertion(def: DropAssertion): string {
+  renderDropAssertion(def: DropAssertion<any>): string {
     return `DROP ASSERTION ${this.renderIdent(def.name)}`;
   }
   renderAlterTable(def: AlterTable<any>): string {
@@ -797,7 +797,7 @@ class Renderer<Ext extends Extension = NoExtension> {
         return exhaustive(def);
     }
   }
-  renderAlterColumn(def: AlterColumn): string {
+  renderAlterColumn(def: AlterColumn<any>): string {
     const action = (() => {
       switch (def.action._tag) {
         case 'DropDefault':
@@ -810,13 +810,13 @@ class Renderer<Ext extends Extension = NoExtension> {
     })();
     return `ALTER COLUMN ${this.renderIdent(def.name)} ${action}`;
   }
-  renderDropColumn(def: DropColumn): string {
+  renderDropColumn(def: DropColumn<any>): string {
     return `DROP COLUMN ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
   renderAddTableConstraint(def: AddTableConstraint<any>): string {
     return `ADD CONSTRAINT ${this.renderTableConstraint(def.constraint)}`;
   }
-  renderDropTableConstraint(def: DropTableConstraint): string {
+  renderDropTableConstraint(def: DropTableConstraint<any>): string {
     return `DROP CONSTRAINT ${this.renderIdent(def.name)} ${this.renderDropBehavior(def.behavior)}`;
   }
   renderAlterDomain(def: AlterDomain<any>): string {

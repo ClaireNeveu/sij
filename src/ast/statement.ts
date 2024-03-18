@@ -64,7 +64,7 @@ interface Update<Ext extends Extension>
     'Update',
     {
       readonly table: Ident;
-      readonly assignments: Array<[Ident, Expr | DefaultValue]>;
+      readonly assignments: Array<[Ident, Expr<Ext> | DefaultValue]>;
       readonly where: Expr<Ext> | null;
       readonly extensions: Ext['Update'] | null;
     }
@@ -76,7 +76,7 @@ interface UpdatePositioned<Ext extends Extension>
     'UpdatePositioned',
     {
       readonly table: Ident;
-      readonly assignments: Array<[Ident, Expr | DefaultValue]>;
+      readonly assignments: Array<[Ident, Expr<Ext> | DefaultValue]>;
       readonly cursor: Ident;
       readonly extensions: Ext['UpdatePositioned'] | null;
     }

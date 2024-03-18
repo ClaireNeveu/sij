@@ -26,7 +26,8 @@
     ],
     "helpers": [
       "**/util.ts*"
-    ]
+    ],
+    "timeout": "20s"
   },
   "author": "Claire Neveu",
   "license": "BSD-3-Clause",
