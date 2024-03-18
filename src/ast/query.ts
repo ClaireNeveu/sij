@@ -90,7 +90,7 @@ interface Select<Ext extends Extension = NoExtension>
       readonly where: Expr<Ext> | null;
       readonly groupBy: Array<Expr<Ext>>;
       readonly having: Expr<Ext> | null;
-      readonly extensions: Ext['Select'];
+      readonly extensions: Ext['Select'] | null;
     }
   > {}
 const Select = <Ext extends Extension = NoExtension>(args: UnTag<Select<Ext>>): Select<Ext> => tag('Select', args);

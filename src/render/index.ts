@@ -467,9 +467,14 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
 
   renderDelete(del: Delete<any>): string {
-    const where = del.where === null ? '' : ' WHERE ' + this.renderExpr(del.where);
-
-    return `DELETE FROM ${this.renderIdent(del.table)}${where}`;
+    return this._renderDelete(del).join(' ');
+  }
+  _renderDelete(del: Delete<any>): Array<string> {
+    const ret = ['DELETE FROM', this.renderIdent(del.table)];
+    if (del.where !== null) {
+      ret.push('WHERE ' + this.renderExpr(del.where));
+    }
+    return ret;
   }
 
   renderDeletePositioned(del: DeletePositioned<any>): string {

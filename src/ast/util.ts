@@ -74,7 +74,7 @@ type NoExtension = {
   SubQuery: unknown;
   UnaryApp: unknown;
   Query: unknown;
-  Select: null;
+  Select: unknown;
   Table: unknown;
   Insert: unknown;
   Update: unknown;

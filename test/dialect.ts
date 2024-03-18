@@ -18,7 +18,7 @@ import { Renderer } from '../src/render';
 
 import { isSqlR, isParamsSql } from './_util';
 import { TypeBuilder } from '../src/builder/type';
-import { Expr, Ident, Query, Select, SqlBigInt } from '../src/ast';
+import { Delete, Expr, Ident, Query, Select, SqlBigInt } from '../src/ast';
 import { lens } from 'lens.ts';
 import { Tagged, UnTag, tag } from '../src/ast/util';
 
@@ -67,6 +67,9 @@ type MyExtension = Extend<{
   Select: null | {
     window: Window | null;
   };
+  Delete: {
+    using: Array<Ident>
+  }
 }>;
 
 class MyTypeBuilder extends TypeBuilder {
@@ -117,6 +120,26 @@ class MyQueryBuilder<Schema, Table, Return> extends QB<Schema, Table, Return, My
   }
 }
 
+class MyDeleteBuilder<Schema, Table, Return> extends DB<Schema, Table, Return, MyExtension> {
+  using(
+    ...tables: Array<string>
+    ): MyDeleteBuilder<Schema, Table, Return> {
+      const tableIdents = tables.map(Ident);
+      return new MyDeleteBuilder<Schema, Table, Return>(
+        lens<Delete<MyExtension>>().extensions.set(os =>
+          os === null ? { using: tableIdents } : lens<MyExtension['Delete']>().using.set(os => tableIdents)(os),
+        )(this._statement),
+        this.fn as any,
+      );
+    }
+
+  override where(
+    clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<MyExtension>>
+    ): MyDeleteBuilder<Schema, Table, Return> {
+      return super.where(clause) as MyDeleteBuilder<Schema, Table, Return>
+    }
+}
+
 class MyBuilder<Schema> extends Builder<Schema, MyExtension> {
   override dialect = 'PostgreSQL';
   constructor(
@@ -124,7 +147,7 @@ class MyBuilder<Schema> extends Builder<Schema, MyExtension> {
     readonly QueryBuilder: typeof QB = MyQueryBuilder as typeof QB,
     readonly InsertBuilder: typeof IB = IB,
     readonly UpdateBuilder: typeof UB = UB,
-    readonly DeleteBuilder: typeof DB = DB,
+    readonly DeleteBuilder: typeof DB = MyDeleteBuilder as typeof DB,
     readonly SchemaBuilder: typeof SB = SB,
     readonly TypeBuilder: typeof TB = TB,
     readonly ConstraintBuilder: typeof CB = CB,
@@ -136,6 +159,10 @@ class MyBuilder<Schema> extends Builder<Schema, MyExtension> {
     table?: TableName,
   ): MyQueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}> {
     return super.from(table) as MyQueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}>;
+  }
+
+  override deleteFrom<TableName extends keyof Schema & string>(table: TableName): MyDeleteBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number> {
+    return super.deleteFrom(table) as MyDeleteBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number>
   }
 }
 
@@ -158,6 +185,17 @@ class MyRenderer extends Renderer {
     const base = super.renderSelect(select);
     return base + windowDef;
   }
+  override _renderDelete(del: Delete<MyExtension>): Array<string> {
+    const base = super._renderDelete(del); 
+    const using = del.extensions !== null && del.extensions.using.length > 0 ? del.extensions.using.map(i => this.renderIdent(i)).join(', ') : null;
+    const ret = base.slice(0, 2);
+    if (using !== null) {
+      ret.push('USING');
+      ret.push(using);
+    }
+    ret.push(...base.slice(2))
+    return ret;
+  }
 }
 
 const r = new MyRenderer();
@@ -170,4 +208,11 @@ test(
   isSql,
   b.from('employee').select('*').window('my_window', { partitionBy: 'department_id' }),
   'SELECT * FROM "employee" WINDOW "my_window" (PARTITION BY "department_id")',
+);
+
+test(
+  'extend delete',
+  isSql,
+  b.deleteFrom('employee').where({ id: 5 }).using("department"),
+  'DELETE FROM "employee" USING "department" WHERE ("id" = 5)',
 );
