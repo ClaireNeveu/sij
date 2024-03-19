@@ -42,6 +42,7 @@ export {
   IsNull,
   Lit,
   Parenthesized,
+  QualifiedIdent,
   QualifiedWildcard,
   SubQuery,
   UnaryApp,

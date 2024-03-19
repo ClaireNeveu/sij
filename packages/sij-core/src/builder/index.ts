@@ -2,7 +2,8 @@ import { CompoundIdentifier, Expr, Ident, Lit, QualifiedIdent, Value } from '../
 import { Query, Select, BasicTable, JoinedTable, Join } from '../ast/query';
 import { Insert, Update, Delete } from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
-import { Extension, NoExtension, VTagged } from '../ast/util';
+import { Extension, NoExtension } from '../ast/util';
+import { VTagged } from "../util";
 import { Functions } from './functions';
 import { BuilderExtension, WithAlias, QualifiedTable, makeLit, TypedAst, ast } from './util';
 import { QueryBuilder as QB } from './query';
@@ -171,5 +172,7 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
     } as TypedAst<Schema, any, Value>;
   }
 }
+
+export { Extend } from './util'
 
 export { Builder, Functions, QB as QueryBuilder, IB as InsertBuilder, UB as UpdateBuilder, DB as DeleteBuilder };

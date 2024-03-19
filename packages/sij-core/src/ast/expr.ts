@@ -1,5 +1,6 @@
 import { DataType } from './data-type';
-import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
+import { Extension, NoExtension } from './util';
+import { Tagged, UnTag, tag } from "../util";
 import type { Query } from './query';
 import type { Literal } from './literal';
 import type { UnaryOperator, BinaryOperator } from './operator';

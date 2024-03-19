@@ -1,0 +1,30 @@
+{
+  "name": "sij-dialect-postgresql",
+  "version": "0.0.1",
+  "description": "SIJ dialect for PostgreSQL",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    "./": "./dist/"
+  },
+  "scripts": {
+    "prepublish": "npm run build",
+    "build": "npx tsc && copyfiles -u 2 \"src/types/*.d.ts\" dist",
+    "format": "npx prettier . --write",
+    "test": "ava -v && tsd",
+    "docs": "npx typedoc src/ --out docs/ --includeDeclarations --excludeExternals --excludeNotExported --excludePrivate && touch docs/.nojekyll"
+  },
+  "author": "Claire Neveu",
+  "license": "BSD-3-Clause",
+  "devDependencies": {
+    "ava": "^6.1.2",
+    "prettier": "^3.2.5",
+    "ts-node": "^10.9.2",
+    "tsd": "^0.30.7",
+    "typedoc": "^0.25.12",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "sij-core": "file:../sij-core"
+  }
+}

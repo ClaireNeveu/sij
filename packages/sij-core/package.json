@@ -4,6 +4,15 @@
   "description": "Embedding of SQL-92 into Javascript",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "typesVersions": {
+    ">=3.1": { 
+      "*": ["*"],
+      "ast": ["dist/ast/index.d.ts"],
+      "builder": ["dist/builder/index.d.ts"],
+      "render": ["dist/render/index.d.ts"],
+      "util": ["dist/util/index.d.ts"]
+    }
+  },
   "exports": {
     "./": "./dist/"
   },

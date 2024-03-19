@@ -1,4 +1,5 @@
-import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
+import { Extension, NoExtension } from './util';
+import { Tagged, UnTag, tag } from "../util";
 import type { Query } from './query';
 import type { Ident, Expr } from './expr';
 import { SchemaDefinitionStatement } from './schema-definition';

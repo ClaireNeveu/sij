@@ -1,4 +1,5 @@
-import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
+import { Extension, NoExtension } from './util';
+import { Tagged, UnTag, tag } from "../util";
 import { Ident, Expr, QualifiedIdent } from './expr';
 
 interface Query<Ext extends Extension = NoExtension>

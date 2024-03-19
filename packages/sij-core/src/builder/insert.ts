@@ -3,7 +3,8 @@ import { lens } from 'lens.ts';
 
 import { Expr, Ident, Lit } from '../ast/expr';
 import { DefaultValue, Insert, ValuesConstructor, ValuesQuery } from '../ast/statement';
-import { Extension, NoExtension, VTagged } from '../ast/util';
+import { Extension, NoExtension } from '../ast/util';
+import { VTagged } from "../util";
 import { Functions } from './functions';
 import { BuilderExtension, NoBuilderExtension, WithAlias, QualifiedTable, makeLit, TypedAst, ast } from './util';
 import { QueryBuilder } from './query';

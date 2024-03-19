@@ -1,12 +1,5 @@
 import { Ident, Lit } from './expr';
-import { Tagged, UnTag, tag } from './util'; /*
-
-<SQL transaction statement> ::=
-    <set transaction statement>
-    | <set constraints mode statement>
-    | <commit statement>
-    | <rollback statement>
-*/
+import { Tagged, UnTag, tag } from "../util";
 type TransactionStatement = SetTransaction | SetConstraintMode | Commit | Rollback;
 
 /*

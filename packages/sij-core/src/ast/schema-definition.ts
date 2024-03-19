@@ -1,4 +1,5 @@
-import { Tagged, UnTag, tag, Extension, NoExtension } from './util';
+import { Extension, NoExtension } from './util';
+import { Tagged, UnTag, tag } from "../util";
 import type { Query } from './query';
 import type { Ident, Expr, Lit, QualifiedIdent } from './expr';
 import { DataType } from './data-type';
