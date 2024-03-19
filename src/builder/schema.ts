@@ -211,7 +211,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       definitions: [],
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>(
       [def, ...this._statements],
       this.fn as Functions<Database, any, Ext>,
     );
@@ -289,10 +289,11 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       onCommit: opts.onCommit ?? null,
       extensions: null,
     });
-    return new SchemaBuilder<Database & { [P in N]: ColumnsToTable<Ext, CS> }, Return, Ext>(
-      [...this._statements, def],
-      this.fn as Functions<Database & { [P in N]: ColumnsToTable<Ext, CS> }, any, Ext>,
-    );
+    return new (this.constructor as typeof SchemaBuilder)<
+      Database & { [P in N]: ColumnsToTable<Ext, CS> },
+      Return,
+      Ext
+    >([...this._statements, def], this.fn as Functions<Database & { [P in N]: ColumnsToTable<Ext, CS> }, any, Ext>);
   }
   createView<N extends string, QReturn, Table, T extends ViewArgs<Database, Table, QReturn, Ext>>(
     name: N,
@@ -312,7 +313,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       checkOption,
       extensions: null,
     });
-    return new SchemaBuilder<Database & { [P in N]: QReturn }, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database & { [P in N]: QReturn }, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database & { [P in N]: QReturn }, any, Ext>,
     );
@@ -368,7 +369,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       grantOption: opts.withGrantOption === undefined ? false : opts.withGrantOption,
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
@@ -382,7 +383,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       collation: opts.collate !== undefined ? Ident(opts.collate) : null,
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
@@ -394,7 +395,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       behavior: this._makeBehavior(behavior),
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
@@ -417,7 +418,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       behavior: this._makeBehavior(behavior),
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
@@ -428,7 +429,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       behavior: this._makeBehavior(behavior),
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
@@ -458,7 +459,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       behavior: this._makeBehavior(opts.behavior),
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
@@ -469,7 +470,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       behavior: this._makeBehavior(behavior),
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>(
       [...this._statements, def],
       this.fn as Functions<Database, any, Ext>,
     );
@@ -496,7 +497,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       action: builder._actions[0],
       extensions: null,
     });
-    return new SchemaBuilder<ND, Return, Ext>(
+    return new (this.constructor as typeof SchemaBuilder)<ND, Return, Ext>(
       [...this._statements, def],
       this.fn as unknown as Functions<ND, any, Ext>,
     );
@@ -519,7 +520,7 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
       action: builder._actions[0],
       extensions: null,
     });
-    return new SchemaBuilder<Database, Return, Ext>([...this._statements, def], this.fn);
+    return new (this.constructor as typeof SchemaBuilder)<Database, Return, Ext>([...this._statements, def], this.fn);
   }
 
   /**

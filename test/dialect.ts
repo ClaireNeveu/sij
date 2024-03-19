@@ -68,8 +68,8 @@ type MyExtension = Extend<{
     window: Window | null;
   };
   Delete: {
-    using: Array<Ident>
-  }
+    using: Array<Ident>;
+  };
 }>;
 
 class MyTypeBuilder extends TypeBuilder {
@@ -121,23 +121,21 @@ class MyQueryBuilder<Schema, Table, Return> extends QB<Schema, Table, Return, My
 }
 
 class MyDeleteBuilder<Schema, Table, Return> extends DB<Schema, Table, Return, MyExtension> {
-  using(
-    ...tables: Array<string>
-    ): MyDeleteBuilder<Schema, Table, Return> {
-      const tableIdents = tables.map(Ident);
-      return new MyDeleteBuilder<Schema, Table, Return>(
-        lens<Delete<MyExtension>>().extensions.set(os =>
-          os === null ? { using: tableIdents } : lens<MyExtension['Delete']>().using.set(os => tableIdents)(os),
-        )(this._statement),
-        this.fn as any,
-      );
-    }
+  using(...tables: Array<string>): MyDeleteBuilder<Schema, Table, Return> {
+    const tableIdents = tables.map(Ident);
+    return new MyDeleteBuilder<Schema, Table, Return>(
+      lens<Delete<MyExtension>>().extensions.set(os =>
+        os === null ? { using: tableIdents } : lens<MyExtension['Delete']>().using.set(os => tableIdents)(os),
+      )(this._statement),
+      this.fn as any,
+    );
+  }
 
   override where(
-    clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<MyExtension>>
-    ): MyDeleteBuilder<Schema, Table, Return> {
-      return super.where(clause) as MyDeleteBuilder<Schema, Table, Return>
-    }
+    clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<MyExtension>>,
+  ): MyDeleteBuilder<Schema, Table, Return> {
+    return super.where(clause) as MyDeleteBuilder<Schema, Table, Return>;
+  }
 }
 
 class MyBuilder<Schema> extends Builder<Schema, MyExtension> {
@@ -161,8 +159,14 @@ class MyBuilder<Schema> extends Builder<Schema, MyExtension> {
     return super.from(table) as MyQueryBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, {}>;
   }
 
-  override deleteFrom<TableName extends keyof Schema & string>(table: TableName): MyDeleteBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number> {
-    return super.deleteFrom(table) as MyDeleteBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number>
+  override deleteFrom<TableName extends keyof Schema & string>(
+    table: TableName,
+  ): MyDeleteBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number> {
+    return super.deleteFrom(table) as MyDeleteBuilder<
+      Schema,
+      Schema[TableName] & QualifiedTable<Schema, TableName>,
+      number
+    >;
   }
 }
 
@@ -186,14 +190,13 @@ class MyRenderer extends Renderer {
     return base + windowDef;
   }
   override _renderDelete(del: Delete<MyExtension>): Array<string> {
-    const base = super._renderDelete(del); 
-    const using = del.extensions !== null && del.extensions.using.length > 0 ? del.extensions.using.map(i => this.renderIdent(i)).join(', ') : null;
+    const base = super._renderDelete(del);
     const ret = base.slice(0, 2);
-    if (using !== null) {
+    if (del.extensions !== null && del.extensions.using.length > 0) {
       ret.push('USING');
-      ret.push(using);
+      ret.push(del.extensions.using.map(i => this.renderIdent(i)).join(', '));
     }
-    ret.push(...base.slice(2))
+    ret.push(...base.slice(2));
     return ret;
   }
 }
@@ -213,6 +216,6 @@ test(
 test(
   'extend delete',
   isSql,
-  b.deleteFrom('employee').where({ id: 5 }).using("department"),
+  b.deleteFrom('employee').where({ id: 5 }).using('department'),
   'DELETE FROM "employee" USING "department" WHERE ("id" = 5)',
 );

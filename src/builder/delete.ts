@@ -36,7 +36,9 @@ class DeleteBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
    * @param clause Either an expression that evaluates to a boolean or a
    *        shorthand equality object mapping columns to values.
    */
-  where(clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<Ext>>): DeleteBuilder<Schema, Table, Return, Ext> {
+  where(
+    clause: { [K in keyof Table]?: Table[K] } | TypedAst<Schema, any, Expr<Ext>>,
+  ): DeleteBuilder<Schema, Table, Return, Ext> {
     const expr: Expr<Ext> = (() => {
       if (typeof clause === 'object' && !('ast' in clause)) {
         return Object.keys(clause)

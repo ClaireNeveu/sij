@@ -74,7 +74,10 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
         throw new Error('Invalid insertion');
       }
     })();
-    return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn as Functions<Schema, any, Ext>);
+    return new (this.constructor as typeof InsertBuilder)<Schema, Table, Return, Ext>(
+      newInsert,
+      this.fn as Functions<Schema, any, Ext>,
+    );
   }
   /**
    * When inserting values SIJ automatically determines the columns
@@ -122,7 +125,10 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
         throw new Error('Invalid insertion');
       }
     })();
-    return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn as Functions<Schema, any, Ext>);
+    return new (this.constructor as typeof InsertBuilder)<Schema, Table, Return, Ext>(
+      newInsert,
+      this.fn as Functions<Schema, any, Ext>,
+    );
   }
 
   /**
@@ -140,7 +146,10 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
       const insertLens = lens<Insert<Ext>>();
       return insertLens.columns.set(columns.map(c => Ident(c as string)))(this._statement);
     })();
-    return new InsertBuilder<Schema, Table, Return, Ext>(newInsert, this.fn as Functions<Schema, any, Ext>);
+    return new (this.constructor as typeof InsertBuilder)<Schema, Table, Return, Ext>(
+      newInsert,
+      this.fn as Functions<Schema, any, Ext>,
+    );
   }
 
   /**
@@ -150,7 +159,7 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
   fromQuery<QReturn extends { [Key in keyof Table]?: Table[Key] }>(
     query: QueryBuilder<Schema, any, QReturn, Ext>,
   ): Omit<InsertBuilder<Schema, Table, Return, Ext>, 'values' | 'values1' | 'columns'> {
-    return new InsertBuilder<Schema, Table, Return, Ext>(
+    return new (this.constructor as typeof InsertBuilder)<Schema, Table, Return, Ext>(
       lens<Insert<Ext>>().values.set(ValuesQuery({ query: query._statement }))(this._statement),
       this.fn as Functions<Schema, any, Ext>,
     );
