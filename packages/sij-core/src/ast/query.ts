@@ -2,7 +2,7 @@ import { Extension, NoExtension } from './util';
 import { Tagged, UnTag, tag } from "../util";
 import { Ident, Expr, QualifiedIdent } from './expr';
 
-interface Query<Ext extends Extension = NoExtension>
+interface Query<Ext extends Extension>
   extends Tagged<
     'Query',
     {
@@ -15,21 +15,21 @@ interface Query<Ext extends Extension = NoExtension>
       readonly extensions: Ext['Query'] | null;
     }
   > {}
-const Query = <Ext extends Extension = NoExtension>(args: UnTag<Query<Ext>>): Query<Ext> => tag('Query', args);
+const Query = <Ext extends Extension>(args: UnTag<Query<Ext>>): Query<Ext> => tag('Query', args);
 
 /**
  * A single Common Table Expression as part of a WITH statement.
  * `tableAlias [(col1, col2, ...)] AS (query)`
  */
-interface CommonTableExpr<Ext extends Extension = NoExtension>
+interface CommonTableExpr<Ext extends Extension>
   extends Tagged<
     'CommonTableExpr',
     {
-      readonly alias: TableAlias;
+      readonly alias: TableAlias<Ext>;
       readonly query: Query<Ext>;
     }
   > {}
-const CommonTableExpr = <Ext extends Extension = NoExtension>(
+const CommonTableExpr = <Ext extends Extension>(
   args: UnTag<CommonTableExpr<Ext>>,
 ): CommonTableExpr<Ext> => tag('CommonTableExpr', args);
 
@@ -37,7 +37,7 @@ const CommonTableExpr = <Ext extends Extension = NoExtension>(
  * Alias name for a table and optionally its columns
  * e.g. aliasedName (colAlias1, colAlias2) AS
  */
-interface TableAlias<Ext extends Extension = NoExtension>
+interface TableAlias<Ext extends Extension>
   extends Tagged<
     'TableAlias',
     {
@@ -45,9 +45,9 @@ interface TableAlias<Ext extends Extension = NoExtension>
       readonly columns: Array<Ident>;
     }
   > {}
-const TableAlias = (args: UnTag<TableAlias>): TableAlias => tag('TableAlias', args);
+const TableAlias = <Ext extends Extension>(args: UnTag<TableAlias<Ext>>): TableAlias<Ext> => tag('TableAlias', args);
 
-interface OrderingExpr<Ext extends Extension = NoExtension>
+interface OrderingExpr<Ext extends Extension>
   extends Tagged<
     'OrderingExpr',
     {
@@ -56,10 +56,10 @@ interface OrderingExpr<Ext extends Extension = NoExtension>
       readonly nullHandling: 'NULLS FIRST' | 'NULLS LAST' | null;
     }
   > {}
-const OrderingExpr = <Ext extends Extension = NoExtension>(args: UnTag<OrderingExpr<Ext>>): OrderingExpr<Ext> =>
+const OrderingExpr = <Ext extends Extension>(args: UnTag<OrderingExpr<Ext>>): OrderingExpr<Ext> =>
   tag('OrderingExpr', args);
 
-interface SetOp<Ext extends Extension = NoExtension>
+interface SetOp<Ext extends Extension>
   extends Tagged<
     'SetOp',
     {
@@ -68,7 +68,7 @@ interface SetOp<Ext extends Extension = NoExtension>
       readonly select: Select<Ext>;
     }
   > {}
-const SetOp = <Ext extends Extension = NoExtension>(args: UnTag<SetOp<Ext>>): SetOp<Ext> => tag('SetOp', args);
+const SetOp = <Ext extends Extension>(args: UnTag<SetOp<Ext>>): SetOp<Ext> => tag('SetOp', args);
 
 // TODO: do table names need to be qualified?
 /*
@@ -82,7 +82,7 @@ const SetOp = <Ext extends Extension = NoExtension>(args: UnTag<SetOp<Ext>>): Se
 <grouping column reference> ::=
   <column reference> [ <collate clause> ]
 */
-interface Select<Ext extends Extension = NoExtension>
+interface Select<Ext extends Extension>
   extends Tagged<
     'Select',
     {
@@ -94,24 +94,24 @@ interface Select<Ext extends Extension = NoExtension>
       readonly extensions: Ext['Select'] | null;
     }
   > {}
-const Select = <Ext extends Extension = NoExtension>(args: UnTag<Select<Ext>>): Select<Ext> => tag('Select', args);
+const Select = <Ext extends Extension>(args: UnTag<Select<Ext>>): Select<Ext> => tag('Select', args);
 
 type Selection<Ext extends Extension> = AnonymousSelection<Ext> | AliasedSelection<Ext>;
 
-interface AnonymousSelection<Ext extends Extension = NoExtension>
+interface AnonymousSelection<Ext extends Extension>
   extends Tagged<
     'AnonymousSelection',
     {
       readonly selection: Expr<Ext>;
     }
   > {}
-const AnonymousSelection = <Ext extends Extension = NoExtension>(selection: Expr<Ext>): AnonymousSelection<Ext> =>
+const AnonymousSelection = <Ext extends Extension>(selection: Expr<Ext>): AnonymousSelection<Ext> =>
   tag('AnonymousSelection', { selection });
 
 /**
  * `foo AS bar`
  */
-interface AliasedSelection<Ext extends Extension = NoExtension>
+interface AliasedSelection<Ext extends Extension>
   extends Tagged<
     'AliasedSelection',
     {
@@ -119,23 +119,23 @@ interface AliasedSelection<Ext extends Extension = NoExtension>
       readonly alias: Ident;
     }
   > {}
-const AliasedSelection = <Ext extends Extension = NoExtension>(
+const AliasedSelection = <Ext extends Extension>(
   args: UnTag<AliasedSelection<Ext>>,
 ): AliasedSelection<Ext> => tag('AliasedSelection', args);
 
 // TODO aliased tables
-interface JoinedTable<Ext extends Extension = NoExtension>
+interface JoinedTable<Ext extends Extension>
   extends Tagged<
     'JoinedTable',
     {
       readonly table: Table<Ext>;
-      readonly joins: Array<Join>;
+      readonly joins: Array<Join<Ext>>;
     }
   > {}
-const JoinedTable = <Ext extends Extension = NoExtension>(args: UnTag<JoinedTable<Ext>>): JoinedTable<Ext> =>
+const JoinedTable = <Ext extends Extension>(args: UnTag<JoinedTable<Ext>>): JoinedTable<Ext> =>
   tag('JoinedTable', args);
 
-interface Join<Ext extends Extension = NoExtension>
+interface Join<Ext extends Extension>
   extends Tagged<
     'Join',
     {
@@ -144,9 +144,9 @@ interface Join<Ext extends Extension = NoExtension>
       readonly on: Expr<Ext>;
     }
   > {}
-const Join = <Ext extends Extension = NoExtension>(args: UnTag<Join<Ext>>): Join<Ext> => tag('Join', args);
+const Join = <Ext extends Extension>(args: UnTag<Join<Ext>>): Join<Ext> => tag('Join', args);
 
-type Table<Ext extends Extension> = BasicTable | DerivedTable | FunctionTable | TableExtension<Ext>;
+type Table<Ext extends Extension> = BasicTable | DerivedTable<Ext> | FunctionTable<Ext> | TableExtension<Ext>;
 
 interface BasicTable
   extends Tagged<
@@ -157,7 +157,7 @@ interface BasicTable
   > {}
 const BasicTable = (name: QualifiedIdent): BasicTable => tag('BasicTable', { name });
 
-interface DerivedTable<Ext extends Extension = NoExtension>
+interface DerivedTable<Ext extends Extension>
   extends Tagged<
     'DerivedTable',
     {
@@ -165,7 +165,7 @@ interface DerivedTable<Ext extends Extension = NoExtension>
       readonly alias: Ident;
     }
   > {}
-const DerivedTable = <Ext extends Extension = NoExtension>(args: UnTag<DerivedTable<Ext>>): DerivedTable<Ext> =>
+const DerivedTable = <Ext extends Extension>(args: UnTag<DerivedTable<Ext>>): DerivedTable<Ext> =>
   tag('DerivedTable', args);
 
 /**
@@ -175,7 +175,7 @@ const DerivedTable = <Ext extends Extension = NoExtension>(args: UnTag<DerivedTa
  * in the dialects. At least PostgreSQL, MySQL, and MSSQL have table-valued
  * functions even if none of them have the *same* table-valued functions.
  */
-interface FunctionTable<Ext extends Extension = NoExtension>
+interface FunctionTable<Ext extends Extension>
   extends Tagged<
     'FunctionTable',
     {
@@ -183,17 +183,17 @@ interface FunctionTable<Ext extends Extension = NoExtension>
       readonly alias: Ident;
     }
   > {}
-const FunctionTable = <Ext extends Extension = NoExtension>(args: UnTag<FunctionTable<Ext>>): FunctionTable<Ext> =>
+const FunctionTable = <Ext extends Extension>(args: UnTag<FunctionTable<Ext>>): FunctionTable<Ext> =>
   tag('FunctionTable', args);
 
-interface TableExtension<Ext extends Extension = NoExtension>
+interface TableExtension<Ext extends Extension>
   extends Tagged<
     'TableExtension',
     {
       readonly val: Ext['Table'];
     }
   > {}
-const TableExtension = <Ext extends Extension = NoExtension>(args: UnTag<TableExtension<Ext>>): TableExtension<Ext> =>
+const TableExtension = <Ext extends Extension>(args: UnTag<TableExtension<Ext>>): TableExtension<Ext> =>
   tag('TableExtension', args);
 
 type JoinKind = 'INNER' | 'LEFT OUTER' | 'RIGHT OUTER' | 'FULL OUTER';

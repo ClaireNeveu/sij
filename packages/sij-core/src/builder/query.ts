@@ -213,7 +213,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
         return BasicTable(Ident(table));
       }
       const wa = table as WithAlias<Alias, QueryBuilder<Schema, any, SubTable, Ext>>;
-      return DerivedTable({
+      return DerivedTable<Ext>({
         alias: Ident(wa.alias),
         subQuery: wa.val._statement,
       });
@@ -306,7 +306,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
     sub: QueryBuilder<Schema, Table2, Return, Ext>,
   ): QueryBuilder<Schema, Table & { [K in StringKeys<Table2> as `${TableName}.${K}`]: Table2[K] }, Return, Ext> {
     const tAlias = TableAlias({ name: Ident(alias), columns: [] });
-    const newCte = CommonTableExpr({ alias: tAlias, query: sub._statement });
+    const newCte = CommonTableExpr<Ext>({ alias: tAlias, query: sub._statement });
     return new (this.constructor as typeof QueryBuilder)(
       lens<Query<Ext>>().commonTableExprs.set(ctes => [...ctes, newCte])(this._statement),
       this.fn as any,

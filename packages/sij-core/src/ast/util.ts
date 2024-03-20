@@ -101,7 +101,7 @@ type NoExtension = {
   DropColumn: unknown;
   AddTableConstraint: unknown;
   DropTableConstraint: unknown;
-  DomainAction: unknown;
+  DomainAction: never;
   AddDomainConstraint: unknown;
   DropDomainConstraint: unknown;
 };

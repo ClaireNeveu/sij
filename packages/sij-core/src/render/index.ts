@@ -277,7 +277,7 @@ class Renderer<Ext extends Extension = NoExtension> {
         return 'BYTEA';
     }
   }
-  renderQuery(query: Query): string {
+  renderQuery(query: Query<any>): string {
     const ctes = (() => {
       if (query.commonTableExprs.length == 0) {
         return '';
@@ -831,7 +831,7 @@ class Renderer<Ext extends Extension = NoExtension> {
     */
     return `ALTER DOMAIN ${this.renderIdent(def.name)} ${this.renderDomainAction(def.action)}`;
   }
-  renderDomainAction(def: DomainAction<any>): string {
+  renderDomainAction(def: DomainAction<NoExtension>): string {
     switch (def._tag) {
       case 'AddDomainConstraint':
         return this.renderAddDomainConstraint(def);

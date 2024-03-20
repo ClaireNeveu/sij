@@ -237,7 +237,8 @@ type DomainAction<Ext extends Extension> =
   | SetDefault<Ext>
   | DropDefault
   | AddDomainConstraint<Ext>
-  | DropDomainConstraint<Ext>;
+  | DropDomainConstraint<Ext>
+  | Ext['DomainAction'];
 
 /*
 <set domain default clause> ::= SET <default clause>
