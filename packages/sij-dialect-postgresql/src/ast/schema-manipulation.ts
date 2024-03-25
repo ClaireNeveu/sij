@@ -1,4 +1,4 @@
-import { QualifiedIdent, Ident, DataType, Lit, StringLit } from 'sij-core/ast';
+import { QualifiedIdent, Ident, DataType, Lit, StringLit, Literal } from 'sij-core/ast';
 
 import { Tagged, UnTag, tag } from 'sij-core/util';
 
@@ -16,6 +16,11 @@ type PgSchemaManipulation =
 //  | AlterFunction
  | AlterGroupAddUser
  | AlterGroupRename
+ | AlterMaterializedView
+ | AlterAllMaterializedView
+ | AlterOperator
+ | AlterOperatorClass
+ | AlterOperatorFamily
 
 type UserSpec = Ident | 'CurrentRole' | 'CurrentUser' | 'SessionUser'
 
@@ -55,34 +60,34 @@ interface AlterAggregate
   > {}
 const AlterAggregate = (args: UnTag<AlterAggregate>): AlterAggregate => tag('AlterAggregate', args);
 
-type AlterObjectAction = RenameObject | ChangeObjectOwner | SetObjectSchema;
+type AlterObjectAction = Rename | OwnerTo | SetSchema;
 
-interface RenameObject
+interface Rename
   extends Tagged<
-    'RenameObject',
+    'Rename',
     {
       readonly newName: QualifiedIdent;
     }
   > {}
-const RenameObject = (args: UnTag<RenameObject>): RenameObject => tag('RenameObject', args);
+const Rename = (args: UnTag<Rename>): Rename => tag('Rename', args);
 
-interface ChangeObjectOwner
+interface OwnerTo
   extends Tagged<
-    'ChangeObjectOwner',
+    'OwnerTo',
     {
       readonly owner: UserSpec;
     }
   > {}
-const ChangeObjectOwner = (args: UnTag<ChangeObjectOwner>): ChangeObjectOwner => tag('ChangeObjectOwner', args);
+const OwnerTo = (args: UnTag<OwnerTo>): OwnerTo => tag('OwnerTo', args);
 
-interface SetObjectSchema
+interface SetSchema
   extends Tagged<
-    'SetObjectSchema',
+    'SetSchema',
     {
       readonly owner: Ident;
     }
   > {}
-const SetObjectSchema = (args: UnTag<SetObjectSchema>): SetObjectSchema => tag('SetObjectSchema', args);
+const SetSchema = (args: UnTag<SetSchema>): SetSchema => tag('SetSchema', args);
 
 /*
 ALTER COLLATION name REFRESH VERSION
@@ -150,8 +155,8 @@ const AlterDatabase = (args: UnTag<AlterDatabase>): AlterDatabase => tag('AlterD
 
 type AlterDatabaseAction =
   | ChangeSettings
-  | RenameObject
-  | ChangeObjectOwner
+  | Rename
+  | OwnerTo
   | SetTablespace
   | RefreshCollation
   | SetConfig
@@ -378,7 +383,7 @@ interface AlterEventTrigger
   > {}
 const AlterEventTrigger = (args: UnTag<AlterEventTrigger>): AlterEventTrigger => tag('AlterEventTrigger', args);
 
-type AlterEventTriggerAction = DisableEventTrigger | EnableEventTrigger | RenameObject | ChangeObjectOwner;
+type AlterEventTriggerAction = DisableEventTrigger | EnableEventTrigger | Rename | OwnerTo;
 
 interface DisableEventTrigger extends Tagged<'DisableEventTrigger', {}> {}
 const DisableEventTrigger: DisableEventTrigger = tag('DisableEventTrigger', {});
@@ -450,7 +455,7 @@ interface AlterForeignDataWrapper
     'AlterForeignDataWrapper',
     {
       readonly name: Ident;
-      readonly action: RenameObject | ChangeObjectOwner | DataWrapperSettings;
+      readonly action: Rename | OwnerTo | DataWrapperSettings;
     }
   > {}
 const AlterForeignDataWrapper = (args: UnTag<AlterForeignDataWrapper>): AlterForeignDataWrapper =>
@@ -578,6 +583,320 @@ extends Tagged<
 > {}
 const AlterGroupRename = (args: UnTag<AlterGroupRename>): AlterGroupRename => tag('AlterGroupRename', args);
 
+/*
+ALTER INDEX [ IF EXISTS ] name RENAME TO new_name
+ALTER INDEX [ IF EXISTS ] name SET TABLESPACE tablespace_name
+ALTER INDEX name ATTACH PARTITION index_name
+ALTER INDEX name [ NO ] DEPENDS ON EXTENSION extension_name
+ALTER INDEX [ IF EXISTS ] name SET ( storage_parameter [= value] [, ... ] )
+ALTER INDEX [ IF EXISTS ] name RESET ( storage_parameter [, ... ] )
+ALTER INDEX [ IF EXISTS ] name ALTER [ COLUMN ] column_number
+    SET STATISTICS integer
+ALTER INDEX ALL IN TABLESPACE name [ OWNED BY role_name [, ... ] ]
+    SET TABLESPACE new_tablespace [ NOWAIT ]
+*/
+interface AlterIndex extends Tagged<'AlterIndex', {
+  readonly name: Ident
+  readonly action: AlterIndexAction
+}> {}
+const AlterIndex = (args: UnTag<AlterIndex>): AlterIndex => tag('AlterIndex', args);
+
+type AlterIndexAction =
+ | Rename
+ | SetTablespace
+ | AttachPartition
+ | DependsOnExtension
+ | SetStorageParameter
+ | AlterIndexColumn
+
+interface AlterAllIndex extends Tagged<'AlterAllIndex', {
+  readonly tablespace: Ident,
+  readonly owners: Array<Ident>
+  readonly newTablespace: Ident
+  readonly noWait: boolean
+}> {}
+const AlterAllIndex = (args: UnTag<AlterAllIndex>): AlterAllIndex => tag('AlterAllIndex', args);
+
+interface AttachPartition extends Tagged<'AttachPartition', {
+  readonly index: Ident
+}> {}
+const AttachPartition = (args: UnTag<AttachPartition>): AttachPartition => tag('AttachPartition', args);
+
+interface DependsOnExtension extends Tagged<'DependsOnExtension', {
+  readonly extension: Ident
+  readonly negate: boolean
+}> {}
+const DependsOnExtension = (args: UnTag<DependsOnExtension>): DependsOnExtension => tag('DependsOnExtension', args);
+
+interface SetStorageParameter extends Tagged<'SetStorageParameter', {
+  readonly reset: boolean
+  readonly parameters: Array<{ name: Ident, value: Literal | null }>
+}> {}
+const SetStorageParameter = (args: UnTag<SetStorageParameter>): SetStorageParameter => tag('SetStorageParameter', args);
+
+interface AlterIndexColumn extends Tagged<'AlterIndexColumn', {
+  readonly column: number
+  readonly statistics: number
+}> {}
+const AlterIndexColumn = (args: UnTag<AlterIndexColumn>): AlterIndexColumn => tag('AlterIndexColumn', args);
+
+/*
+ALTER [ PROCEDURAL ] LANGUAGE name RENAME TO new_name
+ALTER [ PROCEDURAL ] LANGUAGE name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+*/
+interface AlterLanguage extends Tagged<'AlterLanguage', {
+  readonly name: Ident
+  readonly action: Rename | OwnerTo
+}> {}
+const AlterLanguage = (args: UnTag<AlterLanguage>): AlterLanguage => tag('AlterLanguage', args);
+
+/*
+ALTER LARGE OBJECT large_object_oid OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+*/
+interface AlterLargeObject extends Tagged<'AlterLargeObject', {
+  readonly name: Ident
+  readonly owner: UserSpec
+}> {}
+const AlterLargeObject = (args: UnTag<AlterLargeObject>): AlterLargeObject => tag('AlterLargeObject', args);
+
+/*
+ALTER MATERIALIZED VIEW [ IF EXISTS ] name
+    action [, ... ]
+ALTER MATERIALIZED VIEW name
+    [ NO ] DEPENDS ON EXTENSION extension_name
+ALTER MATERIALIZED VIEW [ IF EXISTS ] name
+    RENAME [ COLUMN ] column_name TO new_column_name
+ALTER MATERIALIZED VIEW [ IF EXISTS ] name
+    RENAME TO new_name
+ALTER MATERIALIZED VIEW [ IF EXISTS ] name
+    SET SCHEMA new_schema
+ALTER MATERIALIZED VIEW ALL IN TABLESPACE name [ OWNED BY role_name [, ... ] ]
+    SET TABLESPACE new_tablespace [ NOWAIT ]
+
+where action is one of:
+
+    ALTER [ COLUMN ] column_name SET STATISTICS integer
+    ALTER [ COLUMN ] column_name SET ( attribute_option = value [, ... ] )
+    ALTER [ COLUMN ] column_name RESET ( attribute_option [, ... ] )
+    ALTER [ COLUMN ] column_name SET STORAGE { PLAIN | EXTERNAL | EXTENDED | MAIN | DEFAULT }
+    ALTER [ COLUMN ] column_name SET COMPRESSION compression_method
+    CLUSTER ON index_name
+    SET WITHOUT CLUSTER
+    SET ACCESS METHOD new_access_method
+    SET TABLESPACE new_tablespace
+    SET ( storage_parameter [= value] [, ... ] )
+    RESET ( storage_parameter [, ... ] )
+    OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+*/
+interface AlterMaterializedView extends Tagged<'AlterMaterializedView', {
+  readonly name: Ident
+  readonly ifExists: boolean
+  readonly action: AlterMaterializedViewAction
+}> {}
+const AlterMaterializedView = (args: UnTag<AlterMaterializedView>): AlterMaterializedView => tag('AlterMaterializedView', args);
+
+/*
+ALTER MATERIALIZED VIEW ALL IN TABLESPACE name [ OWNED BY role_name [, ... ] ]
+    SET TABLESPACE new_tablespace [ NOWAIT ]
+*/
+interface AlterAllMaterializedView extends Tagged<'AlterAllMaterializedView', {
+  readonly tablespace: Ident
+  readonly newTablespace: Ident
+  readonly ownedBy: Array<Ident>
+  readonly noWait: boolean
+}> {}
+const AlterAllMaterializedView = (args: UnTag<AlterAllMaterializedView>): AlterAllMaterializedView => tag('AlterAllMaterializedView', args);
+
+type AlterMaterializedViewAction =
+ | DependsOnExtension
+ | RenameColumn
+ | Rename
+ | SetSchema
+
+type AlterMaterializedViewMultiAction =
+ | SetColumnStatistics
+ | SetColumnStorageParameter
+ | SetColumnStorage
+ | SetColumnCompression
+ | ClusterOn
+ | SetAccessMethod
+ | SetTablespace
+ | SetStorageParameter
+ | OwnerTo
+
+ 
+ interface RenameColumn extends Tagged<'RenameColumn', {
+   readonly name: Ident
+   readonly newName: Ident 
+ }> {}
+ const RenameColumn = (args: UnTag<RenameColumn>): RenameColumn => tag('RenameColumn', args);
+
+/*
+ALTER [ COLUMN ] column_name SET STATISTICS integer
+*/
+ interface SetColumnStatistics extends Tagged<'SetColumnStatistics', {
+   readonly name: Ident
+   readonly statistics: number
+ }> {}
+ const SetColumnStatistics = (args: UnTag<SetColumnStatistics>): SetColumnStatistics => tag('SetColumnStatistics', args);
+
+/*
+CLUSTER ON index_name
+*/
+ interface ClusterOn extends Tagged<'ClusterOn', {
+   readonly index: Ident
+ }> {}
+ const ClusterOn = (args: UnTag<ClusterOn>): ClusterOn => tag('ClusterOn', args);
+
+/*
+SET ACCESS METHOD new_access_method
+*/
+ interface SetAccessMethod extends Tagged<'SetAccessMethod', {
+   readonly accessMethod: Ident
+ }> {}
+ const SetAccessMethod = (args: UnTag<SetAccessMethod>): SetAccessMethod => tag('SetAccessMethod', args);
+
+/*
+ALTER [ COLUMN ] column_name SET COMPRESSION compression_method
+*/
+ interface SetColumnCompression extends Tagged<'SetColumnCompression', {
+   readonly 
+ }> {}
+ const SetColumnCompression = (args: UnTag<SetColumnCompression>): SetColumnCompression => tag('SetColumnCompression', args);
+
+/*
+ALTER [ COLUMN ] column_name SET ( attribute_option = value [, ... ] )
+ALTER [ COLUMN ] column_name RESET ( attribute_option [, ... ] )
+*/
+interface SetColumnStorageParameter extends Tagged<'SetColumnStorageParameter', {
+  readonly column: Ident
+  readonly reset: boolean
+  readonly options: Array<{ name: Ident, value: Literal }>
+}> {}
+const SetColumnStorageParameter = (args: UnTag<SetColumnStorageParameter>): SetColumnStorageParameter => tag('SetColumnStorageParameter', args);
+
+/*
+ALTER [ COLUMN ] column_name SET STORAGE { PLAIN | EXTERNAL | EXTENDED | MAIN | DEFAULT }
+*/
+interface SetColumnStorage extends Tagged<'SetColumnStorage', {
+  readonly column: Ident
+  readonly storage: 'Plain' | 'External' | 'Extended' | 'Main' | 'Default'
+}> {}
+const SetColumnStorage = (args: UnTag<SetColumnStorage>): SetColumnStorage => tag('SetColumnStorage', args);
+
+/*
+ALTER OPERATOR name ( { left_type | NONE } , right_type )
+    OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+
+ALTER OPERATOR name ( { left_type | NONE } , right_type )
+    SET SCHEMA new_schema
+
+ALTER OPERATOR name ( { left_type | NONE } , right_type )
+    SET ( {  RESTRICT = { res_proc | NONE }
+           | JOIN = { join_proc | NONE }
+         } [, ... ] )
+*/
+interface AlterOperator extends Tagged<'AlterOperator', {
+  readonly name: Ident
+  readonly leftType: DataType | null // null for unary operators
+  readonly rightType: DataType
+  readonly action: OwnerTo | SetSchema | Array<OperatorSetting>
+}> {}
+const AlterOperator = (args: UnTag<AlterOperator>): AlterOperator => tag('AlterOperator', args);
+
+interface OperatorSetting extends Tagged<'OperatorSetting', {
+  readonly function: Ident | null
+  readonly type: 'Join' | 'Restrict'
+}> {}
+const OperatorSetting = (args: UnTag<OperatorSetting>): OperatorSetting => tag('OperatorSetting', args);
+
+/*
+ALTER OPERATOR CLASS name USING index_method
+    RENAME TO new_name
+
+ALTER OPERATOR CLASS name USING index_method
+    OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+
+ALTER OPERATOR CLASS name USING index_method
+    SET SCHEMA new_schema
+*/
+interface AlterOperatorClass extends Tagged<'AlterOperatorClass', {
+  readonly name: Ident
+  readonly action: Rename | OwnerTo | SetSchema
+}> {}
+const AlterOperatorClass = (args: UnTag<AlterOperatorClass>): AlterOperatorClass => tag('AlterOperatorClass', args);
+
+/*
+ALTER OPERATOR FAMILY name USING index_method ADD
+  {  OPERATOR strategy_number operator_name ( op_type, op_type )
+              [ FOR SEARCH | FOR ORDER BY sort_family_name ]
+   | FUNCTION support_number [ ( op_type [ , op_type ] ) ]
+              function_name [ ( argument_type [, ...] ) ]
+  } [, ... ]
+
+ALTER OPERATOR FAMILY name USING index_method DROP
+  {  OPERATOR strategy_number ( op_type [ , op_type ] )
+   | FUNCTION support_number ( op_type [ , op_type ] )
+  } [, ... ]
+
+ALTER OPERATOR FAMILY name USING index_method
+    RENAME TO new_name
+
+ALTER OPERATOR FAMILY name USING index_method
+    OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+
+ALTER OPERATOR FAMILY name USING index_method
+    SET SCHEMA new_schema
+*/
+interface AlterOperatorFamily extends Tagged<'AlterOperatorFamily', {
+  readonly name: Ident
+  readonly action: Rename | OwnerTo | SetSchema | DropOperator | AddOperator
+}> {}
+const AlterOperatorFamily = (args: UnTag<AlterOperatorFamily>): AlterOperatorFamily => tag('AlterOperatorFamily', args);
+
+/*
+ALTER OPERATOR FAMILY name USING index_method DROP
+  {  OPERATOR strategy_number ( op_type [ , op_type ] )
+   | FUNCTION support_number ( op_type [ , op_type ] )
+  } [, ... ]
+*/
+interface DropOperator extends Tagged<'DropOperator', {
+  readonly index: Ident
+  readonly definitions: Array<OperatorDefinition | FunctionDefinition>
+}> {}
+const DropOperator = (args: UnTag<DropOperator>): DropOperator => tag('DropOperator', args);
+
+/*
+ALTER OPERATOR FAMILY name USING index_method ADD
+  {  OPERATOR strategy_number operator_name ( op_type, op_type )
+              [ FOR SEARCH | FOR ORDER BY sort_family_name ]
+   | FUNCTION support_number [ ( op_type [ , op_type ] ) ]
+              function_name [ ( argument_type [, ...] ) ]
+  } [, ... ]
+*/
+interface AddOperator extends Tagged<'AddOperator', {
+  readonly index: Ident
+  readonly definitions: Array<OperatorDefinition | FunctionDefinition>
+}> {}
+const AddOperator = (args: UnTag<AddOperator>): AddOperator => tag('AddOperator', args);
+
+interface OperatorDefinition extends Tagged<'OperatorDefinition', {
+  readonly strategy: number
+  readonly name: Ident
+  readonly leftType: DataType
+  readonly rightType: DataType
+  readonly for: 'Search' | Ident | null
+}> {}
+const OperatorDefinition = (args: UnTag<OperatorDefinition>): OperatorDefinition => tag('OperatorDefinition', args);
+
+interface FunctionDefinition extends Tagged<'FunctionDefinition', {
+  readonly strategy: number
+  readonly name: Ident
+  readonly leftType: DataType | null
+  readonly rightType: DataType | null
+  readonly args: Array<DataType>
+}> {}
+const FunctionDefinition = (args: UnTag<FunctionDefinition>): FunctionDefinition => tag('FunctionDefinition', args);
 
 export {
   PgSchemaManipulation,
@@ -599,4 +918,9 @@ export {
   DataWrapperOption,
   AlterGroupAddUser,
   AlterGroupRename,
+  AlterMaterializedView,
+  AlterAllMaterializedView,
+  AlterOperator,
+  AlterOperatorClass,
+  AlterOperatorFamily,
 };
