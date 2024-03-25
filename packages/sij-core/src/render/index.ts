@@ -69,7 +69,7 @@ class Renderer<Ext extends Extension = NoExtension> {
   }
 
   renderIdent(ident: Ident): string {
-    return `"${ident.name}"`;
+    return `"${ident.name.replace('"', '""')}"`;
   }
   renderQualifiedIdent(ident: QualifiedIdent): string {
     switch (ident._tag) {
