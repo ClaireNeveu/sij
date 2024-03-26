@@ -1,4 +1,4 @@
-import { QualifiedIdent, Ident, DataType, Lit, StringLit, Literal } from 'sij-core/ast';
+import { QualifiedIdent, Ident, DataType, Lit, StringLit, Literal, Expr } from 'sij-core/ast';
 
 import { Tagged, UnTag, tag } from 'sij-core/util';
 
@@ -9,20 +9,25 @@ type PgSchemaManipulation =
   | AlterAggregate
   | AlterCollation
   | AlterDatabase
-//  | AlterDefaultPrivileges
+  //  | AlterDefaultPrivileges
   | AlterEventTrigger
   | AlterForeignDataWrapper
-//  | AlterForeignTable
-//  | AlterFunction
- | AlterGroupAddUser
- | AlterGroupRename
- | AlterMaterializedView
- | AlterAllMaterializedView
- | AlterOperator
- | AlterOperatorClass
- | AlterOperatorFamily
+  //  | AlterForeignTable
+  //  | AlterFunction
+  | AlterGroupAddUser
+  | AlterGroupRename
+  | AlterMaterializedView
+  | AlterAllMaterializedView
+  | AlterOperator
+  | AlterOperatorClass
+  | AlterOperatorFamily
+  | AlterPolicy
+  | AlterProcedure
+  | AlterPublication
+  | AlterRole
+  | AlterRoutine;
 
-type UserSpec = Ident | 'CurrentRole' | 'CurrentUser' | 'SessionUser'
+type UserSpec = Ident | 'CurrentRole' | 'CurrentUser' | 'SessionUser';
 
 /*
 ABORT [ WORK | TRANSACTION ] [ AND [ NO ] CHAIN ]
@@ -561,26 +566,26 @@ where role_specification can be:
   | SESSION_USER
 */
 interface AlterGroupAddUser
-extends Tagged<
-  'AlterGroupAddUser',
-  {
-    readonly role: UserSpec;
-    readonly drop: boolean;
-  }
-> {}
+  extends Tagged<
+    'AlterGroupAddUser',
+    {
+      readonly role: UserSpec;
+      readonly drop: boolean;
+    }
+  > {}
 const AlterGroupAddUser = (args: UnTag<AlterGroupAddUser>): AlterGroupAddUser => tag('AlterGroupAddUser', args);
 
 /*
 ALTER GROUP group_name RENAME TO new_name
 */
 interface AlterGroupRename
-extends Tagged<
-  'AlterGroupRename',
-  {
-    readonly group: Ident;
-    readonly new_name: Ident;
-  }
-> {}
+  extends Tagged<
+    'AlterGroupRename',
+    {
+      readonly group: Ident;
+      readonly new_name: Ident;
+    }
+  > {}
 const AlterGroupRename = (args: UnTag<AlterGroupRename>): AlterGroupRename => tag('AlterGroupRename', args);
 
 /*
@@ -595,68 +600,100 @@ ALTER INDEX [ IF EXISTS ] name ALTER [ COLUMN ] column_number
 ALTER INDEX ALL IN TABLESPACE name [ OWNED BY role_name [, ... ] ]
     SET TABLESPACE new_tablespace [ NOWAIT ]
 */
-interface AlterIndex extends Tagged<'AlterIndex', {
-  readonly name: Ident
-  readonly action: AlterIndexAction
-}> {}
+interface AlterIndex
+  extends Tagged<
+    'AlterIndex',
+    {
+      readonly name: Ident;
+      readonly action: AlterIndexAction;
+    }
+  > {}
 const AlterIndex = (args: UnTag<AlterIndex>): AlterIndex => tag('AlterIndex', args);
 
 type AlterIndexAction =
- | Rename
- | SetTablespace
- | AttachPartition
- | DependsOnExtension
- | SetStorageParameter
- | AlterIndexColumn
+  | Rename
+  | SetTablespace
+  | AttachPartition
+  | DependsOnExtension
+  | SetStorageParameter
+  | AlterIndexColumn;
 
-interface AlterAllIndex extends Tagged<'AlterAllIndex', {
-  readonly tablespace: Ident,
-  readonly owners: Array<Ident>
-  readonly newTablespace: Ident
-  readonly noWait: boolean
-}> {}
+interface AlterAllIndex
+  extends Tagged<
+    'AlterAllIndex',
+    {
+      readonly tablespace: Ident;
+      readonly owners: Array<Ident>;
+      readonly newTablespace: Ident;
+      readonly noWait: boolean;
+    }
+  > {}
 const AlterAllIndex = (args: UnTag<AlterAllIndex>): AlterAllIndex => tag('AlterAllIndex', args);
 
-interface AttachPartition extends Tagged<'AttachPartition', {
-  readonly index: Ident
-}> {}
+interface AttachPartition
+  extends Tagged<
+    'AttachPartition',
+    {
+      readonly index: Ident;
+    }
+  > {}
 const AttachPartition = (args: UnTag<AttachPartition>): AttachPartition => tag('AttachPartition', args);
 
-interface DependsOnExtension extends Tagged<'DependsOnExtension', {
-  readonly extension: Ident
-  readonly negate: boolean
-}> {}
+interface DependsOnExtension
+  extends Tagged<
+    'DependsOnExtension',
+    {
+      readonly extension: Ident;
+      readonly negate: boolean;
+    }
+  > {}
 const DependsOnExtension = (args: UnTag<DependsOnExtension>): DependsOnExtension => tag('DependsOnExtension', args);
 
-interface SetStorageParameter extends Tagged<'SetStorageParameter', {
-  readonly reset: boolean
-  readonly parameters: Array<{ name: Ident, value: Literal | null }>
-}> {}
+interface SetStorageParameter
+  extends Tagged<
+    'SetStorageParameter',
+    {
+      readonly reset: boolean;
+      readonly parameters: Array<{ name: Ident; value: Literal | null }>;
+    }
+  > {}
 const SetStorageParameter = (args: UnTag<SetStorageParameter>): SetStorageParameter => tag('SetStorageParameter', args);
 
-interface AlterIndexColumn extends Tagged<'AlterIndexColumn', {
-  readonly column: number
-  readonly statistics: number
-}> {}
+interface AlterIndexColumn
+  extends Tagged<
+    'AlterIndexColumn',
+    {
+      readonly column: number;
+      readonly statistics: number;
+    }
+  > {}
 const AlterIndexColumn = (args: UnTag<AlterIndexColumn>): AlterIndexColumn => tag('AlterIndexColumn', args);
 
 /*
 ALTER [ PROCEDURAL ] LANGUAGE name RENAME TO new_name
 ALTER [ PROCEDURAL ] LANGUAGE name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
 */
-interface AlterLanguage extends Tagged<'AlterLanguage', {
-  readonly name: Ident
-  readonly action: Rename | OwnerTo
-}> {}
+interface AlterLanguage
+  extends Tagged<
+    'AlterLanguage',
+    {
+      readonly name: Ident;
+      readonly action: Rename | OwnerTo;
+    }
+  > {}
 const AlterLanguage = (args: UnTag<AlterLanguage>): AlterLanguage => tag('AlterLanguage', args);
 
 /*
 ALTER LARGE OBJECT large_object_oid OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
 */
-interface AlterLargeObject extends Tagged<'AlterLargeObject', {
-  readonly name: Ident
-  readonly owner: UserSpec
-}> {}
+interface AlterLargeObject
+  extends Tagged<
+    'AlterLargeObject',
+    {
+      readonly name: Ident;
+      readonly owner: UserSpec;
+    }
+  > {}
 const AlterLargeObject = (args: UnTag<AlterLargeObject>): AlterLargeObject => tag('AlterLargeObject', args);
 
 /*
@@ -688,100 +725,135 @@ where action is one of:
     RESET ( storage_parameter [, ... ] )
     OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
 */
-interface AlterMaterializedView extends Tagged<'AlterMaterializedView', {
-  readonly name: Ident
-  readonly ifExists: boolean
-  readonly action: AlterMaterializedViewAction
-}> {}
-const AlterMaterializedView = (args: UnTag<AlterMaterializedView>): AlterMaterializedView => tag('AlterMaterializedView', args);
+interface AlterMaterializedView
+  extends Tagged<
+    'AlterMaterializedView',
+    {
+      readonly name: Ident;
+      readonly ifExists: boolean;
+      readonly action: AlterMaterializedViewAction;
+    }
+  > {}
+const AlterMaterializedView = (args: UnTag<AlterMaterializedView>): AlterMaterializedView =>
+  tag('AlterMaterializedView', args);
 
 /*
 ALTER MATERIALIZED VIEW ALL IN TABLESPACE name [ OWNED BY role_name [, ... ] ]
     SET TABLESPACE new_tablespace [ NOWAIT ]
 */
-interface AlterAllMaterializedView extends Tagged<'AlterAllMaterializedView', {
-  readonly tablespace: Ident
-  readonly newTablespace: Ident
-  readonly ownedBy: Array<Ident>
-  readonly noWait: boolean
-}> {}
-const AlterAllMaterializedView = (args: UnTag<AlterAllMaterializedView>): AlterAllMaterializedView => tag('AlterAllMaterializedView', args);
+interface AlterAllMaterializedView
+  extends Tagged<
+    'AlterAllMaterializedView',
+    {
+      readonly tablespace: Ident;
+      readonly newTablespace: Ident;
+      readonly ownedBy: Array<Ident>;
+      readonly noWait: boolean;
+    }
+  > {}
+const AlterAllMaterializedView = (args: UnTag<AlterAllMaterializedView>): AlterAllMaterializedView =>
+  tag('AlterAllMaterializedView', args);
 
-type AlterMaterializedViewAction =
- | DependsOnExtension
- | RenameColumn
- | Rename
- | SetSchema
+type AlterMaterializedViewAction = DependsOnExtension | RenameColumn | Rename | SetSchema;
 
 type AlterMaterializedViewMultiAction =
- | SetColumnStatistics
- | SetColumnStorageParameter
- | SetColumnStorage
- | SetColumnCompression
- | ClusterOn
- | SetAccessMethod
- | SetTablespace
- | SetStorageParameter
- | OwnerTo
+  | SetColumnStatistics
+  | SetColumnStorageParameter
+  | SetColumnStorage
+  | SetColumnCompression
+  | ClusterOn
+  | SetAccessMethod
+  | SetTablespace
+  | SetStorageParameter
+  | OwnerTo;
 
- 
- interface RenameColumn extends Tagged<'RenameColumn', {
-   readonly name: Ident
-   readonly newName: Ident 
- }> {}
- const RenameColumn = (args: UnTag<RenameColumn>): RenameColumn => tag('RenameColumn', args);
+interface RenameColumn
+  extends Tagged<
+    'RenameColumn',
+    {
+      readonly name: Ident;
+      readonly newName: Ident;
+    }
+  > {}
+const RenameColumn = (args: UnTag<RenameColumn>): RenameColumn => tag('RenameColumn', args);
 
 /*
 ALTER [ COLUMN ] column_name SET STATISTICS integer
 */
- interface SetColumnStatistics extends Tagged<'SetColumnStatistics', {
-   readonly name: Ident
-   readonly statistics: number
- }> {}
- const SetColumnStatistics = (args: UnTag<SetColumnStatistics>): SetColumnStatistics => tag('SetColumnStatistics', args);
+interface SetColumnStatistics
+  extends Tagged<
+    'SetColumnStatistics',
+    {
+      readonly name: Ident;
+      readonly statistics: number;
+    }
+  > {}
+const SetColumnStatistics = (args: UnTag<SetColumnStatistics>): SetColumnStatistics => tag('SetColumnStatistics', args);
 
 /*
 CLUSTER ON index_name
 */
- interface ClusterOn extends Tagged<'ClusterOn', {
-   readonly index: Ident
- }> {}
- const ClusterOn = (args: UnTag<ClusterOn>): ClusterOn => tag('ClusterOn', args);
+interface ClusterOn
+  extends Tagged<
+    'ClusterOn',
+    {
+      readonly index: Ident;
+    }
+  > {}
+const ClusterOn = (args: UnTag<ClusterOn>): ClusterOn => tag('ClusterOn', args);
 
 /*
 SET ACCESS METHOD new_access_method
 */
- interface SetAccessMethod extends Tagged<'SetAccessMethod', {
-   readonly accessMethod: Ident
- }> {}
- const SetAccessMethod = (args: UnTag<SetAccessMethod>): SetAccessMethod => tag('SetAccessMethod', args);
+interface SetAccessMethod
+  extends Tagged<
+    'SetAccessMethod',
+    {
+      readonly accessMethod: Ident;
+    }
+  > {}
+const SetAccessMethod = (args: UnTag<SetAccessMethod>): SetAccessMethod => tag('SetAccessMethod', args);
 
 /*
 ALTER [ COLUMN ] column_name SET COMPRESSION compression_method
 */
- interface SetColumnCompression extends Tagged<'SetColumnCompression', {
-   readonly 
- }> {}
- const SetColumnCompression = (args: UnTag<SetColumnCompression>): SetColumnCompression => tag('SetColumnCompression', args);
+interface SetColumnCompression
+  extends Tagged<
+    'SetColumnCompression',
+    {
+      readonly;
+    }
+  > {}
+const SetColumnCompression = (args: UnTag<SetColumnCompression>): SetColumnCompression =>
+  tag('SetColumnCompression', args);
 
 /*
 ALTER [ COLUMN ] column_name SET ( attribute_option = value [, ... ] )
 ALTER [ COLUMN ] column_name RESET ( attribute_option [, ... ] )
 */
-interface SetColumnStorageParameter extends Tagged<'SetColumnStorageParameter', {
-  readonly column: Ident
-  readonly reset: boolean
-  readonly options: Array<{ name: Ident, value: Literal }>
-}> {}
-const SetColumnStorageParameter = (args: UnTag<SetColumnStorageParameter>): SetColumnStorageParameter => tag('SetColumnStorageParameter', args);
+interface SetColumnStorageParameter
+  extends Tagged<
+    'SetColumnStorageParameter',
+    {
+      readonly column: Ident;
+      readonly reset: boolean;
+      readonly options: Array<{ name: Ident; value: Literal }>;
+    }
+  > {}
+const SetColumnStorageParameter = (args: UnTag<SetColumnStorageParameter>): SetColumnStorageParameter =>
+  tag('SetColumnStorageParameter', args);
 
 /*
 ALTER [ COLUMN ] column_name SET STORAGE { PLAIN | EXTERNAL | EXTENDED | MAIN | DEFAULT }
 */
-interface SetColumnStorage extends Tagged<'SetColumnStorage', {
-  readonly column: Ident
-  readonly storage: 'Plain' | 'External' | 'Extended' | 'Main' | 'Default'
-}> {}
+interface SetColumnStorage
+  extends Tagged<
+    'SetColumnStorage',
+    {
+      readonly column: Ident;
+      readonly storage: 'Plain' | 'External' | 'Extended' | 'Main' | 'Default';
+    }
+  > {}
 const SetColumnStorage = (args: UnTag<SetColumnStorage>): SetColumnStorage => tag('SetColumnStorage', args);
 
 /*
@@ -796,18 +868,26 @@ ALTER OPERATOR name ( { left_type | NONE } , right_type )
            | JOIN = { join_proc | NONE }
          } [, ... ] )
 */
-interface AlterOperator extends Tagged<'AlterOperator', {
-  readonly name: Ident
-  readonly leftType: DataType | null // null for unary operators
-  readonly rightType: DataType
-  readonly action: OwnerTo | SetSchema | Array<OperatorSetting>
-}> {}
+interface AlterOperator
+  extends Tagged<
+    'AlterOperator',
+    {
+      readonly name: Ident;
+      readonly leftType: DataType | null; // null for unary operators
+      readonly rightType: DataType;
+      readonly action: OwnerTo | SetSchema | Array<OperatorSetting>;
+    }
+  > {}
 const AlterOperator = (args: UnTag<AlterOperator>): AlterOperator => tag('AlterOperator', args);
 
-interface OperatorSetting extends Tagged<'OperatorSetting', {
-  readonly function: Ident | null
-  readonly type: 'Join' | 'Restrict'
-}> {}
+interface OperatorSetting
+  extends Tagged<
+    'OperatorSetting',
+    {
+      readonly function: Ident | null;
+      readonly type: 'Join' | 'Restrict';
+    }
+  > {}
 const OperatorSetting = (args: UnTag<OperatorSetting>): OperatorSetting => tag('OperatorSetting', args);
 
 /*
@@ -820,10 +900,14 @@ ALTER OPERATOR CLASS name USING index_method
 ALTER OPERATOR CLASS name USING index_method
     SET SCHEMA new_schema
 */
-interface AlterOperatorClass extends Tagged<'AlterOperatorClass', {
-  readonly name: Ident
-  readonly action: Rename | OwnerTo | SetSchema
-}> {}
+interface AlterOperatorClass
+  extends Tagged<
+    'AlterOperatorClass',
+    {
+      readonly name: Ident;
+      readonly action: Rename | OwnerTo | SetSchema;
+    }
+  > {}
 const AlterOperatorClass = (args: UnTag<AlterOperatorClass>): AlterOperatorClass => tag('AlterOperatorClass', args);
 
 /*
@@ -848,10 +932,14 @@ ALTER OPERATOR FAMILY name USING index_method
 ALTER OPERATOR FAMILY name USING index_method
     SET SCHEMA new_schema
 */
-interface AlterOperatorFamily extends Tagged<'AlterOperatorFamily', {
-  readonly name: Ident
-  readonly action: Rename | OwnerTo | SetSchema | DropOperator | AddOperator
-}> {}
+interface AlterOperatorFamily
+  extends Tagged<
+    'AlterOperatorFamily',
+    {
+      readonly name: Ident;
+      readonly action: Rename | OwnerTo | SetSchema | DropOperator | AddOperator;
+    }
+  > {}
 const AlterOperatorFamily = (args: UnTag<AlterOperatorFamily>): AlterOperatorFamily => tag('AlterOperatorFamily', args);
 
 /*
@@ -860,10 +948,14 @@ ALTER OPERATOR FAMILY name USING index_method DROP
    | FUNCTION support_number ( op_type [ , op_type ] )
   } [, ... ]
 */
-interface DropOperator extends Tagged<'DropOperator', {
-  readonly index: Ident
-  readonly definitions: Array<OperatorDefinition | FunctionDefinition>
-}> {}
+interface DropOperator
+  extends Tagged<
+    'DropOperator',
+    {
+      readonly index: Ident;
+      readonly definitions: Array<OperatorDefinition | FunctionDefinition>;
+    }
+  > {}
 const DropOperator = (args: UnTag<DropOperator>): DropOperator => tag('DropOperator', args);
 
 /*
@@ -874,29 +966,458 @@ ALTER OPERATOR FAMILY name USING index_method ADD
               function_name [ ( argument_type [, ...] ) ]
   } [, ... ]
 */
-interface AddOperator extends Tagged<'AddOperator', {
-  readonly index: Ident
-  readonly definitions: Array<OperatorDefinition | FunctionDefinition>
-}> {}
+interface AddOperator
+  extends Tagged<
+    'AddOperator',
+    {
+      readonly index: Ident;
+      readonly definitions: Array<OperatorDefinition | FunctionDefinition>;
+    }
+  > {}
 const AddOperator = (args: UnTag<AddOperator>): AddOperator => tag('AddOperator', args);
 
-interface OperatorDefinition extends Tagged<'OperatorDefinition', {
-  readonly strategy: number
-  readonly name: Ident
-  readonly leftType: DataType
-  readonly rightType: DataType
-  readonly for: 'Search' | Ident | null
-}> {}
+interface OperatorDefinition
+  extends Tagged<
+    'OperatorDefinition',
+    {
+      readonly strategy: number;
+      readonly name: Ident;
+      readonly leftType: DataType;
+      readonly rightType: DataType;
+      readonly for: 'Search' | Ident | null;
+    }
+  > {}
 const OperatorDefinition = (args: UnTag<OperatorDefinition>): OperatorDefinition => tag('OperatorDefinition', args);
 
-interface FunctionDefinition extends Tagged<'FunctionDefinition', {
-  readonly strategy: number
-  readonly name: Ident
-  readonly leftType: DataType | null
-  readonly rightType: DataType | null
-  readonly args: Array<DataType>
-}> {}
+interface FunctionDefinition
+  extends Tagged<
+    'FunctionDefinition',
+    {
+      readonly strategy: number;
+      readonly name: Ident;
+      readonly leftType: DataType | null;
+      readonly rightType: DataType | null;
+      readonly args: Array<DataType>;
+    }
+  > {}
 const FunctionDefinition = (args: UnTag<FunctionDefinition>): FunctionDefinition => tag('FunctionDefinition', args);
+
+/*
+ALTER POLICY name ON table_name RENAME TO new_name
+
+ALTER POLICY name ON table_name
+    [ TO { role_name | PUBLIC | CURRENT_ROLE | CURRENT_USER | SESSION_USER } [, ...] ]
+    [ USING ( using_expression ) ]
+    [ WITH CHECK ( check_expression ) ]
+*/
+interface AlterPolicy
+  extends Tagged<
+    'AlterPolicy',
+    {
+      readonly name: Ident;
+      readonly table: Ident;
+      readonly to: Array<UserSpec>;
+      readonly using: Expr<PgExtension> | null;
+      readonly withCheck: Expr<PgExtension> | null;
+    }
+  > {}
+const AlterPolicy = (args: UnTag<AlterPolicy>): AlterPolicy => tag('AlterPolicy', args);
+
+/*
+ALTER PROCEDURE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    action [ ... ] [ RESTRICT ]
+ALTER PROCEDURE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    RENAME TO new_name
+ALTER PROCEDURE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER PROCEDURE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    SET SCHEMA new_schema
+ALTER PROCEDURE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    [ NO ] DEPENDS ON EXTENSION extension_name
+
+where action is one of:
+
+    [ EXTERNAL ] SECURITY INVOKER | [ EXTERNAL ] SECURITY DEFINER
+    SET configuration_parameter { TO | = } { value | DEFAULT }
+    SET configuration_parameter FROM CURRENT
+    RESET configuration_parameter
+    RESET ALL
+*/
+interface AlterProcedure
+  extends Tagged<
+    'AlterProcedure',
+    {
+      readonly name: Ident;
+      readonly args: Array<{ mode?: ArgMode; name?: Ident; type: DataType }>;
+      readonly restrict: boolean;
+      readonly action: Array<ProcedureMultiAction> | Rename | OwnerTo | SetSchema | DependsOnExtension;
+    }
+  > {}
+const AlterProcedure = (args: UnTag<AlterProcedure>): AlterProcedure => tag('AlterProcedure', args);
+
+type ArgMode = 'In' | 'Out' | 'InOut' | 'Variadic';
+
+type ProcedureMultiAction = SecurityInvoker | SetStorageParameter | ResetConfig | ResetAll;
+
+interface SecurityInvoker
+  extends Tagged<
+    'SecurityInvoker',
+    {
+      readonly external: boolean;
+      readonly definer: boolean;
+    }
+  > {}
+const SecurityInvoker = (args: UnTag<SecurityInvoker>): SecurityInvoker => tag('SecurityInvoker', args);
+
+interface ResetAll extends Tagged<'ResetAll', {}> {}
+const ResetAll: ResetAll = tag('ResetAll', {});
+
+/*
+ALTER PUBLICATION name ADD publication_object [, ...]
+ALTER PUBLICATION name SET publication_object [, ...]
+ALTER PUBLICATION name DROP publication_object [, ...]
+ALTER PUBLICATION name SET ( publication_parameter [= value] [, ... ] )
+ALTER PUBLICATION name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER PUBLICATION name RENAME TO new_name
+
+where publication_object is one of:
+
+    TABLE [ ONLY ] table_name [ * ] [ ( column_name [, ... ] ) ] [ WHERE ( expression ) ] [, ... ]
+    TABLES IN SCHEMA { schema_name | CURRENT_SCHEMA } [, ... ]
+*/
+interface AlterPublication
+  extends Tagged<
+    'AlterPublication',
+    {
+      readonly name: Ident;
+      readonly publications: Rename | OwnerTo | SetPublicationParameter | SetPublications;
+    }
+  > {}
+const AlterPublication = (args: UnTag<AlterPublication>): AlterPublication => tag('AlterPublication', args);
+
+interface SetPublicationParameter
+  extends Tagged<
+    'SetPublicationParameter',
+    {
+      readonly params: Array<{ name: Ident; value: Literal }>;
+    }
+  > {}
+const SetPublicationParameter = (args: UnTag<SetPublicationParameter>): SetPublicationParameter =>
+  tag('SetPublicationParameter', args);
+
+interface SetPublications
+  extends Tagged<
+    'SetPublications',
+    {
+      readonly add: boolean;
+      readonly definitions: Array<TablePublication | TableInSchemaPublication>;
+    }
+  > {}
+const SetPublications = (args: UnTag<SetPublications>): SetPublications => tag('SetPublications', args);
+
+/*
+TABLE [ ONLY ] table_name [ * ] [ ( column_name [, ... ] ) ] [ WHERE ( expression ) ] [, ... ]
+*/
+interface TablePublication
+  extends Tagged<
+    'TablePublication',
+    {
+      readonly table: Ident;
+      readonly only: boolean;
+      readonly columns: Array<Ident>;
+      readonly where: Expr<PgExtension> | null;
+    }
+  > {}
+const TablePublication = (args: UnTag<TablePublication>): TablePublication => tag('TablePublication', args);
+
+/*
+TABLES IN SCHEMA { schema_name | CURRENT_SCHEMA } [, ... ]
+*/
+interface TableInSchemaPublication
+  extends Tagged<
+    'TableInSchemaPublication',
+    {
+      readonly schema: Ident | null;
+    }
+  > {}
+const TableInSchemaPublication = (args: UnTag<TableInSchemaPublication>): TableInSchemaPublication =>
+  tag('TableInSchemaPublication', args);
+
+/*
+ALTER ROLE role_specification [ WITH ] option [ ... ]
+
+where option can be:
+
+      SUPERUSER | NOSUPERUSER
+    | CREATEDB | NOCREATEDB
+    | CREATEROLE | NOCREATEROLE
+    | INHERIT | NOINHERIT
+    | LOGIN | NOLOGIN
+    | REPLICATION | NOREPLICATION
+    | BYPASSRLS | NOBYPASSRLS
+    | CONNECTION LIMIT connlimit
+    | [ ENCRYPTED ] PASSWORD 'password' | PASSWORD NULL
+    | VALID UNTIL 'timestamp'
+
+ALTER ROLE name RENAME TO new_name
+
+ALTER ROLE { role_specification | ALL } [ IN DATABASE database_name ] SET configuration_parameter { TO | = } { value | DEFAULT }
+ALTER ROLE { role_specification | ALL } [ IN DATABASE database_name ] SET configuration_parameter FROM CURRENT
+ALTER ROLE { role_specification | ALL } [ IN DATABASE database_name ] RESET configuration_parameter
+ALTER ROLE { role_specification | ALL } [ IN DATABASE database_name ] RESET ALL
+
+where role_specification can be:
+
+    role_name
+  | CURRENT_ROLE
+  | CURRENT_USER
+  | SESSION_USER
+*/
+interface AlterRole
+  extends Tagged<
+    'AlterRole',
+    {
+      readonly role: UserSpec;
+      readonly action: SetConfig | ResetConfig | ResetAll | Array<RoleOption> | Rename;
+    }
+  > {}
+const AlterRole = (args: UnTag<AlterRole>): AlterRole => tag('AlterRole', args);
+
+type RoleOption =
+  | 'SuperUser'
+  | 'NoSuperUser'
+  | 'CreateDB'
+  | 'NoCreateDB'
+  | 'CreateRole'
+  | 'NoCreateRole'
+  | 'Inherit'
+  | 'NoInherit'
+  | 'Login'
+  | 'NoLogin'
+  | 'Replication'
+  | 'NoReplication'
+  | 'BypassRLs'
+  | 'NoBypassRLs'
+  | ConnectionLimit
+  | Password
+  | ValidUntil;
+
+interface ConnectionLimit
+  extends Tagged<
+    'ConnectionLimit',
+    {
+      readonly limit: number;
+    }
+  > {}
+const ConnectionLimit = (args: UnTag<ConnectionLimit>): ConnectionLimit => tag('ConnectionLimit', args);
+
+interface Password
+  extends Tagged<
+    'Password',
+    {
+      readonly Encrypted: boolean;
+      readonly password: string | null;
+    }
+  > {}
+const Password = (args: UnTag<Password>): Password => tag('Password', args);
+
+interface ValidUntil
+  extends Tagged<
+    'ValidUntil',
+    {
+      readonly timestamp: string;
+    }
+  > {}
+const ValidUntil = (args: UnTag<ValidUntil>): ValidUntil => tag('ValidUntil', args);
+
+/*
+ALTER ROUTINE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    action [ ... ] [ RESTRICT ]
+ALTER ROUTINE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    RENAME TO new_name
+ALTER ROUTINE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER ROUTINE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    SET SCHEMA new_schema
+ALTER ROUTINE name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
+    [ NO ] DEPENDS ON EXTENSION extension_name
+
+where action is one of:
+
+    IMMUTABLE | STABLE | VOLATILE
+    [ NOT ] LEAKPROOF
+    [ EXTERNAL ] SECURITY INVOKER | [ EXTERNAL ] SECURITY DEFINER
+    PARALLEL { UNSAFE | RESTRICTED | SAFE }
+    COST execution_cost
+    ROWS result_rows
+    SET configuration_parameter { TO | = } { value | DEFAULT }
+    SET configuration_parameter FROM CURRENT
+    RESET configuration_parameter
+    RESET ALL
+*/
+interface AlterRoutine
+  extends Tagged<
+    'AlterRoutine',
+    {
+      readonly name: Ident;
+      readonly args: Array<{ mode?: ArgMode; name?: Ident; type: DataType }>;
+      readonly action: Rename | OwnerTo | SetSchema | DependsOnExtension | Array<RoutineOption>;
+    }
+  > {}
+const AlterRoutine = (args: UnTag<AlterRoutine>): AlterRoutine => tag('AlterRoutine', args);
+
+type RoutineOption =
+  | 'Immutable'
+  | 'Stable'
+  | 'Volatile'
+  | 'Leakproof'
+  | 'NotLeakproof'
+  | SecurityInvoker
+  | Parallel
+  | Cost
+  | Rows
+  | SetConfig
+  | ResetConfig
+  | ResetAll;
+
+/*
+PARALLEL { UNSAFE | RESTRICTED | SAFE }
+*/
+interface Parallel
+  extends Tagged<
+    'Parallel',
+    {
+      readonly mode: 'Unsafe' | 'Restricted' | 'Safe';
+    }
+  > {}
+const Parallel = (args: UnTag<Parallel>): Parallel => tag('Parallel', args);
+
+/*
+ROWS result_rows
+*/
+interface Rows
+  extends Tagged<
+    'Rows',
+    {
+      readonly num: number;
+    }
+  > {}
+const Rows = (args: UnTag<Rows>): Rows => tag('Rows', args);
+
+/*
+COST execution_cost
+*/
+interface Cost
+  extends Tagged<
+    'Cost',
+    {
+      readonly cost: number;
+    }
+  > {}
+const Cost = (args: UnTag<Cost>): Cost => tag('Cost', args);
+
+/*
+ALTER RULE name ON table_name RENAME TO new_name
+*/
+interface AlterRule
+  extends Tagged<
+    'AlterRule',
+    {
+      readonly name: Ident;
+      readonly newName: Ident;
+    }
+  > {}
+const AlterRule = (args: UnTag<AlterRule>): AlterRule => tag('AlterRule', args);
+
+/*
+ALTER SCHEMA name RENAME TO new_name
+ALTER SCHEMA name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+*/
+interface AlterSchema
+  extends Tagged<
+    'AlterSchema',
+    {
+      readonly name: Ident;
+      readonly action: Rename | OwnerTo;
+    }
+  > {}
+const AlterSchema = (args: UnTag<AlterSchema>): AlterSchema => tag('AlterSchema', args);
+
+/*
+ALTER SEQUENCE [ IF EXISTS ] name
+    [ AS data_type ]
+    [ INCREMENT [ BY ] increment ]
+    [ MINVALUE minvalue | NO MINVALUE ] [ MAXVALUE maxvalue | NO MAXVALUE ]
+    [ START [ WITH ] start ]
+    [ RESTART [ [ WITH ] restart ] ]
+    [ CACHE cache ] [ [ NO ] CYCLE ]
+    [ OWNED BY { table_name.column_name | NONE } ]
+ALTER SEQUENCE [ IF EXISTS ] name SET { LOGGED | UNLOGGED }
+ALTER SEQUENCE [ IF EXISTS ] name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER SEQUENCE [ IF EXISTS ] name RENAME TO new_name
+ALTER SEQUENCE [ IF EXISTS ] name SET SCHEMA new_schema
+*/
+interface AlterSequence
+  extends Tagged<
+    'AlterSequence',
+    {
+      readonly name: Ident;
+      readonly ifExists: boolean;
+      readonly action: SetSchema | Rename | OwnerTo | SetLogged | SequenceOptions;
+    }
+  > {}
+const AlterSequence = (args: UnTag<AlterSequence>): AlterSequence => tag('AlterSequence', args);
+
+interface SetLogged
+  extends Tagged<
+    'SetLogged',
+    {
+      readonly negate: boolean;
+    }
+  > {}
+const SetLogged = (args: UnTag<SetLogged>): SetLogged => tag('SetLogged', args);
+
+interface SequenceOptions
+  extends Tagged<
+    'SequenceOptions',
+    {
+      readonly as: DataType | null;
+      readonly increment: number;
+      readonly minValue: Literal | null;
+      readonly maxValue: Literal | null;
+      readonly start: Literal | null;
+      readonly restart: Literal | null;
+      readonly cache: number | null;
+      readonly ownerBy: QualifiedIdent | 'None';
+    }
+  > {}
+const SequenceOptions = (args: UnTag<SequenceOptions>): SequenceOptions => tag('SequenceOptions', args);
+
+/*
+ALTER SERVER name [ VERSION 'new_version' ]
+    [ OPTIONS ( [ ADD | SET | DROP ] option ['value'] [, ... ] ) ]
+ALTER SERVER name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER SERVER name RENAME TO new_name
+*/
+interface AlterServer
+  extends Tagged<
+    'AlterServer',
+    {
+      readonly name: Ident;
+      readonly action: Rename | OwnerTo | ServerOptions;
+    }
+  > {}
+const AlterServer = (args: UnTag<AlterServer>): AlterServer => tag('AlterServer', args);
+
+interface ServerOptions
+  extends Tagged<
+    'ServerOptions',
+    {
+      readonly version: StringLit | null;
+      readonly options: Array<{ mode: 'Add' | 'Set' | 'Drop'; name: Ident; value: StringLit | null }>;
+    }
+  > {}
+const ServerOptions = (args: UnTag<ServerOptions>): ServerOptions => tag('ServerOptions', args);
 
 export {
   PgSchemaManipulation,

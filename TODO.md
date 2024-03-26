@@ -12,26 +12,6 @@ type MySchema = {
 
 The database connector might convert this into a numeric type which means that you can use `+`, `-`, etc. but the functions on the builder won't work on `Natural` because they're specialized. Type-classes would be useful here but requiring users to manually pass a type class instance would be annoying and at that point you might as well do `sql.unTyped().fn.add(...)`.
 
-Idents need to be boxed so they can be distinguised from strings in updates and inserts.
-
-Wonder if it might be better to modify the base builder prototype instead of parameterization e.g.
-
-```
-declare module 'zod' {
-    export interface ZodType {
-        makeOptional: (required: boolean)=> ZodType;
-    }
-}
-// Add syntaxic sugar to the Zod schema
-z.ZodType.prototype.makeOptional = function (required: boolean): ZodType {
-    return required ? this : this.optional();
-};
-```
-
-Also wonder if I might be able to _clone_ the module then modify the clone. That would allow the types to actually be accurate.
-
-Another option might be to just override _every_ method calling and having them call `super` while telling Typescript what the correct type is.
-
 ```
 // Pre-compile
 const query: PrecompiledQuery<[number, number]> = sql.from('my_table')
@@ -44,3 +24,9 @@ const query: PrecompiledQuery<[number, number]> = sql.from('my_table')
 const PrecompiledQuery<[number, number]> = 'SELECT * FROM my_table WHERE foo = $number AND bar > $number'
 
 ```
+
+# Documentation Notes
+
+## Security
+1. Never query against your SQL database using `renderAsString`. Queries rendered this way have all literals embedded directly into them and are not escaped. (maybe I should just include escaping by default). Pass the query to the client directly or use `renderAsStringAndArgs`.
+2. Do not use user input except as literals. SIJ cannot protect you against SQL injection if you allow users to define arbitrary parts of your query like function names. (maybe I should provide an `interpolate` function that allows you to pull out any arbitrary part of the query.)
