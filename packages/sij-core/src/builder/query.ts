@@ -35,7 +35,7 @@ import {
   ast,
 } from './util';
 
-type MakeJoinTable<Schema, J, Alias extends string> = J extends keyof Schema & string
+export type MakeJoinTable<Schema, J, Alias extends string> = J extends keyof Schema & string
   ? Schema[J] & QualifiedTable<Schema, J>
   : J extends WithAlias<infer A, QueryBuilder<any, any, infer T, any>>
     ? QualifyTable<A, T>
@@ -342,17 +342,17 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
   orderByAsc<Id extends keyof Table & string, Exp extends Expr<Ext>, Col extends Id | Exp>(
     col: Col,
     opts?: { nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
-  ) {
+  ): QueryBuilder<Schema, Table, Return, Ext> {
     const subOpts = { ...(opts ?? {}), order: 'ASC' as 'ASC' };
-    this.orderBy(col, subOpts);
+    return this.orderBy(col, subOpts);
   }
 
   orderByDesc<Id extends keyof Table & string, Exp extends Expr<Ext>, Col extends Id | Exp>(
     col: Col,
     opts?: { nullHandling?: 'NULLS FIRST' | 'NULLS LAST' },
-  ) {
+  ): QueryBuilder<Schema, Table, Return, Ext> {
     const subOpts = { ...(opts ?? {}), order: 'DESC' as 'DESC' };
-    this.orderBy(col, subOpts);
+    return this.orderBy(col, subOpts);
   }
 
   /**

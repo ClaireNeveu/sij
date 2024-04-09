@@ -1,4 +1,16 @@
-export { Builder, Functions, QueryBuilder, InsertBuilder, UpdateBuilder, DeleteBuilder } from './builder';
+export {
+  Builder,
+  Functions,
+  QueryBuilder,
+  InsertBuilder,
+  UpdateBuilder,
+  DeleteBuilder,
+  SchemaBuilder,
+  ConstraintBuilder,
+  TypeBuilder,
+  DefaultBuilder,
+  MakeJoinTable,
+} from './builder';
 
 export { Renderer } from './render';
 

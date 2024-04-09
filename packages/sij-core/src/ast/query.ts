@@ -1,5 +1,5 @@
 import { Extension, NoExtension } from './util';
-import { Tagged, UnTag, tag } from "../util";
+import { Tagged, UnTag, tag } from '../util';
 import { Ident, Expr, QualifiedIdent } from './expr';
 
 interface Query<Ext extends Extension>
@@ -29,9 +29,8 @@ interface CommonTableExpr<Ext extends Extension>
       readonly query: Query<Ext>;
     }
   > {}
-const CommonTableExpr = <Ext extends Extension>(
-  args: UnTag<CommonTableExpr<Ext>>,
-): CommonTableExpr<Ext> => tag('CommonTableExpr', args);
+const CommonTableExpr = <Ext extends Extension>(args: UnTag<CommonTableExpr<Ext>>): CommonTableExpr<Ext> =>
+  tag('CommonTableExpr', args);
 
 /**
  * Alias name for a table and optionally its columns
@@ -119,9 +118,8 @@ interface AliasedSelection<Ext extends Extension>
       readonly alias: Ident;
     }
   > {}
-const AliasedSelection = <Ext extends Extension>(
-  args: UnTag<AliasedSelection<Ext>>,
-): AliasedSelection<Ext> => tag('AliasedSelection', args);
+const AliasedSelection = <Ext extends Extension>(args: UnTag<AliasedSelection<Ext>>): AliasedSelection<Ext> =>
+  tag('AliasedSelection', args);
 
 // TODO aliased tables
 interface JoinedTable<Ext extends Extension>

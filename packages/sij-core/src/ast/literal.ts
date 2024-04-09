@@ -1,4 +1,4 @@
-import { Tagged, tag } from "../util";
+import { Tagged, tag } from '../util';
 
 type Literal = NumLit | StringLit | BoolLit | NullLit | DateLit | CustomLit;
 

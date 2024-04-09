@@ -1,4 +1,4 @@
-import { Tagged, UnTag, tag } from "../util";
+import { Tagged, UnTag, tag } from '../util';
 
 /**
  * Datatypes defined in SQL.

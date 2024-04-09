@@ -10,7 +10,7 @@ import {
   TableConstraint,
 } from './schema-definition';
 import { Extension } from './util';
-import { Tagged, UnTag, tag } from "../util";
+import { Tagged, UnTag, tag } from '../util';
 
 /*
 <SQL schema manipulation statement> ::=

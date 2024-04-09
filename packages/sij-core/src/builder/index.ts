@@ -3,7 +3,7 @@ import { Query, Select, BasicTable, JoinedTable, Join } from '../ast/query';
 import { Insert, Update, Delete } from '../ast/statement';
 import { DefaultValue } from '../ast/statement';
 import { Extension, NoExtension } from '../ast/util';
-import { VTagged } from "../util";
+import { VTagged } from '../util';
 import { Functions } from './functions';
 import { BuilderExtension, WithAlias, QualifiedTable, makeLit, TypedAst, ast } from './util';
 import { QueryBuilder as QB } from './query';
@@ -89,7 +89,7 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
     );
   }
 
-  update<TableName extends keyof Schema & string>(table: TableName) {
+  update<TableName extends keyof Schema & string>(table: TableName): UB<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number, Ext> {
     const update = Update<Ext>({
       table: Ident(table),
       assignments: [],
@@ -114,19 +114,19 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
     );
   }
 
-  get schema() {
+  get schema(): SB<Schema, number, Ext> {
     return new this.SchemaBuilder<Schema, number, Ext>([], this.fn);
   }
 
-  get type() {
+  get type(): TB {
     return new this.TypeBuilder();
   }
 
-  get constraint() {
+  get constraint(): CB<Schema, Ext> {
     return new this.ConstraintBuilder();
   }
 
-  get default() {
+  get default(): DefB<Ext> {
     return new this.DefaultBuilder();
   }
 
@@ -173,6 +173,18 @@ class Builder<Schema, Ext extends BuilderExtension> extends TransactionBuilder<S
   }
 }
 
-export { Extend } from './util'
+export { Extend } from './util';
+export { MakeJoinTable } from './query';
 
-export { Builder, Functions, QB as QueryBuilder, IB as InsertBuilder, UB as UpdateBuilder, DB as DeleteBuilder };
+export {
+  Builder,
+  Functions,
+  QB as QueryBuilder,
+  IB as InsertBuilder,
+  UB as UpdateBuilder,
+  DB as DeleteBuilder,
+  SB as SchemaBuilder,
+  CB as ConstraintBuilder,
+  TB as TypeBuilder,
+  DefB as DefaultBuilder,
+};

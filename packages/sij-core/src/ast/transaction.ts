@@ -1,5 +1,5 @@
 import { Ident, Lit } from './expr';
-import { Tagged, UnTag, tag } from "../util";
+import { Tagged, UnTag, tag } from '../util';
 type TransactionStatement = SetTransaction | SetConstraintMode | Commit | Rollback;
 
 /*
