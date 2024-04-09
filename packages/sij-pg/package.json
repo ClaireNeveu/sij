@@ -1,7 +1,7 @@
 {
-  "name": "sij-postgresql",
+  "name": "sij-pg",
   "version": "0.0.1",
-  "description": "SIJ client for PostgreSQL",
+  "description": "SIJ client for PostgreSQL using the pg client",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {
@@ -25,6 +25,7 @@
     "typescript": "^5.4.2"
   },
   "dependencies": {
+    "pg": "^8.11.5",
     "sij-dialect-postgresql": "file:../sij-dialect-postgresql"
   }
 }
