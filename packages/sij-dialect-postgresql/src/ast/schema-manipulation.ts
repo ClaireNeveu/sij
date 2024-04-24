@@ -821,7 +821,7 @@ interface SetColumnCompression
   extends Tagged<
     'SetColumnCompression',
     {
-      readonly;
+      readonly method: Ident;
     }
   > {}
 const SetColumnCompression = (args: UnTag<SetColumnCompression>): SetColumnCompression =>

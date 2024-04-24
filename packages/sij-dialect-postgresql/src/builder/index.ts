@@ -45,11 +45,21 @@ class PgBuilder<Schema> extends CoreBuilder<Schema, PgExtension> {
   override insertInto<TableName extends keyof Schema & string>(
     table: TableName,
   ): PgInsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number> {
-    return super.insertInto(table) as PgInsertBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number>
+    return super.insertInto(table) as PgInsertBuilder<
+      Schema,
+      Schema[TableName] & QualifiedTable<Schema, TableName>,
+      number
+    >;
   }
 
-  override update<TableName extends keyof Schema & string>(table: TableName): PgUpdateBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number> {
-    return super.update(table) as PgUpdateBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number>
+  override update<TableName extends keyof Schema & string>(
+    table: TableName,
+  ): PgUpdateBuilder<Schema, Schema[TableName] & QualifiedTable<Schema, TableName>, number> {
+    return super.update(table) as PgUpdateBuilder<
+      Schema,
+      Schema[TableName] & QualifiedTable<Schema, TableName>,
+      number
+    >;
   }
 
   override deleteFrom<TableName extends keyof Schema & string>(table: TableName) {
@@ -61,11 +71,11 @@ class PgBuilder<Schema> extends CoreBuilder<Schema, PgExtension> {
   }
 
   override get schema(): PgSchemaBuilder<Schema, number> {
-    return super.schema() as PgSchemaBuilder<Schema, number>
+    return super.schema() as PgSchemaBuilder<Schema, number>;
   }
 
   override get type(): PgTypeBuilder {
-    return super.type
+    return super.type;
   }
 
   override get constraint(): PgConstraintBuilder<Schema> {
@@ -77,4 +87,4 @@ class PgBuilder<Schema> extends CoreBuilder<Schema, PgExtension> {
   }
 }
 
-export { PgBuilder }
+export { PgBuilder };
