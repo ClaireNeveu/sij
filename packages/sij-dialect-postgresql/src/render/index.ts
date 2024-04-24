@@ -1,3 +1,3 @@
 import { Renderer } from 'sij-core';
 
-class PostgreSqlRenderer extends Renderer {}
+export class PgRenderer extends Renderer {}

@@ -87,4 +87,16 @@ class PgBuilder<Schema> extends CoreBuilder<Schema, PgExtension> {
   }
 }
 
-export { PgBuilder };
+export { PgFunctions } from './functions';
+
+export {
+  PgBuilder,
+  PgQueryBuilder,
+  PgInsertBuilder,
+  PgUpdateBuilder,
+  PgDeleteBuilder,
+  PgSchemaBuilder,
+  PgConstraintBuilder,
+  PgTypeBuilder,
+  PgDefaultBuilder,
+};

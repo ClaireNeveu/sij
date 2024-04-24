@@ -2,7 +2,7 @@ import CallableInstance from 'callable-instance';
 import { lens } from 'lens.ts';
 
 import { Expr, Ident, Lit } from '../ast/expr';
-import { DefaultValue, Delete, ValuesConstructor, ValuesQuery } from '../ast/statement';
+import { DefaultValue, Delete, Statement, ValuesConstructor, ValuesQuery } from '../ast/statement';
 import { Functions } from './functions';
 import { BuilderExtension, makeLit, TypedAst, ast } from './util';
 import { QueryBuilder } from './query';
@@ -62,6 +62,10 @@ class DeleteBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
       lens<Delete<Ext>>().where.set(e => updateWhere(e))(this._statement),
       this.fn as Functions<Schema, any, Ext>,
     );
+  }
+
+  build(): Statement<Ext> {
+    return this._statement;
   }
 }
 // Merges with above class to provide calling as a function

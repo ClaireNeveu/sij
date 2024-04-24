@@ -34,6 +34,7 @@ import {
   TypedAst,
   ast,
 } from './util';
+import { Statement } from '../ast';
 
 export type MakeJoinTable<Schema, J, Alias extends string> = J extends keyof Schema & string
   ? Schema[J] & QualifiedTable<Schema, J>
@@ -469,7 +470,7 @@ class QueryBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends 
     return typeTag<Return>();
   }
 
-  finish(): Query<Ext> {
+  build(): Statement<Ext> {
     return this._statement;
   }
 }

@@ -2,7 +2,7 @@ import CallableInstance from 'callable-instance';
 import { lens } from 'lens.ts';
 
 import { Expr, Ident, Lit } from '../ast/expr';
-import { DefaultValue, Update, ValuesConstructor, ValuesQuery } from '../ast/statement';
+import { DefaultValue, Statement, Update, ValuesConstructor, ValuesQuery } from '../ast/statement';
 import { Extension, NoExtension } from '../ast/util';
 import { Functions } from './functions';
 import { BuilderExtension, makeLit, StringKeys, TypedAst, ast } from './util';
@@ -120,6 +120,10 @@ class UpdateBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
       lens<Update<Ext>>().where.set(e => updateWhere(e))(this._statement),
       this.fn as Functions<Schema, any, Ext>,
     );
+  }
+
+  build(): Statement<Ext> {
+    return this._statement;
   }
 }
 // Merges with above class to provide calling as a function

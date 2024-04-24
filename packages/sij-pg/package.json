@@ -17,6 +17,7 @@
   "author": "Claire Neveu",
   "license": "BSD-3-Clause",
   "devDependencies": {
+    "@types/pg": "^8.11.5",
     "ava": "^6.1.2",
     "prettier": "^3.2.5",
     "ts-node": "^10.9.2",
@@ -26,6 +27,7 @@
   },
   "dependencies": {
     "pg": "^8.11.5",
+    "sij-core": "file:../sij-core",
     "sij-dialect-postgresql": "file:../sij-dialect-postgresql"
   }
 }

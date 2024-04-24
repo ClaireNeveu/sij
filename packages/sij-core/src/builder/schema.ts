@@ -39,6 +39,7 @@ import {
   SchemaManipulationStatement,
   SelectPrivilege,
   SetDefault,
+  Statement,
   TableConstraint,
   TableDefinition,
   UniqueConstraint,
@@ -534,6 +535,10 @@ class SchemaBuilder<Database, Return, Ext extends BuilderExtension> extends Call
 
   schemaTag(): TypeTag<Database> {
     return typeTag<Database>();
+  }
+
+  build(): Array<Statement<Ext>> {
+    return this._statements;
   }
 }
 

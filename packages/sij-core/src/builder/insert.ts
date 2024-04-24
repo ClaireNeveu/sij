@@ -2,7 +2,7 @@ import CallableInstance from 'callable-instance';
 import { lens } from 'lens.ts';
 
 import { Expr, Ident, Lit } from '../ast/expr';
-import { DefaultValue, Insert, ValuesConstructor, ValuesQuery } from '../ast/statement';
+import { DefaultValue, Insert, Statement, ValuesConstructor, ValuesQuery } from '../ast/statement';
 import { Extension, NoExtension } from '../ast/util';
 import { VTagged } from '../util';
 import { Functions } from './functions';
@@ -164,6 +164,10 @@ class InsertBuilder<Schema, Table, Return, Ext extends BuilderExtension> extends
       lens<Insert<Ext>>().values.set(ValuesQuery({ query: query._statement }))(this._statement),
       this.fn as Functions<Schema, any, Ext>,
     );
+  }
+
+  build(): Statement<Ext> {
+    return this._statement;
   }
 }
 // Merges with above class to provide calling as a function
