@@ -1,10 +1,33 @@
-import { Ident } from 'sij-core/ast';
+import { Ident, IsolationLevel } from 'sij-core/ast';
+import { Tagged, UnTag, tag } from 'sij-core/util';
 
-import { Tagged, UnTag, tag } from 'sij-core/dist/util';
+type PgUtil = Vacuum | Unlisten | StartTransaction;
 
-type PgUtil = Vacuum;
+/*
+START TRANSACTION [ transaction_mode [, ...] ]
 
-/* VACUUM [ ( option [, ...] ) ] [ table_and_columns [, ...] ]
+where transaction_mode is one of:
+
+    ISOLATION LEVEL { SERIALIZABLE | REPEATABLE READ | READ COMMITTED | READ UNCOMMITTED }
+    READ WRITE | READ ONLY
+    [ NOT ] DEFERRABLE
+*/
+interface StartTransaction extends Tagged<'StartTransaction', {
+  readonly modes: Array<TransactionMode>;
+}> {}
+const StartTransaction = (args: UnTag<StartTransaction>): StartTransaction => tag('StartTransaction', args);
+type TransactionMode = IsolationLevel | 'ReadWrite' | 'ReadOnly' | 'Deferrable' | 'NotDeferrable';
+
+/* 
+UNLISTEN { channel | * }
+*/
+interface Unlisten extends Tagged<'Unlisten', {
+  readonly channels: Array<Ident> //empty array == "*";
+}> {}
+const Unlisten = (args: UnTag<Unlisten>): Unlisten => tag('Unlisten', args);
+
+/* 
+VACUUM [ ( option [, ...] ) ] [ table_and_columns [, ...] ]
 VACUUM [ FULL ] [ FREEZE ] [ VERBOSE ] [ ANALYZE ] [ table_and_columns [, ...] ]
 
 where option can be one of:
