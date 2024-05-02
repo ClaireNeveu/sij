@@ -25,7 +25,17 @@ type PgSchemaManipulation =
   | AlterProcedure
   | AlterPublication
   | AlterRole
-  | AlterRoutine;
+  | AlterRoutine
+  | AlterRule
+  | AlterSchema
+  | AlterSequence
+  | AlterServer
+  | AlterStatistics
+  | AlterSubscription
+  | AlterSystem
+  // | AlterTable
+  | AlterTablespace
+  | AlterTextSearchConfiguration;
 
 type UserSpec = Ident | 'CurrentRole' | 'CurrentUser' | 'SessionUser';
 
@@ -1419,6 +1429,285 @@ interface ServerOptions
   > {}
 const ServerOptions = (args: UnTag<ServerOptions>): ServerOptions => tag('ServerOptions', args);
 
+/*
+ALTER STATISTICS name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER STATISTICS name RENAME TO new_name
+ALTER STATISTICS name SET SCHEMA new_schema
+ALTER STATISTICS name SET STATISTICS new_target
+*/
+interface AlterStatistics
+  extends Tagged<
+    'AlterStatistics',
+    {
+      readonly name: Ident;
+      readonly action: OwnerTo | Rename | SetSchema | SetStatistics;
+    }
+  > {}
+const AlterStatistics = (args: UnTag<AlterStatistics>): AlterStatistics => tag('AlterStatistics', args);
+
+interface SetStatistics
+  extends Tagged<
+    'SetStatistics',
+    {
+      readonly target: number;
+    }
+  > {}
+const SetStatistics = (args: UnTag<SetStatistics>): SetStatistics => tag('SetStatistics', args);
+
+/*
+ALTER SUBSCRIPTION name CONNECTION 'conninfo'
+ALTER SUBSCRIPTION name SET PUBLICATION publication_name [, ...] [ WITH ( publication_option [= value] [, ... ] ) ]
+ALTER SUBSCRIPTION name ADD PUBLICATION publication_name [, ...] [ WITH ( publication_option [= value] [, ... ] ) ]
+ALTER SUBSCRIPTION name DROP PUBLICATION publication_name [, ...] [ WITH ( publication_option [= value] [, ... ] ) ]
+ALTER SUBSCRIPTION name REFRESH PUBLICATION [ WITH ( refresh_option [= value] [, ... ] ) ]
+ALTER SUBSCRIPTION name ENABLE
+ALTER SUBSCRIPTION name DISABLE
+ALTER SUBSCRIPTION name SET ( subscription_parameter [= value] [, ... ] )
+ALTER SUBSCRIPTION name SKIP ( skip_option = value )
+ALTER SUBSCRIPTION name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER SUBSCRIPTION name RENAME TO new_name
+*/
+interface AlterSubscription
+  extends Tagged<
+    'AlterSubscription',
+    {
+      readonly name: Ident;
+      readonly action: AlterSubscriptionAction;
+    }
+  > {}
+const AlterSubscription = (args: UnTag<AlterSubscription>): AlterSubscription => tag('AlterSubscription', args);
+
+type AlterSubscriptionAction =
+  | Connection
+  | SetPublication
+  | AddPublication
+  | DropPublication
+  | RefreshPublication
+  | 'Enable'
+  | 'Disable'
+  | SetParameter
+  | Skip
+  | OwnerTo
+  | Rename;
+
+interface Connection
+  extends Tagged<
+    'Connection',
+    {
+      readonly connInfo: string;
+    }
+  > {}
+const Connection = (args: UnTag<Connection>): Connection => tag('Connection', args);
+
+interface AddPublication
+  extends Tagged<
+    'AddPublication',
+    {
+      readonly publications: Array<string>;
+      readonly refresh: boolean;
+    }
+  > {}
+const AddPublication = (args: UnTag<AddPublication>): AddPublication => tag('AddPublication', args);
+
+interface SetPublication
+  extends Tagged<
+    'SetPublication',
+    {
+      readonly publications: Array<string>;
+      readonly refresh: boolean;
+    }
+  > {}
+const SetPublication = (args: UnTag<SetPublication>): SetPublication => tag('SetPublication', args);
+
+interface DropPublication
+  extends Tagged<
+    'DropPublication',
+    {
+      readonly publications: Array<string>;
+      readonly refresh: boolean;
+    }
+  > {}
+const DropPublication = (args: UnTag<DropPublication>): DropPublication => tag('DropPublication', args);
+
+interface RefreshPublication
+  extends Tagged<
+    'RefreshPublication',
+    {
+      readonly copyData: boolean;
+    }
+  > {}
+const RefreshPublication = (args: UnTag<RefreshPublication>): RefreshPublication => tag('RefreshPublication', args);
+
+interface SetParameter
+  extends Tagged<
+    'SetParameter',
+    {
+      readonly slotName?: string | null;
+      readonly synchronousCommit?: 'on' | 'off' | 'remote_write' | 'local' | 'remote_apply';
+      readonly binary?: boolean;
+      readonly streaming?: 'on' | 'off' | 'parallel';
+      readonly disableOnError?: boolean;
+      readonly password_required?: boolean;
+      readonly runAsOwner?: boolean;
+      readonly origin?: string;
+    }
+  > {}
+const SetParameter = (args: UnTag<SetParameter>): SetParameter => tag('SetParameter', args);
+
+interface Skip
+  extends Tagged<
+    'Skip',
+    {
+      readonly lsn?: number | null;
+    }
+  > {}
+const Skip = (args: UnTag<Skip>): Skip => tag('Skip', args);
+
+/*
+ALTER SYSTEM SET configuration_parameter { TO | = } { value [, ...] | DEFAULT }
+
+ALTER SYSTEM RESET configuration_parameter
+ALTER SYSTEM RESET ALL
+*/
+interface AlterSystem
+  extends Tagged<
+    'AlterSystem',
+    {
+      readonly parameters: Array<Literal | Ident | null>; // empty array is ALL, null is DEFAULT
+    }
+  > {}
+const AlterSystem = (args: UnTag<AlterSystem>): AlterSystem => tag('AlterSystem', args);
+
+/*
+ALTER TABLESPACE name RENAME TO new_name
+ALTER TABLESPACE name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER TABLESPACE name SET ( tablespace_option = value [, ... ] )
+ALTER TABLESPACE name RESET ( tablespace_option [, ... ] )
+*/
+interface AlterTablespace
+  extends Tagged<
+    'AlterTablespace',
+    {
+      readonly name: Ident;
+      readonly action: OwnerTo | SetTablespaceOption | Rename | ResetTablespaceOption;
+    }
+  > {}
+const AlterTablespace = (args: UnTag<AlterTablespace>): AlterTablespace => tag('AlterTablespace', args);
+
+interface SetTablespaceOption
+  extends Tagged<
+    'SetTablespaceOption',
+    {
+      readonly seqPageCost?: number;
+      readonly randomPageCost?: number;
+      readonly effectIoConcurrency?: number;
+      readonly maintenanceIoConcurrency?: number;
+    }
+  > {}
+const SetTablespaceOption = (args: UnTag<SetTablespaceOption>): SetTablespaceOption => tag('SetTablespaceOption', args);
+
+interface ResetTablespaceOption
+  extends Tagged<
+    'ResetTablespaceOption',
+    {
+      readonly parameters:
+        | 'seq_page_cost'
+        | 'random_page_cost'
+        | 'effective_io_concurrency'
+        | 'maintenance_io_concurrency';
+    }
+  > {}
+const ResetTablespaceOption = (args: UnTag<ResetTablespaceOption>): ResetTablespaceOption =>
+  tag('ResetTablespaceOption', args);
+
+/*
+ALTER TEXT SEARCH CONFIGURATION name
+    ADD MAPPING FOR token_type [, ... ] WITH dictionary_name [, ... ]
+ALTER TEXT SEARCH CONFIGURATION name
+    ALTER MAPPING FOR token_type [, ... ] WITH dictionary_name [, ... ]
+ALTER TEXT SEARCH CONFIGURATION name
+    ALTER MAPPING REPLACE old_dictionary WITH new_dictionary
+ALTER TEXT SEARCH CONFIGURATION name
+    ALTER MAPPING FOR token_type [, ... ] REPLACE old_dictionary WITH new_dictionary
+ALTER TEXT SEARCH CONFIGURATION name
+    DROP MAPPING [ IF EXISTS ] FOR token_type [, ... ]
+ALTER TEXT SEARCH CONFIGURATION name RENAME TO new_name
+ALTER TEXT SEARCH CONFIGURATION name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER TEXT SEARCH CONFIGURATION name SET SCHEMA new_schema
+*/
+interface AlterTextSearchConfiguration
+  extends Tagged<
+    'AlterTextSearchConfiguration',
+    {
+      readonly name: Ident;
+      readonly action: AlterTextSearchConfigurationAction;
+    }
+  > {}
+const AlterTextSearchConfiguration = (args: UnTag<AlterTextSearchConfiguration>): AlterTextSearchConfiguration =>
+  tag('AlterTextSearchConfiguration', args);
+
+type AlterTextSearchConfigurationAction =
+  | AddMapping
+  | AlterMappingForWith
+  | AlterMappingReplace
+  | AlterMappingForReplace
+  | DropMapping
+  | Rename
+  | OwnerTo
+  | SetSchema;
+
+interface AddMapping
+  extends Tagged<
+    'AddMapping',
+    {
+      readonly tokenTypes: Array<Ident>;
+      readonly dictionaries: Array<Ident>;
+    }
+  > {}
+const AddMapping = (args: UnTag<AddMapping>): AddMapping => tag('AddMapping', args);
+
+interface AlterMappingForWith
+  extends Tagged<
+    'AlterMappingForWith',
+    {
+      readonly tokenTypes: Array<Ident>;
+      readonly dictionaries: Array<Ident>;
+    }
+  > {}
+const AlterMappingForWith = (args: UnTag<AlterMappingForWith>): AlterMappingForWith => tag('AlterMappingForWith', args);
+
+interface AlterMappingReplace
+  extends Tagged<
+    'AlterMappingReplace',
+    {
+      readonly oldDictionary: Ident;
+      readonly newDictionary: Ident;
+    }
+  > {}
+const AlterMappingReplace = (args: UnTag<AlterMappingReplace>): AlterMappingReplace => tag('AlterMappingReplace', args);
+
+interface AlterMappingForReplace
+  extends Tagged<
+    'AlterMappingForReplace',
+    {
+      readonly tokenTypes: Array<Ident>;
+      readonly oldDictionary: Ident;
+      readonly newDictionary: Ident;
+    }
+  > {}
+const AlterMappingForReplace = (args: UnTag<AlterMappingForReplace>): AlterMappingForReplace =>
+  tag('AlterMappingForReplace', args);
+
+interface DropMapping
+  extends Tagged<
+    'DropMapping',
+    {
+      readonly ifExists: boolean;
+      readonly tokenTypes: Array<Ident>;
+    }
+  > {}
+const DropMapping = (args: UnTag<DropMapping>): DropMapping => tag('DropMapping', args);
+
 export {
   PgSchemaManipulation,
   Abort,
@@ -1444,4 +1733,19 @@ export {
   AlterOperator,
   AlterOperatorClass,
   AlterOperatorFamily,
+  AlterPolicy,
+  AlterProcedure,
+  AlterPublication,
+  AlterRole,
+  AlterRoutine,
+  AlterRule,
+  AlterSchema,
+  AlterSequence,
+  AlterServer,
+  AlterStatistics,
+  AlterSubscription,
+  AlterSubscriptionAction,
+  AlterSystem,
+  AlterTablespace,
+  AlterTextSearchConfiguration,
 };
