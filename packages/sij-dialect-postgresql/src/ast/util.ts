@@ -1,7 +1,83 @@
-import { Ident, IsolationLevel } from 'sij-core/ast';
+import { Ident, IsolationLevel, StringLit } from 'sij-core/ast';
 import { Tagged, UnTag, tag } from 'sij-core/util';
 
-type PgUtil = Vacuum | Unlisten | StartTransaction;
+type PgUtil =
+  | SetRole
+  | ResetRole
+  | SetSessionAuthorization
+  | ResetSessionAuthorization
+  | Show
+  | StartTransaction
+  | Truncate
+  | Unlisten
+  | Vacuum;
+
+/*
+SET [ SESSION | LOCAL ] ROLE role_name
+SET [ SESSION | LOCAL ] ROLE NONE
+*/
+interface SetRole
+  extends Tagged<
+    'SetRole',
+    {
+      readonly mode: 'Session' | 'Local' | null;
+      readonly name: Ident | 'None';
+    }
+  > {}
+const SetRole = (args: UnTag<SetRole>): SetRole => tag('SetRole', args);
+
+/*
+RESET ROLE
+*/
+interface ResetRole extends Tagged<'ResetRole', {}> {}
+const ResetRole = (args: UnTag<ResetRole>): ResetRole => tag('ResetRole', args);
+
+/*
+SET [ SESSION | LOCAL ] SESSION AUTHORIZATION user_name
+SET [ SESSION | LOCAL ] SESSION AUTHORIZATION DEFAULT
+*/
+interface SetSessionAuthorization
+  extends Tagged<
+    'SetSessionAuthorization',
+    {
+      readonly mode: 'Session' | 'Local' | null;
+      readonly username: Ident | 'Default';
+    }
+  > {}
+const SetSessionAuthorization = (args: UnTag<SetSessionAuthorization>): SetSessionAuthorization =>
+  tag('SetSessionAuthorization', args);
+
+/*
+RESET SESSION AUTHORIZATION
+*/
+interface ResetSessionAuthorization extends Tagged<'ResetSessionAuthorization', {}> {}
+const ResetSessionAuthorization = (args: UnTag<ResetSessionAuthorization>): ResetSessionAuthorization =>
+  tag('ResetSessionAuthorization', args);
+
+/* TODO -- in core
+SET TRANSACTION transaction_mode [, ...]
+SET TRANSACTION SNAPSHOT snapshot_id
+SET SESSION CHARACTERISTICS AS TRANSACTION transaction_mode [, ...]
+
+where transaction_mode is one of:
+
+    ISOLATION LEVEL { SERIALIZABLE | REPEATABLE READ | READ COMMITTED | READ UNCOMMITTED }
+    READ WRITE | READ ONLY
+    [ NOT ] DEFERRABLE
+*/
+
+/* 
+SHOW name
+SHOW ALL
+*/
+interface Show
+  extends Tagged<
+    'Show',
+    {
+      readonly name: Ident | null; // null == "SHOW ALL"
+    }
+  > {}
+const Show = (args: UnTag<Show>): Show => tag('Show', args);
 
 /*
 START TRANSACTION [ transaction_mode [, ...] ]
@@ -12,18 +88,42 @@ where transaction_mode is one of:
     READ WRITE | READ ONLY
     [ NOT ] DEFERRABLE
 */
-interface StartTransaction extends Tagged<'StartTransaction', {
-  readonly modes: Array<TransactionMode>;
-}> {}
+interface StartTransaction
+  extends Tagged<
+    'StartTransaction',
+    {
+      readonly modes: Array<TransactionMode>;
+    }
+  > {}
 const StartTransaction = (args: UnTag<StartTransaction>): StartTransaction => tag('StartTransaction', args);
 type TransactionMode = IsolationLevel | 'ReadWrite' | 'ReadOnly' | 'Deferrable' | 'NotDeferrable';
 
 /* 
+TRUNCATE [ TABLE ] [ ONLY ] name [ * ] [, ... ]
+    [ RESTART IDENTITY | CONTINUE IDENTITY ] [ CASCADE | RESTRICT ]
+*/
+interface Truncate
+  extends Tagged<
+    'Truncate',
+    {
+      readonly only: boolean;
+      readonly name: Ident;
+      readonly restartIdentity: boolean;
+      readonly cascade: boolean;
+    }
+  > {}
+
+const Truncate = (args: UnTag<Truncate>): Truncate => tag('Truncate', args);
+/* 
 UNLISTEN { channel | * }
 */
-interface Unlisten extends Tagged<'Unlisten', {
-  readonly channels: Array<Ident> //empty array == "*";
-}> {}
+interface Unlisten
+  extends Tagged<
+    'Unlisten',
+    {
+      readonly channels: Array<Ident>; //empty array == "*";
+    }
+  > {}
 const Unlisten = (args: UnTag<Unlisten>): Unlisten => tag('Unlisten', args);
 
 /* 
@@ -116,4 +216,15 @@ interface Size
   > {}
 const Size = (args: UnTag<Size>): Size => tag('Size', args);
 
-export { PgUtil, Vacuum };
+export {
+  PgUtil,
+  SetRole,
+  ResetRole,
+  SetSessionAuthorization,
+  ResetSessionAuthorization,
+  Show,
+  StartTransaction,
+  Truncate,
+  Unlisten,
+  Vacuum,
+};
