@@ -40,7 +40,10 @@ type PgSchemaManipulation =
   // | AlterTable
   | AlterTablespace
   | AlterTextSearchConfiguration
-  | AlterTextSearchDictionary;
+  | AlterTextSearchDictionary
+  | AlterTextSearchParser
+  | AlterTextSearchTemplate
+  | AlterType;
 
 type UserSpec = Ident | 'CurrentRole' | 'CurrentUser' | 'SessionUser';
 
@@ -1721,16 +1724,182 @@ ALTER TEXT SEARCH DICTIONARY name RENAME TO new_name
 ALTER TEXT SEARCH DICTIONARY name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
 ALTER TEXT SEARCH DICTIONARY name SET SCHEMA new_schema
 */
-interface AlterTextSearchDictionary extends Tagged<'AlterTextSearchDictionary', {
-  readonly name: Ident;
-  readonly action: SetSearchDictionaryOption | Rename | OwnerTo | SetSchema
-}> {}
-const AlterTextSearchDictionary = (args: UnTag<AlterTextSearchDictionary>): AlterTextSearchDictionary => tag('AlterTextSearchDictionary', args);
+interface AlterTextSearchDictionary
+  extends Tagged<
+    'AlterTextSearchDictionary',
+    {
+      readonly name: Ident;
+      readonly action: SetSearchDictionaryOption | Rename | OwnerTo | SetSchema;
+    }
+  > {}
+const AlterTextSearchDictionary = (args: UnTag<AlterTextSearchDictionary>): AlterTextSearchDictionary =>
+  tag('AlterTextSearchDictionary', args);
 
-interface SetSearchDictionaryOption extends Tagged<'SetSearchDictionaryOption', {
-  readonly options: Array<[Ident, string | null]>
-}> {}
-const SetSearchDictionaryOption = (args: UnTag<SetSearchDictionaryOption>): SetSearchDictionaryOption => tag('SetSearchDictionaryOption', args);
+interface SetSearchDictionaryOption
+  extends Tagged<
+    'SetSearchDictionaryOption',
+    {
+      readonly options: Array<[Ident, string | null]>;
+    }
+  > {}
+const SetSearchDictionaryOption = (args: UnTag<SetSearchDictionaryOption>): SetSearchDictionaryOption =>
+  tag('SetSearchDictionaryOption', args);
+
+/*
+ALTER TEXT SEARCH PARSER name RENAME TO new_name
+ALTER TEXT SEARCH PARSER name SET SCHEMA new_schema
+*/
+interface AlterTextSearchParser
+  extends Tagged<
+    'AlterTextSearchParser',
+    {
+      readonly name: Ident;
+      readonly action: Rename | SetSchema;
+    }
+  > {}
+const AlterTextSearchParser = (args: UnTag<AlterTextSearchParser>): AlterTextSearchParser =>
+  tag('AlterTextSearchParser', args);
+
+/*
+ALTER TEXT SEARCH TEMPLATE name RENAME TO new_name
+ALTER TEXT SEARCH TEMPLATE name SET SCHEMA new_schema
+*/
+interface AlterTextSearchTemplate
+  extends Tagged<
+    'AlterTextSearchTemplate',
+    {
+      readonly name: Ident;
+      readonly action: Rename | OwnerTo;
+    }
+  > {}
+const AlterTextSearchTemplate = (args: UnTag<AlterTextSearchTemplate>): AlterTextSearchTemplate =>
+  tag('AlterTextSearchTemplate', args);
+
+/*
+ALTER TRIGGER name ON table_name RENAME TO new_name
+ALTER TRIGGER name ON table_name [ NO ] DEPENDS ON EXTENSION extension_name
+*/
+interface AlterTrigger
+  extends Tagged<
+    'AlterTrigger',
+    {
+      readonly name: Ident;
+      readonly table: Ident;
+      readonly action: Rename | DependsOnExtension;
+    }
+  > {}
+const AlterTrigger = (args: UnTag<AlterTrigger>): AlterTrigger => tag('AlterTrigger', args);
+
+/*
+ALTER TYPE name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER TYPE name RENAME TO new_name
+ALTER TYPE name SET SCHEMA new_schema
+ALTER TYPE name RENAME ATTRIBUTE attribute_name TO new_attribute_name [ CASCADE | RESTRICT ]
+ALTER TYPE name action [, ... ]
+ALTER TYPE name ADD VALUE [ IF NOT EXISTS ] new_enum_value [ { BEFORE | AFTER } neighbor_enum_value ]
+ALTER TYPE name RENAME VALUE existing_enum_value TO new_enum_value
+ALTER TYPE name SET ( property = value [, ... ] )
+
+where action is one of:
+
+    ADD ATTRIBUTE attribute_name data_type [ COLLATE collation ] [ CASCADE | RESTRICT ]
+    DROP ATTRIBUTE [ IF EXISTS ] attribute_name [ CASCADE | RESTRICT ]
+    ALTER ATTRIBUTE attribute_name [ SET DATA ] TYPE data_type [ COLLATE collation ] [ CASCADE | RESTRICT ]
+
+CASCADE | RESTRICT defaults to RESTRICT
+*/
+interface AlterType
+  extends Tagged<
+    'AlterType',
+    {
+      readonly name: Ident;
+      readonly action: AlterTypeAction;
+    }
+  > {}
+const AlterType = (args: UnTag<AlterType>): AlterType => tag('AlterType', args);
+
+type AlterTypeAction =
+  | OwnerTo
+  | Rename
+  | SetSchema
+  | RenameAttribute
+  | Array<AlterAttribute | DropAttribute | AddAttribute>
+  | AddValue
+  | Rename
+  | SetProperty;
+
+interface RenameAttribute
+  extends Tagged<
+    'RenameAttribute',
+    {
+      readonly name: Ident;
+      readonly newName: Ident;
+      readonly cascade: boolean;
+    }
+  > {}
+const RenameAttribute = (args: UnTag<RenameAttribute>): RenameAttribute => tag('RenameAttribute', args);
+
+interface AlterAttribute
+  extends Tagged<
+    'AlterAttribute',
+    {
+      readonly name: Ident;
+      readonly type: DataType;
+      readonly cascade: boolean;
+      readonly collation: Ident;
+    }
+  > {}
+const AlterAttribute = (args: UnTag<AlterAttribute>): AlterAttribute => tag('AlterAttribute', args);
+
+interface DropAttribute
+  extends Tagged<
+    'DropAttribute',
+    {
+      readonly name: Ident;
+      readonly ifExists: boolean;
+      readonly cascade: boolean;
+    }
+  > {}
+const DropAttribute = (args: UnTag<DropAttribute>): DropAttribute => tag('DropAttribute', args);
+
+interface AddAttribute
+  extends Tagged<
+    'AddAttribute',
+    {
+      readonly name: Ident;
+      readonly type: DataType;
+      readonly cascade: boolean;
+    }
+  > {}
+const AddAttribute = (args: UnTag<AddAttribute>): AddAttribute => tag('AddAttribute', args);
+
+//ALTER TYPE name ADD VALUE [ IF NOT EXISTS ] new_enum_value [ { BEFORE | AFTER } neighbor_enum_value ]
+interface AddValue
+  extends Tagged<
+    'AddValue',
+    {
+      readonly name: Ident;
+      readonly ifNotExists: boolean;
+      readonly newValue: StringLit;
+      readonly neighbor: ['Before' | 'After', StringLit];
+    }
+  > {}
+const AddValue = (args: UnTag<AddValue>): AddValue => tag('AddValue', args);
+
+interface SetProperty
+  extends Tagged<
+    'SetProperty',
+    {
+      readonly receive?: Ident | null;
+      readonly send?: Ident | null;
+      readonly typmodIn?: Ident | null;
+      readonly typmodOut?: Ident | null;
+      readonly analyze?: Ident | null;
+      readonly subscript?: Ident | null;
+      readonly storage?: 'Plain' | 'Extended' | 'External' | 'Main';
+    }
+  > {}
+const SetProperty = (args: UnTag<SetProperty>): SetProperty => tag('SetProperty', args);
 
 export {
   PgSchemaManipulation,
@@ -1777,4 +1946,7 @@ export {
   AlterTablespace,
   AlterTextSearchConfiguration,
   AlterTextSearchDictionary,
+  AlterTextSearchParser,
+  AlterTextSearchTemplate,
+  AlterType,
 };
