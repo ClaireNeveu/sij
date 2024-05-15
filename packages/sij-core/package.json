@@ -31,7 +31,7 @@
     "build": "npx tsc && copyfiles -u 2 \"src/types/*.d.ts\" dist",
     "format": "npx prettier . --write",
     "test": "ava -v && tsd",
-    "docs": "npx typedoc src/ --out docs/ --includeDeclarations --excludeExternals --excludeNotExported --excludePrivate && touch docs/.nojekyll"
+    "docs": "npx typedoc src/ --out docs/ --excludeExternals --excludePrivate && touch docs/.nojekyll"
   },
   "keywords": [
     "sql"

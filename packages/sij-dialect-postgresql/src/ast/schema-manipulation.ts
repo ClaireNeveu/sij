@@ -39,7 +39,8 @@ type PgSchemaManipulation =
   | AlterSystem
   // | AlterTable
   | AlterTablespace
-  | AlterTextSearchConfiguration;
+  | AlterTextSearchConfiguration
+  | AlterTextSearchDictionary;
 
 type UserSpec = Ident | 'CurrentRole' | 'CurrentUser' | 'SessionUser';
 
@@ -1712,6 +1713,25 @@ interface DropMapping
   > {}
 const DropMapping = (args: UnTag<DropMapping>): DropMapping => tag('DropMapping', args);
 
+/*
+ALTER TEXT SEARCH DICTIONARY name (
+    option [ = value ] [, ... ]
+)
+ALTER TEXT SEARCH DICTIONARY name RENAME TO new_name
+ALTER TEXT SEARCH DICTIONARY name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER TEXT SEARCH DICTIONARY name SET SCHEMA new_schema
+*/
+interface AlterTextSearchDictionary extends Tagged<'AlterTextSearchDictionary', {
+  readonly name: Ident;
+  readonly action: SetSearchDictionaryOption | Rename | OwnerTo | SetSchema
+}> {}
+const AlterTextSearchDictionary = (args: UnTag<AlterTextSearchDictionary>): AlterTextSearchDictionary => tag('AlterTextSearchDictionary', args);
+
+interface SetSearchDictionaryOption extends Tagged<'SetSearchDictionaryOption', {
+  readonly options: Array<[Ident, string | null]>
+}> {}
+const SetSearchDictionaryOption = (args: UnTag<SetSearchDictionaryOption>): SetSearchDictionaryOption => tag('SetSearchDictionaryOption', args);
+
 export {
   PgSchemaManipulation,
   Abort,
@@ -1756,4 +1776,5 @@ export {
   AlterSystem,
   AlterTablespace,
   AlterTextSearchConfiguration,
+  AlterTextSearchDictionary,
 };
