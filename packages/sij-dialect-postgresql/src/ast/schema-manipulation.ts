@@ -8,6 +8,7 @@ type PgSchemaManipulation =
   | Abort
   | AlterAggregate
   | AlterCollation
+  | AlterConversion
   | AlterDatabase
   //  | AlterDefaultPrivileges
   | AlterEventTrigger
@@ -16,6 +17,9 @@ type PgSchemaManipulation =
   //  | AlterFunction
   | AlterGroupAddUser
   | AlterGroupRename
+  | AlterIndex
+  | AlterLanguage
+  | AlterLargeObject
   | AlterMaterializedView
   | AlterAllMaterializedView
   | AlterOperator
@@ -1713,6 +1717,7 @@ export {
   Abort,
   AlterAggregate,
   AlterCollation,
+  AlterConversion,
   AlterDatabase,
   PgAlterDomainAction,
   AlterDomainNotNull,
@@ -1728,6 +1733,9 @@ export {
   DataWrapperOption,
   AlterGroupAddUser,
   AlterGroupRename,
+  AlterIndex,
+  AlterLanguage,
+  AlterLargeObject,
   AlterMaterializedView,
   AlterAllMaterializedView,
   AlterOperator,

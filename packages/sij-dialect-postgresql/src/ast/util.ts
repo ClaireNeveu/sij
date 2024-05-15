@@ -2,6 +2,7 @@ import { Ident, IsolationLevel, StringLit } from 'sij-core/ast';
 import { Tagged, UnTag, tag } from 'sij-core/util';
 
 type PgUtil =
+  | SetConstraints
   | SetRole
   | ResetRole
   | SetSessionAuthorization
@@ -11,6 +12,20 @@ type PgUtil =
   | Truncate
   | Unlisten
   | Vacuum;
+
+/*
+SET CONSTRAINTS { ALL | name [, ...] } { DEFERRED | IMMEDIATE }
+*/
+
+interface SetConstraints
+  extends Tagged<
+    'SetConstraints',
+    {
+      readonly names: Array<Ident>;
+      readonly mode: 'Deferred' | 'Immediate';
+    }
+  > {}
+const SetConstraints = (args: UnTag<SetConstraints>): SetConstraints => tag('SetConstraints', args);
 
 /*
 SET [ SESSION | LOCAL ] ROLE role_name
@@ -218,6 +233,7 @@ const Size = (args: UnTag<Size>): Size => tag('Size', args);
 
 export {
   PgUtil,
+  SetConstraints,
   SetRole,
   ResetRole,
   SetSessionAuthorization,
