@@ -1,4 +1,4 @@
-import { Ident, IsolationLevel, StringLit } from 'sij-core/ast';
+import { Ident, IsolationLevel, StringLit, NumLit, Interval } from 'sij-core/ast';
 import { Tagged, UnTag, tag } from 'sij-core/util';
 
 type PgUtil =
@@ -14,9 +14,36 @@ type PgUtil =
   | Vacuum;
 
 /*
+SET [ SESSION | LOCAL ] configuration_parameter { TO | = } { value | 'value' | DEFAULT }
+*/
+interface SetConfigurationParameter
+  extends Tagged<
+    'SetConfigurationParameter',
+    {
+      readonly mode: 'Session' | 'Local';
+      readonly param: Ident;
+      readonly value: StringLit | Ident | NumLit | Array<StringLit | Ident | NumLit> | 'Default';
+    }
+  > {}
+const SetConfigurationParameter = (args: UnTag<SetConfigurationParameter>): SetConfigurationParameter =>
+  tag('SetConfigurationParameter', args);
+
+/*
+SET [ SESSION | LOCAL ] TIME ZONE { value | 'value' | LOCAL | DEFAULT }
+*/
+interface SetTimeZone
+  extends Tagged<
+    'SetTimeZone',
+    {
+      readonly mode: 'Session' | 'Local';
+      readonly value: StringLit | NumLit | Interval | 'Local' | 'Default';
+    }
+  > {}
+const SetTimeZone = (args: UnTag<SetTimeZone>): SetTimeZone => tag('SetTimeZone', args);
+
+/*
 SET CONSTRAINTS { ALL | name [, ...] } { DEFERRED | IMMEDIATE }
 */
-
 interface SetConstraints
   extends Tagged<
     'SetConstraints',
