@@ -81,7 +81,7 @@ where transaction_mode is one of:
     [ NOT ] DEFERRABLE
 */
 
-/* 
+/*
 SHOW name
 SHOW ALL
 */
@@ -113,7 +113,7 @@ interface StartTransaction
 const StartTransaction = (args: UnTag<StartTransaction>): StartTransaction => tag('StartTransaction', args);
 type TransactionMode = IsolationLevel | 'ReadWrite' | 'ReadOnly' | 'Deferrable' | 'NotDeferrable';
 
-/* 
+/*
 TRUNCATE [ TABLE ] [ ONLY ] name [ * ] [, ... ]
     [ RESTART IDENTITY | CONTINUE IDENTITY ] [ CASCADE | RESTRICT ]
 */
@@ -129,7 +129,7 @@ interface Truncate
   > {}
 
 const Truncate = (args: UnTag<Truncate>): Truncate => tag('Truncate', args);
-/* 
+/*
 UNLISTEN { channel | * }
 */
 interface Unlisten
@@ -141,7 +141,7 @@ interface Unlisten
   > {}
 const Unlisten = (args: UnTag<Unlisten>): Unlisten => tag('Unlisten', args);
 
-/* 
+/*
 VACUUM [ ( option [, ...] ) ] [ table_and_columns [, ...] ]
 VACUUM [ FULL ] [ FREEZE ] [ VERBOSE ] [ ANALYZE ] [ table_and_columns [, ...] ]
 
