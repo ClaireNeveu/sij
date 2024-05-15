@@ -20,7 +20,7 @@ import { isSqlR, isParamsSql } from './_util';
 import { TypeBuilder } from '../src/builder/type';
 import { Delete, Expr, Ident, Query, Select, SqlBigInt } from '../src/ast';
 import { lens } from 'lens.ts';
-import { Tagged, UnTag, tag } from '../src/ast/util';
+import { Tagged, UnTag, tag } from '../src/util';
 
 import { InsertBuilder as IB } from '../src/builder/insert';
 import { UpdateBuilder as UB } from '../src/builder/update';
