@@ -48,15 +48,11 @@ type DirectionOption =
   | 'Prior'
   | 'First'
   | 'Last'
+  | 'All'
   | Absolute
   | Relative
-  | 'All'
-  | 'Forward'
   | Forward
-  | 'ForwardAll'
-  | 'Backward'
   | Backward
-  | 'BackwardAll';
 
 interface Absolute
   extends Tagged<
@@ -80,7 +76,7 @@ interface Forward
   extends Tagged<
     'Forward',
     {
-      readonly count: NumLit;
+      readonly count: NumLit | 'All' | null;
     }
   > {}
 const Forward = (args: UnTag<Forward>): Forward => tag('Forward', args);
@@ -89,7 +85,7 @@ interface Backward
   extends Tagged<
     'Backward',
     {
-      readonly count: NumLit;
+      readonly count: NumLit | 'All' | null;
     }
   > {}
 const Backward = (args: UnTag<Backward>): Backward => tag('Backward', args);
