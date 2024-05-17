@@ -4,6 +4,8 @@ import { Tagged, UnTag, tag } from 'sij-core/util';
 type PgUtil =
   | Fetch
   | Move
+  | SetConfigurationParameter
+  | SetTimeZone
   | SetConstraints
   | SetRole
   | ResetRole
@@ -341,6 +343,8 @@ export {
   PgUtil,
   Fetch,
   Move,
+  SetConfigurationParameter,
+  SetTimeZone,
   SetConstraints,
   SetRole,
   ResetRole,
