@@ -2,6 +2,8 @@ import { Ident, IsolationLevel, StringLit, NumLit, Interval } from 'sij-core/ast
 import { Tagged, UnTag, tag } from 'sij-core/util';
 
 type PgUtil =
+  | Fetch
+  | Move
   | SetConstraints
   | SetRole
   | ResetRole
@@ -12,6 +14,83 @@ type PgUtil =
   | Truncate
   | Unlisten
   | Vacuum;
+
+/*
+FETCH [ direction ] [ FROM | IN ] cursor_name
+*/
+interface Fetch
+  extends Tagged<
+    'Fetch',
+    {
+      readonly direction: DirectionOption;
+      readonly cursorName: Ident;
+    }
+  > {}
+const Fetch = (args: UnTag<Fetch>): Fetch => tag('Fetch', args);
+
+/*
+MOVE [ direction ] [ FROM | IN ] cursor_name
+*/
+interface Move
+  extends Tagged<
+    'Move',
+    {
+      readonly direction: DirectionOption;
+      readonly cursorName: Ident;
+    }
+  > {}
+const Move = (args: UnTag<Move>): Move => tag('Move', args);
+
+type DirectionOption =
+  | 'Next'
+  | 'Prior'
+  | 'First'
+  | 'Last'
+  | Absolute
+  | Relative
+  | 'All'
+  | 'Forward'
+  | Forward
+  | 'ForwardAll'
+  | 'Backward'
+  | Backward
+  | 'BackwardAll';
+
+interface Absolute
+  extends Tagged<
+    'Absolute',
+    {
+      readonly count: NumLit;
+    }
+  > {}
+const Absolute = (args: UnTag<Absolute>): Absolute => tag('Absolute', args);
+
+interface Relative
+  extends Tagged<
+    'Relative',
+    {
+      readonly count: NumLit;
+    }
+  > {}
+const Relative = (args: UnTag<Relative>): Relative => tag('Relative', args);
+
+interface Forward
+  extends Tagged<
+    'Forward',
+    {
+      readonly count: NumLit;
+    }
+  > {}
+const Forward = (args: UnTag<Forward>): Forward => tag('Forward', args);
+
+interface Backward
+  extends Tagged<
+    'Backward',
+    {
+      readonly count: NumLit;
+    }
+  > {}
+const Backward = (args: UnTag<Backward>): Backward => tag('Backward', args);
 
 /*
 SET [ SESSION | LOCAL ] configuration_parameter { TO | = } { value | 'value' | DEFAULT }
@@ -260,6 +339,8 @@ const Size = (args: UnTag<Size>): Size => tag('Size', args);
 
 export {
   PgUtil,
+  Fetch,
+  Move,
   SetConstraints,
   SetRole,
   ResetRole,
