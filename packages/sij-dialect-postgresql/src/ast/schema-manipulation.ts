@@ -1,4 +1,19 @@
-import { QualifiedIdent, Ident, DataType, Lit, StringLit, Literal, Expr } from 'sij-core/ast';
+import {
+  QualifiedIdent,
+  Ident,
+  DataType,
+  Lit,
+  StringLit,
+  Literal,
+  Expr,
+  NullLit,
+  DateLit,
+  AlterColumn,
+  DropColumn,
+  ColumnDefinition,
+  AddTableConstraint,
+  DropTableConstraint,
+} from 'sij-core/ast';
 
 import { Tagged, UnTag, tag } from 'sij-core/util';
 
@@ -13,7 +28,7 @@ type PgSchemaManipulation =
   //  | AlterDefaultPrivileges
   | AlterEventTrigger
   | AlterForeignDataWrapper
-  //  | AlterForeignTable
+  | AlterForeignTable
   //  | AlterFunction
   | AlterGroupAddUser
   | AlterGroupRename
@@ -43,7 +58,12 @@ type PgSchemaManipulation =
   | AlterTextSearchDictionary
   | AlterTextSearchParser
   | AlterTextSearchTemplate
-  | AlterType;
+  | AlterType
+  | AlterUser
+  | RenameUser
+  | AlterUserInDatabase
+  | AlterUserMapping
+  | AlterView;
 
 type UserSpec = Ident | 'CurrentRole' | 'CurrentUser' | 'SessionUser';
 
@@ -507,7 +527,6 @@ interface DataWrapperOption
 const DataWrapperOption = (args: UnTag<DataWrapperOption>): DataWrapperOption => tag('DataWrapperOption', args);
 
 /*
-TODO
 ALTER FOREIGN TABLE [ IF EXISTS ] [ ONLY ] name [ * ]
     action [, ... ]
 ALTER FOREIGN TABLE [ IF EXISTS ] [ ONLY ] name [ * ]
@@ -543,6 +562,110 @@ where action is one of:
     OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
     OPTIONS ( [ ADD | SET | DROP ] option ['value'] [, ... ])
 */
+interface AlterForeignTable
+  extends Tagged<
+    'AlterForeignTable',
+    {
+      readonly name: QualifiedIdent;
+      readonly action: AlterForeignTableAction;
+    }
+  > {}
+const AlterForeignTable = (args: UnTag<AlterForeignTable>): AlterForeignTable => tag('AlterForeignTable', args);
+
+type AlterForeignTableAction = Rename | RenameColumn | SetSchema | Array<AlterForeignTableMultiAction>;
+
+type AlterForeignTableMultiAction =
+  | ColumnDefinition<PgExtension>
+  | DropColumn<PgExtension>
+  | AlterColumn<PgExtension>
+  | AddTableConstraint<PgExtension>
+  | ValidateTableConstraint
+  | DropTableConstraint<PgExtension>
+  | DisableTrigger
+  | EnableTrigger
+  | EnableReplicaTrigger
+  | EnableAlwaysTrigger
+  | 'SetWithoutOids'
+  | Inherit
+  | NoInherit
+  | OwnerTo
+  | Array<ForeignTableOption>;
+
+interface ValidateTableConstraint
+  extends Tagged<
+    'ValidateTableConstraint',
+    {
+      readonly name: Ident;
+    }
+  > {}
+const ValidateTableConstraint = (args: UnTag<ValidateTableConstraint>): ValidateTableConstraint =>
+  tag('ValidateTableConstraint', args);
+
+interface DisableTrigger
+  extends Tagged<
+    'DisableTrigger',
+    {
+      readonly trigger: Ident | 'All' | 'User';
+    }
+  > {}
+const DisableTrigger = (args: UnTag<DisableTrigger>): DisableTrigger => tag('DisableTrigger', args);
+
+interface EnableTrigger
+  extends Tagged<
+    'EnableTrigger',
+    {
+      readonly trigger: Ident | 'All' | 'User';
+    }
+  > {}
+const EnableTrigger = (args: UnTag<EnableTrigger>): EnableTrigger => tag('EnableTrigger', args);
+
+interface EnableReplicaTrigger
+  extends Tagged<
+    'EnableReplicaTrigger',
+    {
+      readonly trigger: Ident;
+    }
+  > {}
+const EnableReplicaTrigger = (args: UnTag<EnableReplicaTrigger>): EnableReplicaTrigger =>
+  tag('EnableReplicaTrigger', args);
+
+interface EnableAlwaysTrigger
+  extends Tagged<
+    'EnableAlwaysTrigger',
+    {
+      readonly trigger: Ident;
+    }
+  > {}
+const EnableAlwaysTrigger = (args: UnTag<EnableAlwaysTrigger>): EnableAlwaysTrigger => tag('EnableAlwaysTrigger', args);
+
+interface Inherit
+  extends Tagged<
+    'Inherit',
+    {
+      readonly parent: Ident;
+    }
+  > {}
+const Inherit = (args: UnTag<Inherit>): Inherit => tag('Inherit', args);
+
+interface NoInherit
+  extends Tagged<
+    'NoInherit',
+    {
+      readonly parent: Ident;
+    }
+  > {}
+const NoInherit = (args: UnTag<NoInherit>): NoInherit => tag('NoInherit', args);
+
+interface ForeignTableOption
+  extends Tagged<
+    'ForeignTableOption',
+    {
+      readonly mode: 'Add' | 'Set' | 'Drop';
+      readonly option: Ident;
+      readonly value: Literal | null;
+    }
+  > {}
+const ForeignTableOption = (args: UnTag<ForeignTableOption>): ForeignTableOption => tag('ForeignTableOption', args);
 
 /*
 ALTER FUNCTION name [ ( [ [ argmode ] [ argname ] argtype [, ...] ] ) ]
@@ -571,7 +694,6 @@ where action is one of:
     RESET configuration_parameter
     RESET ALL
 */
-
 /*
 ALTER GROUP role_specification ADD USER user_name [, ... ]
 ALTER GROUP role_specification DROP USER user_name [, ... ]
@@ -1901,6 +2023,170 @@ interface SetProperty
   > {}
 const SetProperty = (args: UnTag<SetProperty>): SetProperty => tag('SetProperty', args);
 
+/*
+ALTER USER role_specification [ WITH ] option [ ... ]
+
+where option can be:
+
+      SUPERUSER | NOSUPERUSER
+    | CREATEDB | NOCREATEDB
+    | CREATEROLE | NOCREATEROLE
+    | INHERIT | NOINHERIT
+    | LOGIN | NOLOGIN
+    | REPLICATION | NOREPLICATION
+    | BYPASSRLS | NOBYPASSRLS
+    | CONNECTION LIMIT connlimit
+    | [ ENCRYPTED ] PASSWORD 'password' | PASSWORD NULL
+    | VALID UNTIL 'timestamp'
+
+ALTER USER name RENAME TO new_name
+
+ALTER USER { role_specification | ALL } [ IN DATABASE database_name ] SET configuration_parameter { TO | = } { value | DEFAULT }
+ALTER USER { role_specification | ALL } [ IN DATABASE database_name ] SET configuration_parameter FROM CURRENT
+ALTER USER { role_specification | ALL } [ IN DATABASE database_name ] RESET configuration_parameter
+ALTER USER { role_specification | ALL } [ IN DATABASE database_name ] RESET ALL
+
+where role_specification can be:
+
+    role_name
+  | CURRENT_ROLE
+  | CURRENT_USER
+  | SESSION_USER
+*/
+interface AlterUser
+  extends Tagged<
+    'AlterUser',
+    {
+      readonly target: UserSpec;
+      readonly superuser: boolean;
+      readonly noSuperuser: boolean;
+      readonly createDb: boolean;
+      readonly noCreateDb: boolean;
+      readonly createRole: boolean;
+      readonly noCreateRole: boolean;
+      readonly login: boolean;
+      readonly noLogin: boolean;
+      readonly replication: boolean;
+      readonly noReplication: boolean;
+      readonly bypassRls: boolean;
+      readonly noBypassRls: boolean;
+      readonly connectionLimit: number | null;
+      readonly password: StringLit | NullLit | null;
+      readonly validUntil: DateLit | null;
+    }
+  > {}
+const AlterUser = (args: UnTag<AlterUser>): AlterUser => tag('AlterUser', args);
+
+interface RenameUser
+  extends Tagged<
+    'RenameUser',
+    {
+      readonly name: Ident;
+      readonly newName: Ident;
+    }
+  > {}
+const RenameUser = (args: UnTag<RenameUser>): RenameUser => tag('RenameUser', args);
+
+interface AlterUserInDatabase
+  extends Tagged<
+    'AlterUserInDatabase',
+    {
+      readonly target: UserSpec | 'All';
+      readonly database: Ident | null;
+      readonly action: SetConfig | ResetConfig;
+    }
+  > {}
+const AlterUserInDatabase = (args: UnTag<AlterUserInDatabase>): AlterUserInDatabase => tag('AlterUserInDatabase', args);
+
+/*
+ALTER USER MAPPING FOR { user_name | USER | CURRENT_ROLE | CURRENT_USER | SESSION_USER | PUBLIC }
+    SERVER server_name
+    OPTIONS ( [ ADD | SET | DROP ] option ['value'] [, ... ] )
+*/
+interface AlterUserMapping
+  extends Tagged<
+    'AlterUserMapping',
+    {
+      readonly user: UserSpec | 'User' | 'SessionUser' | 'Public';
+      readonly server: Ident;
+      readonly options: Array<UserMappingOption>;
+    }
+  > {}
+const AlterUserMapping = (args: UnTag<AlterUserMapping>): AlterUserMapping => tag('AlterUserMapping', args);
+
+type UserMappingOption =
+  | Tagged<'Add', { option: Ident; value: StringLit }>
+  | Tagged<'Set', { option: Ident; value: StringLit }>
+  | Tagged<'Drop', { option: Ident }>;
+
+/*
+ALTER VIEW [ IF EXISTS ] name ALTER [ COLUMN ] column_name SET DEFAULT expression
+ALTER VIEW [ IF EXISTS ] name ALTER [ COLUMN ] column_name DROP DEFAULT
+ALTER VIEW [ IF EXISTS ] name OWNER TO { new_owner | CURRENT_ROLE | CURRENT_USER | SESSION_USER }
+ALTER VIEW [ IF EXISTS ] name RENAME [ COLUMN ] column_name TO new_column_name
+ALTER VIEW [ IF EXISTS ] name RENAME TO new_name
+ALTER VIEW [ IF EXISTS ] name SET SCHEMA new_schema
+ALTER VIEW [ IF EXISTS ] name SET ( view_option_name [= view_option_value] [, ... ] )
+ALTER VIEW [ IF EXISTS ] name RESET ( view_option_name [, ... ] )
+*/
+interface AlterView
+  extends Tagged<
+    'AlterView',
+    {
+      readonly name: QualifiedIdent;
+      readonly action: AlterViewAction;
+    }
+  > {}
+const AlterView = (args: UnTag<AlterView>): AlterView => tag('AlterView', args);
+
+type AlterViewAction =
+  | AlterColumn<PgExtension>
+  | OwnerTo
+  | RenameColumn
+  | Rename
+  | SetSchema
+  | Array<AlterViewSetOption>
+  | Array<AlterViewResetOption>;
+
+/*
+SET ( view_option_name [= view_option_value] [, ... ] )
+RESET ( view_option_name [, ... ] )
+
+    Sets or resets a view option. Currently supported options are:
+
+    check_option (enum)
+
+        Changes the check option of the view. The value must be local or cascaded.
+    security_barrier (boolean)
+
+        Changes the security-barrier property of the view. The value must be a Boolean value, such as true or false.
+    security_invoker (boolean)
+
+        Changes the security-invoker property of the view. The value must be a Boolean value, such as true or false.
+*/
+interface AlterViewSetOption
+  extends Tagged<
+    'AlterViewSetOption',
+    {
+      readonly checkOption?: 'Local' | 'Cascaded';
+      readonly securityBarrier?: boolean;
+      readonly securityInvoker?: boolean;
+    }
+  > {}
+const AlterViewSetOption = (args: UnTag<AlterViewSetOption>): AlterViewSetOption => tag('AlterViewSetOption', args);
+
+interface AlterViewResetOption
+  extends Tagged<
+    'AlterViewResetOption',
+    {
+      readonly checkOption: boolean;
+      readonly securityBarrier: boolean;
+      readonly securityInvoker: boolean;
+    }
+  > {}
+const AlterViewResetOption = (args: UnTag<AlterViewResetOption>): AlterViewResetOption =>
+  tag('AlterViewResetOption', args);
+
 export {
   PgSchemaManipulation,
   Abort,
@@ -1918,6 +2204,7 @@ export {
   DisableEventTrigger,
   EnableEventTrigger,
   AlterForeignDataWrapper,
+  AlterForeignTable,
   DataWrapperSettings,
   DataWrapperOption,
   AlterGroupAddUser,
@@ -1949,4 +2236,9 @@ export {
   AlterTextSearchParser,
   AlterTextSearchTemplate,
   AlterType,
+  AlterUser,
+  RenameUser,
+  AlterUserInDatabase,
+  AlterUserMapping,
+  AlterView,
 };

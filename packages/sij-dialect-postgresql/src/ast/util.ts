@@ -43,16 +43,7 @@ interface Move
   > {}
 const Move = (args: UnTag<Move>): Move => tag('Move', args);
 
-type DirectionOption =
-  | 'Next'
-  | 'Prior'
-  | 'First'
-  | 'Last'
-  | 'All'
-  | Absolute
-  | Relative
-  | Forward
-  | Backward
+type DirectionOption = 'Next' | 'Prior' | 'First' | 'Last' | 'All' | Absolute | Relative | Forward | Backward;
 
 interface Absolute
   extends Tagged<
